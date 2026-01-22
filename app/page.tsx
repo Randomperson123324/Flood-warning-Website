@@ -1,0 +1,510 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  AlertTriangle,
+  Droplets,
+  TrendingUp,
+  TrendingDown,
+  Settings,
+  RefreshCw,
+  QrCode,
+  WifiOff,
+} from "lucide-react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@supabase/supabase-js"
+import { EnhancedWaterLevelChart } from "../components/enhanced-water-level-chart"
+import { WeatherCard } from "../components/weather-card"
+import { WeatherMap } from "../components/weather-map"
+import { HourlyForecast } from "../components/hourly-forecast"
+import { RainDashboard } from "../components/rain-dashboard"
+import { CommunityChat } from "../components/community-chat"
+import { FloodReport } from "../components/flood-report"
+import { AffectedAreas } from "../components/affected-areas"
+import { DeveloperSettings } from "../components/developer-settings"
+import { SystemStatus } from "../components/system-status"
+import { AnnouncementBanner } from "../components/announcement-banner"
+import { StatusSummary } from "../components/status-summary"
+import { StickyHeader } from "../components/sticky-header"
+import { useLanguage } from "../hooks/language-context"
+import { LanguageToggle } from "../components/language-toggle"
+import { useWaterData } from "../hooks/use-water-data"
+import { useWeatherData } from "../hooks/use-weather-data"
+import { Footer } from "../components/footer"
+import React from "react"
+import type { JSX } from "react/jsx-runtime"
+
+export default function Dashboard() {
+  const { t, language } = useLanguage()
+  const {
+    waterData,
+    currentLevel,
+    trend,
+    timeToWarningData,
+    analytics,
+    isLoading,
+    isConnected,
+    lastUpdateTime,
+    testConnection,
+    getCurrentRate,
+    getLatestReadingTime, // Get the latest reading timestamp function
+  } = useWaterData()
+  const { weatherData, isLoading: weatherLoading, error: weatherError, refetch: refetchWeather } = useWeatherData()
+  const [showDeveloperSettings, setShowDeveloperSettings] = useState(false)
+  const [warningLevels, setWarningLevels] = useState({ warningLevel: 20, dangerLevel: 40 })
+  const [mounted, setMounted] = useState(false)
+  const [activeTab, setActiveTab] = useState("overview")
+  const [isDarkMode, setIsDarkMode] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [dataComparison, setDataComparison] = useState<"lastDay" | "lastWeek">("lastDay")
+  const [showLineQR, setShowLineQR] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
+  const router = useRouter()
+
+  // Get warning levels from localStorage or use defaults
+  useEffect(() => {
+    setMounted(true)
+
+    const getWarningLevels = () => {
+      try {
+        const saved = localStorage.getItem("waterLevelSettings")
+        if (saved) {
+          const settings = JSON.parse(saved)
+          return {
+            warningLevel: Number.parseFloat(settings.warningLevel) || 20,
+            dangerLevel: Number.parseFloat(settings.dangerLevel) || 40,
+          }
+        }
+      } catch (error) {
+        console.error("Error reading localStorage:", error)
+      }
+      return { warningLevel: 20, dangerLevel: 40 }
+    }
+
+    setWarningLevels(getWarningLevels())
+
+    // Check for dark mode preference
+    const darkMode = localStorage.getItem("darkMode") === "true"
+    setIsDarkMode(darkMode)
+    if (darkMode) {
+      document.documentElement.classList.add("dark")
+    }
+
+    // Listen for settings changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "waterLevelSettings") {
+        setWarningLevels(getWarningLevels())
+      }
+    }
+    window.addEventListener("storage", handleStorageChange)
+
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange)
+    }
+  }, [])
+
+  const { warningLevel, dangerLevel } = warningLevels
+
+  const toggleTheme = () => {
+    const newDarkMode = !isDarkMode
+    setIsDarkMode(newDarkMode)
+    localStorage.setItem("darkMode", newDarkMode.toString())
+
+    if (newDarkMode) {
+      document.documentElement.classList.add("dark")
+    } else {
+      document.documentElement.classList.remove("dark")
+    }
+  }
+
+
+
+  const getStatusColor = (level: number) => {
+    if (level >= dangerLevel) return "destructive"
+    if (level >= warningLevel) return "secondary"
+    return "default"
+  }
+
+  const getStatusText = (level: number) => {
+    if (level >= dangerLevel) return t.status.danger
+    if (level >= warningLevel) return t.status.warning
+    return t.status.normal
+  }
+
+  const getCardBackgroundColor = (level: number) => {
+    if (level >= dangerLevel) return "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+    if (level >= warningLevel) return "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
+    return "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+  }
+
+  const getTrendIcon = () => {
+    switch (trend) {
+      case "rising":
+        return <TrendingUp className="h-4 w-4 text-red-600" />
+      case "falling":
+        return <TrendingDown className="h-4 w-4 text-green-600" />
+      default:
+        return <div className="h-4 w-4 rounded-full bg-gray-400" />
+    }
+  }
+
+  const getTrendColor = () => {
+    switch (trend) {
+      case "rising":
+        return "text-red-600"
+      case "falling":
+        return "text-green-600"
+      default:
+        return "text-gray-600"
+    }
+  }
+
+  // Function to format time to warning
+  const formatTimeToWarning = () => {
+    if (timeToWarningData.isStable) {
+      return t.cards.stable
+    }
+
+    const parts: JSX.Element[] = []
+    if (timeToWarningData.days !== null && timeToWarningData.days > 0) {
+      parts.push(
+        <span key="days">
+          <span className="font-inter-numbers">{timeToWarningData.days}</span> {t.timeUnits.days}
+        </span>,
+      )
+    }
+    if (timeToWarningData.hours !== null && (timeToWarningData.hours > 0 || parts.length > 0)) {
+      parts.push(
+        <span key="hours">
+          <span className="font-inter-numbers">{timeToWarningData.hours}</span> {t.timeUnits.hours}
+        </span>,
+      )
+    }
+    if (timeToWarningData.minutes !== null && (timeToWarningData.minutes > 0 || parts.length === 0)) {
+      parts.push(
+        <span key="minutes">
+          <span className="font-inter-numbers">{timeToWarningData.minutes}</span> {t.timeUnits.minutes}
+        </span>,
+      )
+    }
+
+    return parts.length > 0 ? (
+      <>
+        {parts.map((part, index) => (
+          <React.Fragment key={index}>
+            {part}
+            {index < parts.length - 1 && " "}
+          </React.Fragment>
+        ))}
+      </>
+    ) : (
+      t.cards.stable
+    )
+  }
+
+  // Don't render until mounted to avoid hydration issues
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-gray-800">
+        <div className="container mx-auto p-6">
+          <div className="flex justify-center items-center min-h-[50vh]">
+            <div className="animate-pulse text-lg">{t.common.loading}</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className={`min-h-screen bg-gradient-to-br from-blue-100 via-blue-50 to-blue-200 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900`}
+    >
+      {/* Sticky Header */}
+      <StickyHeader
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onSettingsClick={() => setShowDeveloperSettings(true)}
+      />
+
+      {/* Announcement Banner */}
+      <AnnouncementBanner />
+
+      <div className="container mx-auto p-4 sm:p-6 pt-8">
+        {/* Status Summary */}
+        <StatusSummary currentLevel={currentLevel} warningLevel={warningLevel} dangerLevel={dangerLevel} />
+
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
+          <div>
+            <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white">
+              {activeTab === "overview" && t.tabstitle.overview}
+              {activeTab === "analytics" && t.tabstitle.analytics}
+              {activeTab === "weather" && t.tabstitle.weather}
+              {activeTab === "community" && t.tabstitle.community}
+            </h1>
+
+            <p className="text-gray-600 dark:text-gray-300 mt-2 text-sm sm:text-base">
+              {activeTab === "overview" && t.subtitles.overview}
+              {activeTab === "analytics" && t.subtitles.analytics}
+              {activeTab === "weather" && t.subtitles.weather}
+              {activeTab === "community" && t.subtitles.community}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <SystemStatus isConnected={isConnected} lastUpdateTime={lastUpdateTime} onTestConnection={testConnection} />
+            <Popover open={isOpen} onOpenChange={setIsOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="icon" className="bg-transparent" title={t.common.addUsOnLINE}>
+                  <QrCode className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80" align="end">
+                <div className="text-center">
+                  <div className="w-48 h-48 bg-gray-100 dark:bg-gray-700 rounded-tr-lg rounded-bl-lg flex items-center justify-center mb-2 mx-auto">
+                    <img
+                      src="/images/design-mode/M_917ybsgj_BW.png"
+                      alt="Add us on LINE"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{t.common.addLineContact}</p>
+                  <Button variant="outline" size="sm" onClick={() => setIsOpen(false)}>
+                    {t.common.close}
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+            <LanguageToggle />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowDeveloperSettings(true)}
+              className="bg-transparent"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview">{t.tabs.overview}</TabsTrigger>
+            <TabsTrigger value="analytics">{t.tabs.analytics}</TabsTrigger>
+            <TabsTrigger value="weather">{t.tabs.weather}</TabsTrigger>
+            <TabsTrigger value="community">{t.tabs.community}</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            {/* Current Status Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <Card className={getCardBackgroundColor(currentLevel)}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{t.cards.currentLevel}</CardTitle>
+                  <Droplets className="h-4 w-4 text-blue-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold font-inter-numbers mb-2">{currentLevel} cm</div>
+                  <Badge variant={getStatusColor(currentLevel)} className="mb-2">
+                    {getStatusText(currentLevel)}
+                  </Badge>
+                </CardContent>
+                {!isConnected && (
+                  <div className="w-full py-2 bg-red-600 rounded-b-xl flex items-center justify-center gap-2 text-white">
+                    <WifiOff className="h-4 w-4" />
+                    <span className="text-sm font-medium">{t.system.disconnected}</span>
+                  </div>
+                )}
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{t.cards.trend}</CardTitle>
+                  {getTrendIcon()}
+                </CardHeader>
+                <CardContent>
+                  <div className={`text-2xl font-bold capitalize ${getTrendColor()}`}>{t.trends[trend]}</div>
+                  <p className="text-xs text-muted-foreground mt-2">{t.cards.trendDescription}</p>
+                  <div className="text-sm font-inter-numbers text-muted-foreground">
+                    {(() => {
+                      const { ratePerHour, timestamp } = getCurrentRate()
+                      return (
+                        <>
+                          Rate: {ratePerHour} {t.trends.ratePerHour}
+                          {timestamp && (
+                            <div className="text-xs mt-1">
+                              {timestamp.toLocaleTimeString("en-US", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                hourCycle: "h23",
+                              })}
+                            </div>
+                          )}
+                        </>
+                      )
+                    })()}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium">{t.cards.timeToWarning}</CardTitle>
+                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{formatTimeToWarning()}</div>
+                  <p className="text-xs text-muted-foreground mt-2">{t.cards.timeToWarningDescription}</p>
+                </CardContent>
+              </Card>
+
+
+            </div>
+
+            <AffectedAreas />
+
+            {/* Enhanced Water Level Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t.chart.title}</CardTitle>
+                <CardDescription>{t.chart.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EnhancedWaterLevelChart
+                  data={waterData}
+                  warningLevel={warningLevel}
+                  dangerLevel={dangerLevel}
+                  onRefresh={async () => {
+                    setIsRefreshing(true)
+                    await testConnection()
+                    setTimeout(() => setIsRefreshing(false), 1000)
+                  }}
+                  isRefreshing={isRefreshing}
+                  showLast24Hours={true}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6">
+            {/* Data Comparison Controls */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant={dataComparison === "lastDay" ? "default" : "outline"}
+                onClick={() => setDataComparison("lastDay")}
+              >
+                {t.analytics.lastDay}
+              </Button>
+              <Button
+                variant={dataComparison === "lastWeek" ? "default" : "outline"}
+                onClick={() => setDataComparison("lastWeek")}
+              >
+                {t.analytics.lastWeek}
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t.analytics.dailyAverage}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold font-inter-numbers">{analytics.dailyAverage} cm</div>
+                  <p className="text-sm text-muted-foreground">{t.analytics.dailyAverageDescription}</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t.analytics.peakLevel}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold font-inter-numbers">{analytics.peakLevel} cm</div>
+                  <p className="text-sm text-muted-foreground">{t.analytics.peakLevelDescription}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t.analytics.weeklyTrend}</CardTitle>
+                <CardDescription>
+                  {dataComparison === "lastDay" ? t.chart.last24Hours : t.chart.lastWeek}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EnhancedWaterLevelChart
+                  data={waterData}
+                  warningLevel={warningLevel}
+                  dangerLevel={dangerLevel}
+                  showLast24Hours={dataComparison === "lastDay"}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="weather" className="space-y-6">
+            {/* 1. Rain Dashboard (Precipitation) */}
+            <RainDashboard weatherData={weatherData} isLoading={weatherLoading} />
+
+            {/* 2. Current Weather Card */}
+            <WeatherCard data={weatherData} isLoading={weatherLoading} error={weatherError} onRetry={refetchWeather} />
+
+            {/* 3. 3-Hour Forecast */}
+            <HourlyForecast
+              data={[
+                {
+                  time: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
+                  temp: weatherData?.current?.temp || 27,
+                  description: "partly cloudy",
+                  icon: "cloud",
+                  precipitation: 0.2,
+                  humidity: 65,
+                  windSpeed: 3.2,
+                },
+                {
+                  time: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+                  temp: (weatherData?.current?.temp || 27) + 2,
+                  description: "light rain",
+                  icon: "rain",
+                  precipitation: 2.1,
+                  humidity: 78,
+                  windSpeed: 4.1,
+                },
+                {
+                  time: new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString(),
+                  temp: (weatherData?.current?.temp || 27) - 1,
+                  description: "overcast",
+                  icon: "cloud",
+                  precipitation: 0,
+                  humidity: 72,
+                  windSpeed: 2.8,
+                },
+              ]}
+            />
+
+            {/* 5. Weather Map (last) */}
+            <WeatherMap coordinates={weatherData?.coordinates} city={weatherData?.city} />
+          </TabsContent>
+
+          <TabsContent value="community" className="space-y-6">
+            <FloodReport />
+            <CommunityChat />
+          </TabsContent>
+        </Tabs>
+
+        {/* Developer Settings Modal */}
+        <DeveloperSettings open={showDeveloperSettings} onOpenChange={setShowDeveloperSettings} />
+
+        <Footer />
+      </div>
+
+    </div>
+  )
+}
