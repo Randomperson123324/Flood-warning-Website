@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { createClient } from "@supabase/supabase-js"
 import { useWeatherData } from "@/hooks/use-weather-data"
+import { useLanguage } from "@/hooks/language-context"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { CloudRain, Sun } from "lucide-react"
@@ -10,6 +11,8 @@ import { toast } from "sonner"
 
 export function WeatherVotePopup() {
     const { weatherData } = useWeatherData()
+    const { t } = useLanguage()
+
     const [isOpen, setIsOpen] = useState(false)
     const [hasVoted, setHasVoted] = useState(false)
     const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -139,7 +142,7 @@ export function WeatherVotePopup() {
             })
 
             if (response.ok) {
-                toast.success("Thank you for your report!")
+                toast.success(t.weatherVote.thankYou)
                 setHasVoted(true)
                 setIsOpen(false)
                 if (userId) {
@@ -148,19 +151,19 @@ export function WeatherVotePopup() {
             } else {
                 const error = await response.json()
                 if (response.status === 429) {
-                    toast.error("You have already voted recently.")
+                    toast.error(t.weatherVote.alreadyVoted)
                     setHasVoted(true)
                     setIsOpen(false)
                     if (userId) {
                         localStorage.setItem(`weather_vote_${userId}`, Date.now().toString())
                     }
                 } else {
-                    toast.error("Failed to submit vote. Please try again.")
+                    toast.error(t.weatherVote.error)
                 }
             }
         } catch (error) {
             console.error("Vote error:", error)
-            toast.error("An error occurred.")
+            toast.error(t.weatherVote.error)
         }
     }
 
@@ -168,9 +171,9 @@ export function WeatherVotePopup() {
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Weather Report</DialogTitle>
+                    <DialogTitle>{t.weatherVote.title}</DialogTitle>
                     <DialogDescription>
-                        It looks like it might be raining. Can you confirm the weather at your location?
+                        {t.weatherVote.description}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex justify-center gap-4 py-4">
@@ -180,7 +183,7 @@ export function WeatherVotePopup() {
                         onClick={() => handleVote(false)}
                     >
                         <Sun className="h-8 w-8" />
-                        <span>No Rain</span>
+                        <span>{t.weatherVote.confirmNoRain}</span>
                     </Button>
                     <Button
                         variant="outline"
@@ -188,15 +191,15 @@ export function WeatherVotePopup() {
                         onClick={() => handleVote(true)}
                     >
                         <CloudRain className="h-8 w-8" />
-                        <span>Raining</span>
+                        <span>{t.weatherVote.confirmRain}</span>
                     </Button>
                 </div>
                 <DialogFooter className="flex-col sm:justify-center gap-2">
                     <Button variant="ghost" size="sm" onClick={handleDismiss} className="w-full sm:w-auto text-muted-foreground">
-                        I don't know / Not sure
+                        {t.weatherVote.iDontKnow}
                     </Button>
                     <p className="text-xs text-muted-foreground w-full text-center mt-2">
-                        Your report helps the community track flood risks.
+                        {t.weatherVote.footer}
                     </p>
                 </DialogFooter>
             </DialogContent>

@@ -60,9 +60,9 @@ export function WeatherVoteResults() {
             <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300 px-4">
                 <CloudRain className="h-4 w-4" />
                 <span className="font-medium whitespace-nowrap">
-                    Is it raining? Community Report: {stats.rainPercentage}% Yes
+                    {t.weatherVote.communityReport}: {stats.rainPercentage}% {t.weatherVote.yes}
                 </span>
-                <span className="text-xs opacity-70 hidden sm:inline-block">({stats.totalVotes} votes / 30m)</span>
+                <span className="text-xs opacity-70 hidden sm:inline-block">({stats.totalVotes} {t.weatherVote.votes})</span>
             </div>
         </div>
     )
