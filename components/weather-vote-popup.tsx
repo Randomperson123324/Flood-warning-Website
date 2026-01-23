@@ -77,6 +77,15 @@ export function WeatherVotePopup() {
         checkConditions()
     }, [weatherData, isAuthenticated, hasVoted, isOpen])
 
+    const handleDismiss = () => {
+        setHasVoted(true)
+        setIsOpen(false)
+        if (userId) {
+            // Set a shorter cooldown for dismissal if desired, but 30m is fine to prevent annoyance
+            localStorage.setItem(`weather_vote_${userId}`, Date.now().toString())
+        }
+    }
+
     const handleVote = async (isRaining: boolean) => {
         try {
             const { data: { session } } = await supabase.auth.getSession()
@@ -147,8 +156,11 @@ export function WeatherVotePopup() {
                         <span>Raining</span>
                     </Button>
                 </div>
-                <DialogFooter className="sm:justify-start">
-                    <p className="text-xs text-muted-foreground w-full text-center">
+                <DialogFooter className="flex-col sm:justify-center gap-2">
+                    <Button variant="ghost" size="sm" onClick={handleDismiss} className="w-full sm:w-auto text-muted-foreground">
+                        I don't know / Not sure
+                    </Button>
+                    <p className="text-xs text-muted-foreground w-full text-center mt-2">
                         Your report helps the community track flood risks.
                     </p>
                 </DialogFooter>
