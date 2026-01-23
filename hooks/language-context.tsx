@@ -282,6 +282,7 @@ const translations = {
     },
     weatherVote: {
       title: "Weather Report",
+      pleaseWait: "Please wait...",
       description: "It looks like it might be raining. Can you confirm the weather at StreePasertsin School?",
       confirmRain: "Raining",
       confirmNoRain: "No Rain",
@@ -574,6 +575,7 @@ const translations = {
     },
     weatherVote: {
       title: "รายงานสภาพอากาศ",
+      pleaseWait: "กรุณารอสักครู่...",
       description: "ดูเหมือนว่าฝนอาจจะกำลังตก ช่วยยืนยันสภาพอากาศในสตรีประเสิรฐศิลป์ได้ไหม?",
       confirmRain: "ฝนตก",
       confirmNoRain: "ฝนไม่ตก",

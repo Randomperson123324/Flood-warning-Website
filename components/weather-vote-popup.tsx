@@ -17,6 +17,7 @@ export function WeatherVotePopup() {
     const [hasVoted, setHasVoted] = useState(false)
     const [isAuthenticated, setIsAuthenticated] = useState(false)
     const [userId, setUserId] = useState<string | null>(null)
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL || "",
@@ -125,9 +126,13 @@ export function WeatherVotePopup() {
     }
 
     const handleVote = async (isRaining: boolean | null) => {
+        setIsSubmitting(true)
         try {
             const { data: { session } } = await supabase.auth.getSession()
-            if (!session) return
+            if (!session) {
+                setIsSubmitting(false)
+                return
+            }
 
             const response = await fetch("/api/weather/vote", {
                 method: "POST",
@@ -164,6 +169,8 @@ export function WeatherVotePopup() {
         } catch (error) {
             console.error("Vote error:", error)
             toast.error(t.weatherVote.error)
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -176,32 +183,41 @@ export function WeatherVotePopup() {
                         {t.weatherVote.description}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="flex justify-center gap-4 py-4">
-                    <Button
-                        variant="outline"
-                        className="flex flex-col h-24 w-24 gap-2 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
-                        onClick={() => handleVote(false)}
-                    >
-                        <Sun className="h-8 w-8" />
-                        <span>{t.weatherVote.confirmNoRain}</span>
-                    </Button>
-                    <Button
-                        variant="outline"
-                        className="flex flex-col h-24 w-24 gap-2 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200"
-                        onClick={() => handleVote(true)}
-                    >
-                        <CloudRain className="h-8 w-8" />
-                        <span>{t.weatherVote.confirmRain}</span>
-                    </Button>
-                </div>
-                <DialogFooter className="flex-col sm:justify-center gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => handleVote(null)} className="w-full sm:w-auto text-muted-foreground">
-                        {t.weatherVote.iDontKnow}
-                    </Button>
-                    <p className="text-xs text-muted-foreground w-full text-center mt-2">
-                        {t.weatherVote.footer}
-                    </p>
-                </DialogFooter>
+                {isSubmitting ? (
+                    <div className="flex flex-col items-center justify-center py-12 gap-4">
+                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                        <p className="text-lg font-medium text-primary">{t.weatherVote.pleaseWait}</p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="flex justify-center gap-4 py-4">
+                            <Button
+                                variant="outline"
+                                className="flex flex-col h-24 w-24 gap-2 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                                onClick={() => handleVote(false)}
+                            >
+                                <Sun className="h-8 w-8" />
+                                <span>{t.weatherVote.confirmNoRain}</span>
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="flex flex-col h-24 w-24 gap-2 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200"
+                                onClick={() => handleVote(true)}
+                            >
+                                <CloudRain className="h-8 w-8" />
+                                <span>{t.weatherVote.confirmRain}</span>
+                            </Button>
+                        </div>
+                        <DialogFooter className="flex-col sm:justify-center gap-2">
+                            <Button variant="ghost" size="sm" onClick={() => handleVote(null)} className="w-full sm:w-auto text-muted-foreground">
+                                {t.weatherVote.iDontKnow}
+                            </Button>
+                            <p className="text-xs text-muted-foreground w-full text-center mt-2">
+                                {t.weatherVote.footer}
+                            </p>
+                        </DialogFooter>
+                    </>
+                )}
             </DialogContent>
         </Dialog>
     )
