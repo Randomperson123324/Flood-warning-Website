@@ -122,8 +122,10 @@ export default function Dashboard() {
 
   // Fetch historical data when date range changes
   useEffect(() => {
-    if (dataComparison === "pastData" && dateRange?.from && dateRange?.to) {
-      fetchHistoricalData(dateRange.from, dateRange.to)
+    if (dataComparison === "pastData" && dateRange?.from) {
+      // If only start date is selected, use it as both start and end date (single day view)
+      const endDate = dateRange.to || dateRange.from
+      fetchHistoricalData(dateRange.from, endDate)
     }
   }, [dataComparison, dateRange])
 
