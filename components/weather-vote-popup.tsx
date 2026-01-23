@@ -115,16 +115,16 @@ export function WeatherVotePopup() {
         }
     }, [weatherData, isAuthenticated, hasVoted, isOpen])
 
+    // Dismiss without local storage (or with short timeout) - now unused for voting, but keeping function if needed
     const handleDismiss = () => {
         setHasVoted(true)
         setIsOpen(false)
         if (userId) {
-            // Set a shorter cooldown for dismissal if desired, but 30m is fine to prevent annoyance
             localStorage.setItem(`weather_vote_${userId}`, Date.now().toString())
         }
     }
 
-    const handleVote = async (isRaining: boolean) => {
+    const handleVote = async (isRaining: boolean | null) => {
         try {
             const { data: { session } } = await supabase.auth.getSession()
             if (!session) return
@@ -169,7 +169,7 @@ export function WeatherVotePopup() {
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md [&>button]:hidden">
                 <DialogHeader>
                     <DialogTitle>{t.weatherVote.title}</DialogTitle>
                     <DialogDescription>
@@ -195,7 +195,7 @@ export function WeatherVotePopup() {
                     </Button>
                 </div>
                 <DialogFooter className="flex-col sm:justify-center gap-2">
-                    <Button variant="ghost" size="sm" onClick={handleDismiss} className="w-full sm:w-auto text-muted-foreground">
+                    <Button variant="ghost" size="sm" onClick={() => handleVote(null)} className="w-full sm:w-auto text-muted-foreground">
                         {t.weatherVote.iDontKnow}
                     </Button>
                     <p className="text-xs text-muted-foreground w-full text-center mt-2">
