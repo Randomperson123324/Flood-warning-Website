@@ -53,6 +53,8 @@ export function useWaterData() {
   const [isConnected, setIsConnected] = useState(false)
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null)
   const [tableExists, setTableExists] = useState(true)
+  const [historicalData, setHistoricalData] = useState<WaterReading[]>([])
+  const [isFetchingHistorical, setIsFetchingHistorical] = useState(false)
 
   const getWarningLevels = () => {
     if (typeof window === "undefined") {
@@ -283,6 +285,35 @@ export function useWaterData() {
     }
   }
 
+  const fetchHistoricalData = async (startDate: Date, endDate: Date) => {
+    if (!supabase || !tableExists) return
+
+    try {
+      setIsFetchingHistorical(true)
+      // Ensure end date covers the full day
+      const adjustedEnd = new Date(endDate)
+      adjustedEnd.setHours(23, 59, 59, 999)
+
+      const { data, error } = await supabase
+        .from("water_readings")
+        .select("*")
+        .gte("timestamp", startDate.toISOString())
+        .lte("timestamp", adjustedEnd.toISOString())
+        .order("timestamp", { ascending: true })
+
+      if (error) {
+        console.error("Error fetching historical data:", error)
+        return
+      }
+
+      setHistoricalData(data || [])
+    } catch (error) {
+      console.error("Error fetching historical data:", error)
+    } finally {
+      setIsFetchingHistorical(false)
+    }
+  }
+
   useEffect(() => {
     if (typeof window === "undefined") return
 
@@ -332,5 +363,8 @@ export function useWaterData() {
     testConnection,
     getCurrentRate,
     getLatestReadingTime,
+    historicalData,
+    isFetchingHistorical,
+    fetchHistoricalData,
   }
 }

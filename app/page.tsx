@@ -1,6 +1,9 @@
 "use client"
 
+
 import { useState, useEffect } from "react"
+import { DateRange } from "react-day-picker"
+import { DatePickerWithRange } from "../components/date-range-picker"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -54,6 +57,9 @@ export default function Dashboard() {
     testConnection,
     getCurrentRate,
     getLatestReadingTime, // Get the latest reading timestamp function
+    historicalData,
+    fetchHistoricalData,
+    isFetchingHistorical,
   } = useWaterData()
   const { weatherData, isLoading: weatherLoading, error: weatherError, refetch: refetchWeather } = useWeatherData()
   const [showDeveloperSettings, setShowDeveloperSettings] = useState(false)
@@ -62,7 +68,8 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [dataComparison, setDataComparison] = useState<"lastDay" | "lastWeek">("lastDay")
+  const [dataComparison, setDataComparison] = useState<"lastDay" | "pastData">("lastDay")
+  const [dateRange, setDateRange] = useState<DateRange | undefined>()
   const [showLineQR, setShowLineQR] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const router = useRouter()
@@ -108,7 +115,17 @@ export default function Dashboard() {
     return () => {
       window.removeEventListener("storage", handleStorageChange)
     }
+    return () => {
+      window.removeEventListener("storage", handleStorageChange)
+    }
   }, [])
+
+  // Fetch historical data when date range changes
+  useEffect(() => {
+    if (dataComparison === "pastData" && dateRange?.from && dateRange?.to) {
+      fetchHistoricalData(dateRange.from, dateRange.to)
+    }
+  }, [dataComparison, dateRange])
 
   const { warningLevel, dangerLevel } = warningLevels
 
@@ -394,19 +411,26 @@ export default function Dashboard() {
 
           <TabsContent value="analytics" className="space-y-6">
             {/* Data Comparison Controls */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant={dataComparison === "lastDay" ? "default" : "outline"}
-                onClick={() => setDataComparison("lastDay")}
-              >
-                {t.analytics.lastDay}
-              </Button>
-              <Button
-                variant={dataComparison === "lastWeek" ? "default" : "outline"}
-                onClick={() => setDataComparison("lastWeek")}
-              >
-                {t.analytics.lastWeek}
-              </Button>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={dataComparison === "lastDay" ? "default" : "outline"}
+                  onClick={() => setDataComparison("lastDay")}
+                >
+                  {t.analytics.lastDay}
+                </Button>
+                <Button
+                  variant={dataComparison === "pastData" ? "default" : "outline"}
+                  onClick={() => setDataComparison("pastData")}
+                >
+                  {t.analytics.pastData}
+                </Button>
+              </div>
+              {dataComparison === "pastData" && (
+                <div className="animate-in fade-in slide-in-from-left-4 duration-300">
+                  <DatePickerWithRange date={dateRange} setDate={setDateRange} />
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
@@ -435,15 +459,25 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle>{t.analytics.weeklyTrend}</CardTitle>
                 <CardDescription>
-                  {dataComparison === "lastDay" ? t.chart.last24Hours : t.chart.lastWeek}
+                  <CardDescription>
+                    {dataComparison === "lastDay" ? t.chart.last24Hours : t.analytics.pastData}
+                  </CardDescription>
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <EnhancedWaterLevelChart
-                  data={waterData}
+                  data={dataComparison === "pastData" ? historicalData : waterData}
                   warningLevel={warningLevel}
                   dangerLevel={dangerLevel}
                   showLast24Hours={dataComparison === "lastDay"}
+                  dateRangeLabel={
+                    dataComparison === "pastData"
+                      ? dateRange?.from
+                        ? `${dateRange.from.toLocaleDateString()} - ${dateRange.to?.toLocaleDateString() || "..."}`
+                        : t.analytics.selectDateRange
+                      : undefined
+                  }
+                  isRefreshing={dataComparison === "pastData" ? isFetchingHistorical : false}
                 />
               </CardContent>
             </Card>

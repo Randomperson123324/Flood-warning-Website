@@ -38,7 +38,8 @@ export function EnhancedWaterLevelChart({
   onRefresh,
   isRefreshing = false,
   showLast24Hours = false,
-}: EnhancedWaterLevelChartProps) {
+  dateRangeLabel,
+}: EnhancedWaterLevelChartProps & { dateRangeLabel?: string }) {
   const { t } = useLanguage()
   const [zoomDomain, setZoomDomain] = useState<[number, number] | null>(null)
 
@@ -96,7 +97,7 @@ export function EnhancedWaterLevelChart({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-xs">
-            {showLast24Hours ? t.chart.last24Hours : t.chart.lastWeek}
+            {dateRangeLabel || (showLast24Hours ? t.chart.last24Hours : t.chart.lastWeek)}
           </Badge>
           <Badge variant="outline" className="text-xs">
             {filteredData.length} readings

@@ -84,6 +84,8 @@ const translations = {
       dataComparison: "Data Comparison",
       lastDay: "Last Day",
       lastWeek: "Last Week",
+      pastData: "Past Data",
+      selectDateRange: "Select Date Range",
     },
     weather: {
       title: "Weather Forecast",
@@ -359,6 +361,8 @@ const translations = {
       dataComparison: "เปรียบเทียบข้อมูล",
       lastDay: "วันที่ผ่านมา",
       lastWeek: "สัปดาห์ที่ผ่านมา",
+      pastData: "ข้อมูลในอดีต",
+      selectDateRange: "เลือกช่วงเวลา",
     },
     weather: {
       title: "พยากรณ์อากาศ",
