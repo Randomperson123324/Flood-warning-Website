@@ -384,6 +384,12 @@ export function CommunityChat() {
           return
         }
 
+        // Validate username (only English letters and numbers)
+        if (!/^[a-zA-Z0-9]+$/.test(trimmedUsername)) {
+          setAuthError("Username can only contain English letters and numbers")
+          return
+        }
+
         if (authData.password.length < 6) {
           setAuthError("Password must be at least 6 characters long")
           return
@@ -779,8 +785,11 @@ export function CommunityChat() {
                   <Input
                     id="username"
                     value={authData.username}
-                    onChange={(e) => setAuthData({ ...authData, username: e.target.value })}
-                    placeholder="Your display name"
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^a-zA-Z0-9]/g, "")
+                      setAuthData({ ...authData, username: value })
+                    }}
+                    placeholder="English letters and numbers only"
                   />
                 </div>
               )}
