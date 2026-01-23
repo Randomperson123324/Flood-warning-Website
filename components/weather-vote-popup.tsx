@@ -56,9 +56,33 @@ export function WeatherVotePopup() {
 
     // Check weather conditions and trigger popup
     useEffect(() => {
-        if (!weatherData || !isAuthenticated || hasVoted || isOpen) return
+        if (!weatherData) {
+            console.log("VotePopup: No weather data")
+            return
+        }
+        if (!isAuthenticated) {
+            console.log("VotePopup: Not authenticated")
+            return
+        }
+        if (hasVoted) {
+            console.log("VotePopup: Already voted (local state)")
+            return
+        }
+        if (isOpen) {
+            console.log("VotePopup: Already open")
+            return
+        }
+
+        let cleanup: (() => void) | undefined
 
         const checkConditions = () => {
+            console.log("VotePopup: Checking conditions...", {
+                rain: weatherData.current.rain,
+                rain1h: weatherData.current.rain?.["1h"],
+                desc: weatherData.current.description,
+                humidity: weatherData.current.humidity
+            })
+
             const isRaining =
                 (weatherData.current.rain && (weatherData.current.rain["1h"] || 0) > 0) ||
                 weatherData.current.description.toLowerCase().includes("rain")
@@ -67,14 +91,25 @@ export function WeatherVotePopup() {
                 weatherData.current.humidity > 10 &&
                 weatherData.current.description.toLowerCase().includes("cloud")
 
+            console.log("VotePopup: Conditions:", { isRaining, isCloudyAndHumid })
+
             if (isRaining || isCloudyAndHumid) {
+                console.log("VotePopup: Conditions met! Opening in 2s...")
                 // Add a small delay so it doesn't pop up immediately on load
-                const timer = setTimeout(() => setIsOpen(true), 2000)
-                return () => clearTimeout(timer)
+                const timer = setTimeout(() => {
+                    console.log("VotePopup: Opening now")
+                    setIsOpen(true)
+                }, 2000)
+                cleanup = () => clearTimeout(timer)
+            } else {
+                console.log("VotePopup: Conditions NOT met")
             }
         }
 
         checkConditions()
+        return () => {
+            if (cleanup) cleanup()
+        }
     }, [weatherData, isAuthenticated, hasVoted, isOpen])
 
     const handleDismiss = () => {
