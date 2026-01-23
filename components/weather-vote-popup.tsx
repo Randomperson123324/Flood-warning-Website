@@ -10,7 +10,7 @@ import { CloudRain, Sun } from "lucide-react"
 import { toast } from "sonner"
 
 export function WeatherVotePopup() {
-    const { weatherData } = useWeatherData()
+    const { weatherData, isLoading: weatherLoading, error: weatherError } = useWeatherData()
     const { t } = useLanguage()
 
     const [isOpen, setIsOpen] = useState(false)
@@ -27,6 +27,7 @@ export function WeatherVotePopup() {
     useEffect(() => {
         const checkAuth = async () => {
             const { data: { session } } = await supabase.auth.getSession()
+            console.log("VotePopup: Auth session check:", !!session)
             setIsAuthenticated(!!session)
             setUserId(session?.user?.id || null)
         }
@@ -34,6 +35,7 @@ export function WeatherVotePopup() {
         checkAuth()
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            console.log("VotePopup: Auth state changed:", !!session)
             setIsAuthenticated(!!session)
             setUserId(session?.user?.id || null)
         })
@@ -47,6 +49,7 @@ export function WeatherVotePopup() {
             const lastVoteTime = localStorage.getItem(`weather_vote_${userId}`)
             if (lastVoteTime) {
                 const timeDiff = Date.now() - parseInt(lastVoteTime)
+                console.log("VotePopup: Last vote time diff (s):", Math.floor(timeDiff / 1000))
                 // 30 minutes cooldown
                 if (timeDiff < 30 * 60 * 1000) {
                     setHasVoted(true)
@@ -59,29 +62,40 @@ export function WeatherVotePopup() {
 
     // Check weather conditions and trigger popup
     useEffect(() => {
+        if (weatherLoading) {
+            console.log("VotePopup: Weather data is loading...")
+            return
+        }
+
+        if (weatherError) {
+            console.error("VotePopup: Weather data error:", weatherError)
+            return
+        }
+
         if (!weatherData) {
-            console.log("VotePopup: No weather data")
+            console.log("VotePopup: Weather data is null, but not loading or erroring")
             return
         }
+
         if (!isAuthenticated) {
-            console.log("VotePopup: Not authenticated")
+            console.log("VotePopup: Not authenticated, skipping popup")
             return
         }
+
         if (hasVoted) {
-            console.log("VotePopup: Already voted (local state)")
+            console.log("VotePopup: User already voted (cooldown active)")
             return
         }
+
         if (isOpen) {
-            console.log("VotePopup: Already open")
             return
         }
 
         let cleanup: (() => void) | undefined
 
         const checkConditions = () => {
-            console.log("VotePopup: Checking conditions...", {
+            console.log("VotePopup: Checking conditions with:", {
                 rain: weatherData.current.rain,
-                rain1h: weatherData.current.rain?.["1h"],
                 desc: weatherData.current.description,
                 humidity: weatherData.current.humidity
             })
@@ -94,18 +108,18 @@ export function WeatherVotePopup() {
                 weatherData.current.humidity > 10 &&
                 weatherData.current.description.toLowerCase().includes("cloud")
 
-            console.log("VotePopup: Conditions:", { isRaining, isCloudyAndHumid })
+            console.log("VotePopup: Condition check results:", { isRaining, isCloudyAndHumid })
 
             if (isRaining || isCloudyAndHumid) {
-                console.log("VotePopup: Conditions met! Opening in 2s...")
+                console.log("VotePopup: Conditions met! Opening popup in 2 seconds...")
                 // Add a small delay so it doesn't pop up immediately on load
                 const timer = setTimeout(() => {
-                    console.log("VotePopup: Opening now")
+                    console.log("VotePopup: Opening dialog now")
                     setIsOpen(true)
                 }, 2000)
                 cleanup = () => clearTimeout(timer)
             } else {
-                console.log("VotePopup: Conditions NOT met")
+                console.log("VotePopup: Conditions not met for popup")
             }
         }
 
