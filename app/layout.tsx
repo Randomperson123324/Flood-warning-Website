@@ -4,6 +4,7 @@ import "./globals.css"
 import { IBM_Plex_Sans_Thai } from "next/font/google"
 import { LanguageProvider } from "@/hooks/language-context"
 import { WeatherVotePopup } from "@/components/weather-vote-popup"
+import { WeatherVoteResults } from "@/components/weather-vote-results"
 
 
 
@@ -30,6 +31,7 @@ export default function RootLayout({
     <html lang="en" className={ibmPlexSansThai.variable}>
       <body className="font-sans">
         <LanguageProvider>
+          <WeatherVoteResults />
           {children}
           <WeatherVotePopup />
         </LanguageProvider>

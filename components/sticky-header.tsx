@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Waves, BarChart3, Cloud, MessageCircle } from "lucide-react"
 import { useLanguage } from "../hooks/language-context"
 import { LanguageToggle } from "./language-toggle"
-import { WeatherVoteResults } from "@/components/weather-vote-results"
+
 
 interface StickyHeaderProps {
   activeTab: string
@@ -90,10 +90,11 @@ export function StickyHeader({
 
           {/* Right side controls */}
           <div className="flex items-center gap-2">
-            <WeatherVoteResults />
             <LanguageToggle showTooltip={false} />
           </div>
         </div>
+
+
       </div>
     </div>
   )
