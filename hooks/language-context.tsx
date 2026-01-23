@@ -282,7 +282,7 @@ const translations = {
     },
     weatherVote: {
       title: "Weather Report",
-      description: "It looks like it might be raining. Can you confirm the weather at StreePasertsin School?",
+      description: "It looks like it might be raining. Can you confirm the weather at your location?",
       confirmRain: "Raining",
       confirmNoRain: "No Rain",
       iDontKnow: "I don't know / Not sure",
@@ -291,8 +291,9 @@ const translations = {
       alreadyVoted: "You have already voted recently.",
       error: "Failed to submit vote. Please try again.",
       communityReport: "Is it raining? Community Report",
-      votes: "votes in last 30m",
+      votes: "votes / 30m",
       yes: "Yes",
+      no: "No",
     },
   },
   th: {
@@ -573,7 +574,7 @@ const translations = {
     },
     weatherVote: {
       title: "รายงานสภาพอากาศ",
-      description: "ดูเหมือนว่าฝนอาจจะกำลังตก ช่วยยืนยันสภาพอากาศในโรงเรียนสตรีประเสริฐศิลป์ได้ไหม?",
+      description: "ดูเหมือนว่าฝนอาจจะกำลังตก ช่วยยืนยันสภาพอากาศในพื้นที่ของคุณได้ไหม?",
       confirmRain: "ฝนตก",
       confirmNoRain: "ฝนไม่ตก",
       iDontKnow: "ไม่แน่ใจ / ไม่ทราบ",
@@ -582,8 +583,9 @@ const translations = {
       alreadyVoted: "คุณได้โหวตไปแล้วเมื่อเร็วๆ นี้",
       error: "ส่งรายงานไม่สำเร็จ กรุณาลองใหม่",
       communityReport: "ฝนตกไหม? รายงานจากชุมชน",
-      votes: "ผลโหวต 30นาทีล่าสุด",
+      votes: "โหวต / 30นาที",
       yes: "ใช่",
+      no: "ไม่ใช่",
     },
   },
 }
