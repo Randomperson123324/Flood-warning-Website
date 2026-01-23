@@ -6,6 +6,7 @@ import { CloudRain, Sun, Info } from "lucide-react"
 
 interface VoteStats {
     totalVotes: number
+    totalValidVotes: number
     rainVotes: number
     rainPercentage: number
     isRaining: boolean
@@ -23,7 +24,7 @@ export function WeatherVoteResults() {
             if (response.ok) {
                 const data = await response.json()
                 setStats(data)
-                setIsVisible(data.totalVotes > 0)
+                setIsVisible(data.totalValidVotes > 0)
             }
         } catch (error) {
             console.error("Failed to fetch vote stats", error)
@@ -68,7 +69,7 @@ export function WeatherVoteResults() {
                 <span className="font-medium whitespace-nowrap">
                     {t.weatherVote.communityReport}: {isRainingConsensus ? stats.rainPercentage : 100 - stats.rainPercentage}% {isRainingConsensus ? t.weatherVote.yes : t.weatherVote.no}
                 </span>
-                <span className="text-xs opacity-70 hidden sm:inline-block">({stats.totalVotes} {t.weatherVote.votes})</span>
+                <span className="text-xs opacity-70 hidden sm:inline-block">({stats.totalValidVotes} {t.weatherVote.votes})</span>
             </div>
         </div>
     )

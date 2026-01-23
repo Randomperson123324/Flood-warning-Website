@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             totalVotes, // Keep total engagement count
+            totalValidVotes, // Count of votes that are not "unsure"
             rainVotes,
             rainPercentage,
             isRaining: rainPercentage > 50, // Simple majority rule of valid votes
