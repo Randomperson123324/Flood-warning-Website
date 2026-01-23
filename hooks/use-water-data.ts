@@ -49,6 +49,7 @@ export function useWaterData() {
     isStable: true,
   })
   const [analytics, setAnalytics] = useState<WaterAnalytics>({ dailyAverage: 0, peakLevel: 0 })
+  const [historicalAnalytics, setHistoricalAnalytics] = useState<WaterAnalytics>({ dailyAverage: 0, peakLevel: 0 })
   const [isLoading, setIsLoading] = useState(true)
   const [isConnected, setIsConnected] = useState(false)
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null)
@@ -76,6 +77,42 @@ export function useWaterData() {
     }
 
     return { warningLevel: 20, dangerLevel: 40, updateInterval: 30 }
+  }
+
+  const calculateAnalytics = (data: WaterReading[]): WaterAnalytics => {
+    if (data.length === 0) {
+      return { dailyAverage: 0, peakLevel: 0 }
+    }
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    // For historical data that might span multiple days or a specific past day,
+    // we generally want to calculate stats for the entire dataset provided.
+    // But for the "live" view, we explicitly want "Today's" stats.
+    // The previous logic filtered for 'today'.
+    // Let's keep the logic flexible: if the data is "live" (contains today), filter for today.
+    // If it's historical (explicitly fetched range), use all of it.
+    // However, to keep it simple and reusable: let's assume the caller filters the data
+    // OR we check if the dataset looks like a "feed" vs a "range".
+
+    // Actually, looking at the previous implementation, it filtered `data` (which was limit 100)
+    // for readings >= today.
+
+    // Let's split this.
+    // 1. Live data analytics (Today)
+    // 2. Historical data analytics (Selected Range)
+
+    // We will just expose a simple calculator that processes ALL given data.
+    // For live data, we will filter it before passing it in.
+
+    const dailyAverage = data.reduce((sum, reading) => sum + reading.level, 0) / data.length
+    const peakLevel = Math.max(...data.map((reading) => reading.level))
+
+    return {
+      dailyAverage: Math.round(dailyAverage * 10) / 10,
+      peakLevel: Math.round(peakLevel * 10) / 10,
+    }
   }
 
   const fetchWaterData = async () => {
@@ -124,22 +161,11 @@ export function useWaterData() {
         })
 
         if (todayData.length > 0) {
-          const dailyAverage = todayData.reduce((sum, reading) => sum + reading.level, 0) / todayData.length
-          const peakLevel = Math.max(...todayData.map((reading) => reading.level))
-
-          setAnalytics({
-            dailyAverage: Math.round(dailyAverage * 10) / 10,
-            peakLevel: Math.round(peakLevel * 10) / 10,
-          })
+          setAnalytics(calculateAnalytics(todayData))
         } else {
-          const allLevels = data.map((reading) => reading.level)
-          const dailyAverage = allLevels.reduce((sum, level) => sum + level, 0) / allLevels.length
-          const peakLevel = Math.max(...allLevels)
-
-          setAnalytics({
-            dailyAverage: Math.round(dailyAverage * 10) / 10,
-            peakLevel: Math.round(peakLevel * 10) / 10,
-          })
+          // Fallback to all data if no data for today? 
+          // Original code fell back to calculating on ALL data if todayData was empty.
+          setAnalytics(calculateAnalytics(data))
         }
 
         calculateTrendAndWarning(data)
@@ -307,6 +333,7 @@ export function useWaterData() {
       }
 
       setHistoricalData(data || [])
+      setHistoricalAnalytics(calculateAnalytics(data || []))
     } catch (error) {
       console.error("Error fetching historical data:", error)
     } finally {
@@ -366,5 +393,6 @@ export function useWaterData() {
     historicalData,
     isFetchingHistorical,
     fetchHistoricalData,
+    historicalAnalytics,
   }
 }

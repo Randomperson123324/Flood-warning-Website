@@ -2,7 +2,6 @@
 
 
 import { useState, useEffect } from "react"
-import { DateRange } from "react-day-picker"
 import { DatePickerWithRange } from "../components/date-range-picker"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -60,6 +59,7 @@ export default function Dashboard() {
     historicalData,
     fetchHistoricalData,
     isFetchingHistorical,
+    historicalAnalytics,
   } = useWaterData()
   const { weatherData, isLoading: weatherLoading, error: weatherError, refetch: refetchWeather } = useWeatherData()
   const [showDeveloperSettings, setShowDeveloperSettings] = useState(false)
@@ -69,7 +69,7 @@ export default function Dashboard() {
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [dataComparison, setDataComparison] = useState<"lastDay" | "pastData">("lastDay")
-  const [dateRange, setDateRange] = useState<DateRange | undefined>()
+  const [date, setDate] = useState<Date | undefined>()
   const [showLineQR, setShowLineQR] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const router = useRouter()
@@ -120,14 +120,12 @@ export default function Dashboard() {
     }
   }, [])
 
-  // Fetch historical data when date range changes
+  // Fetch historical data when date changes
   useEffect(() => {
-    if (dataComparison === "pastData" && dateRange?.from) {
-      // If only start date is selected, use it as both start and end date (single day view)
-      const endDate = dateRange.to || dateRange.from
-      fetchHistoricalData(dateRange.from, endDate)
+    if (dataComparison === "pastData" && date) {
+      fetchHistoricalData(date, date)
     }
-  }, [dataComparison, dateRange])
+  }, [dataComparison, date])
 
   const { warningLevel, dangerLevel } = warningLevels
 
@@ -430,7 +428,7 @@ export default function Dashboard() {
               </div>
               {dataComparison === "pastData" && (
                 <div className="animate-in fade-in slide-in-from-left-4 duration-300">
-                  <DatePickerWithRange date={dateRange} setDate={setDateRange} />
+                  <DatePickerWithRange date={date} setDate={setDate} />
                 </div>
               )}
             </div>
@@ -441,7 +439,9 @@ export default function Dashboard() {
                   <CardTitle>{t.analytics.dailyAverage}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold font-inter-numbers">{analytics.dailyAverage} cm</div>
+                  <div className="text-3xl font-bold font-inter-numbers">
+                    {dataComparison === "pastData" ? historicalAnalytics.dailyAverage : analytics.dailyAverage} cm
+                  </div>
                   <p className="text-sm text-muted-foreground">{t.analytics.dailyAverageDescription}</p>
                 </CardContent>
               </Card>
@@ -451,7 +451,9 @@ export default function Dashboard() {
                   <CardTitle>{t.analytics.peakLevel}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold font-inter-numbers">{analytics.peakLevel} cm</div>
+                  <div className="text-3xl font-bold font-inter-numbers">
+                    {dataComparison === "pastData" ? historicalAnalytics.peakLevel : analytics.peakLevel} cm
+                  </div>
                   <p className="text-sm text-muted-foreground">{t.analytics.peakLevelDescription}</p>
                 </CardContent>
               </Card>
@@ -474,8 +476,8 @@ export default function Dashboard() {
                   showLast24Hours={dataComparison === "lastDay"}
                   dateRangeLabel={
                     dataComparison === "pastData"
-                      ? dateRange?.from
-                        ? `${dateRange.from.toLocaleDateString()} - ${dateRange.to?.toLocaleDateString() || "..."}`
+                      ? date
+                        ? date.toLocaleDateString()
                         : t.analytics.selectDateRange
                       : undefined
                   }
