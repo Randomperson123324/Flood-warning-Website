@@ -63,7 +63,7 @@ export function WeatherMap({ city }: WeatherMapProps) {
           </div>
 
           <p className="text-xs text-muted-foreground mt-2 text-center">
-            Thailand Meteorological Department – Storm Tracking
+            Thailand Meteorological Department(กรมอุตุนิยมวิทยา) – Storm Tracking
           </p>
         </CardContent>
       )}
