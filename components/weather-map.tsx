@@ -58,7 +58,7 @@ export function WeatherMap({ coordinates, city }: WeatherMapProps) {
       {showMap && (
         <CardContent>
           <div className="relative w-full h-[400px] rounded-tr-lg rounded-bl-2xl overflow-hidden border">
-            <iframe src="https://www.tmd.go.th/StromTrack" height="600" scrolling="no" frameborder="0"></iframe>
+            <iframe src="https://www.tmd.go.th/StromTrack" height="600" scrolling="no" frameBorder="0"></iframe>
           </div>
           <p className="text-xs text-muted-foreground mt-2 text-center">
             แผนที่พายุจาก กรมอุตุนิยมวิทยา
