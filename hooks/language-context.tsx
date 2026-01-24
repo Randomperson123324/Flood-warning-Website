@@ -244,7 +244,7 @@ const translations = {
       daysAgo: "d ago",
     },
     alerts: {
-      sensorStale: "sensors is not sending new data for {minutes} minutes. data below are outdated.",
+      sensorStale: "sensors is not sending new data for {minutes} minutes. data below are the last data sensor sent.",
     },
     precipitation: {
       title: "Current Precipitation",
@@ -349,7 +349,7 @@ const translations = {
       normal: "ปลอดภัย",
       warning: "เฝ้าระวัง",
       danger: "วิกฤติ",
-      waterLevel: "ระดับน้ำเป็น",
+      waterLevel: "ระดับน้ำ",
       goodMorning: "สวัสดีตอนเช้า!",
       goodAfternoon: "สวัสดีตอนบ่าย!",
       goodEvening: "สวัสดีตอนเย็น!",
@@ -542,7 +542,7 @@ const translations = {
       daysAgo: "วันที่แล้ว",
     },
     alerts: {
-      sensorStale: "เซ็นเซอร์ไม่มีการส่งข้อมูลใหม่มาเป็นเวลา {minutes} นาที ข้อมูลด้านล่างอาจไม่อัปเดต",
+      sensorStale: "เซ็นเซอร์ไม่มีการส่งข้อมูลใหม่มาเป็นเวลา {minutes} นาที ข้อมูลด้านล่างเป็นข้อมูลครั้งสุดท้ายที่เซ็นเซอร์ส่งมา",
     },
     precipitation: {
       title: "ปริมาณฝนปัจจุบัน",
