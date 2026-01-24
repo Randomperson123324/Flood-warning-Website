@@ -70,7 +70,7 @@ export function WeatherMap({ coordinates, city }: WeatherMapProps) {
             />
           </div>
           <p className="text-xs text-muted-foreground mt-2 text-center">
-            Interactive weather map showing precipitation and conditions
+            แผนที่พายุจาก กรมอุตุนิยมวิทยา
           </p>
         </CardContent>
       )}
