@@ -8,19 +8,12 @@ import { MapPin, Eye, EyeOff } from "lucide-react"
 import { useLanguage } from "../hooks/language-context"
 
 interface WeatherMapProps {
-  coordinates?: { lat: number; lon: number }
   city?: string
 }
 
-export function WeatherMap({ coordinates, city }: WeatherMapProps) {
+export function WeatherMap({ city }: WeatherMapProps) {
   const { t } = useLanguage()
   const [showMap, setShowMap] = useState(false)
-
-  if (!coordinates) {
-    return null
-  }
-
-  const mapUrl = `https://www.tmd.go.th/StromTrack`
 
   return (
     <Card>
@@ -30,6 +23,7 @@ export function WeatherMap({ coordinates, city }: WeatherMapProps) {
             <MapPin className="h-5 w-5" />
             {t.weather.weatherMap}
           </div>
+
           <Button variant="outline" size="sm" onClick={() => setShowMap(!showMap)}>
             {showMap ? (
               <>
@@ -44,33 +38,32 @@ export function WeatherMap({ coordinates, city }: WeatherMapProps) {
             )}
           </Button>
         </CardTitle>
+
         {city && (
-          <CardDescription className="flex items-center gap-2">
+          <CardDescription>
             <Badge variant="outline" className="text-xs">
               {city}
             </Badge>
-            <span className="text-xs text-muted-foreground">
-              {coordinates.lat.toFixed(2)}, {coordinates.lon.toFixed(2)}
-            </span>
           </CardDescription>
         )}
       </CardHeader>
 
       {showMap && (
         <CardContent>
-          <div className="relative w-full h-[400px] rounded-tr-lg rounded-bl-2xl overflow-hidden border">
+          <div className="relative w-full h-[600px] rounded-lg overflow-hidden border">
             <iframe
-              src={mapUrl}
+              src="https://www.tmd.go.th/StromTrack"
               width="100%"
               height="100%"
-              style={{ border: 0 }}
+              scrolling="no"
+              frameBorder="0"
               loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              title={`${t.weather.weatherMap} - ${city}`}
+              title="TMD Storm Tracking"
             />
           </div>
+
           <p className="text-xs text-muted-foreground mt-2 text-center">
-            Interactive weather map showing precipitation and conditions
+            Thailand Meteorological Department – Storm Tracking
           </p>
         </CardContent>
       )}
