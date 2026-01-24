@@ -375,7 +375,9 @@ export function useWaterData() {
         .subscribe()
     }
 
+    const interval = setInterval(fetchWaterData, 999999999999999999999) //temporary fix
     const connectionTest = setInterval(testConnection, 120000)
+
 
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "waterLevelSettings") {
