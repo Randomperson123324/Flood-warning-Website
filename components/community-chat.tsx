@@ -62,6 +62,7 @@ export function CommunityChat() {
   const [authData, setAuthData] = useState({ email: "", password: "", username: "", turnstileToken: "" })
   const [authError, setAuthError] = useState<string | null>(null)
   const [authSuccess, setAuthSuccess] = useState<string | null>(null)
+  const [isAuthenticating, setIsAuthenticating] = useState(false)
   const [connectionError, setConnectionError] = useState<string | null>(null)
   const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null)
   const [showProfileSheet, setShowProfileSheet] = useState(false)
@@ -370,6 +371,7 @@ export function CommunityChat() {
   const handleAuth = async () => {
     setAuthError(null)
     setAuthSuccess(null)
+    setIsAuthenticating(true)
 
     try {
       if (authMode === "signup") {
@@ -596,6 +598,8 @@ export function CommunityChat() {
     } catch (error) {
       console.error("[v0] Auth error:", error)
       setAuthError((error as any)?.message || "Authentication failed")
+    } finally {
+      setIsAuthenticating(false)
     }
   }
 
@@ -754,90 +758,101 @@ export function CommunityChat() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              {authError && (
-                <Alert variant="destructive">
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>{authError}</AlertDescription>
-                </Alert>
-              )}
-
-              {authSuccess && (
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>{authSuccess}</AlertDescription>
-                </Alert>
-              )}
-
-              <div>
-                <Label htmlFor="email">{t?.community?.email || "Email"}</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={authData.email}
-                  onChange={(e) => setAuthData({ ...authData, email: e.target.value })}
-                  placeholder="your.name@streetrat.ac.th"
-                />
-              </div>
-
-              {authMode === "signup" && (
-                <div>
-                  <Label htmlFor="username">{t?.community?.username || "Username"}</Label>
-                  <Input
-                    id="username"
-                    value={authData.username}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/[^a-zA-Z0-9]/g, "")
-                      setAuthData({ ...authData, username: value })
-                    }}
-                    placeholder="English letters and numbers only"
-                  />
+              {isAuthenticating ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-4">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                  <p className="text-lg font-medium text-primary">
+                    {t?.weatherVote?.pleaseWait || "Please wait..."}
+                  </p>
                 </div>
+              ) : (
+                <>
+                  {authError && (
+                    <Alert variant="destructive">
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>{authError}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  {authSuccess && (
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>{authSuccess}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div>
+                    <Label htmlFor="email">{t?.community?.email || "Email"}</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={authData.email}
+                      onChange={(e) => setAuthData({ ...authData, email: e.target.value })}
+                      placeholder="your.name@streetrat.ac.th"
+                    />
+                  </div>
+
+                  {authMode === "signup" && (
+                    <div>
+                      <Label htmlFor="username">{t?.community?.username || "Username"}</Label>
+                      <Input
+                        id="username"
+                        value={authData.username}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/[^a-zA-Z0-9]/g, "")
+                          setAuthData({ ...authData, username: value })
+                        }}
+                        placeholder="English letters and numbers only"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <Label htmlFor="password">{t?.community?.password || "Password"}</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={authData.password}
+                      onChange={(e) => setAuthData({ ...authData, password: e.target.value })}
+                      placeholder="At least 6 characters"
+                    />
+                  </div>
+
+
+                  {/* Turnstile for both Sign In and Sign Up */}
+                  <div>
+                    <Label>Let us check if you are really a human</Label>
+                    <CloudflareTurnstile
+                      onVerify={(token) => {
+                        setAuthData((prev) => ({ ...prev, turnstileToken: token }))
+                      }}
+                      onExpire={() => {
+                        setAuthData((prev) => ({ ...prev, turnstileToken: "" }))
+                        setAuthError("human check expired. Please verify again.")
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleAuth}
+                      className="flex-1"
+                      disabled={
+                        !authData.email ||
+                        !authData.password ||
+                        (authMode === "signup" && (!authData.username || !authData.turnstileToken))
+                      }
+                    >
+                      {authMode === "signin"
+                        ? t?.community?.signIn || "Sign In"
+                        : t?.community?.createAccount || "Create Account"}
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowAuth(false)}>
+                      {t?.common?.cancel || "Cancel"}
+                    </Button>
+                  </div>
+                </>
               )}
-
-              <div>
-                <Label htmlFor="password">{t?.community?.password || "Password"}</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={authData.password}
-                  onChange={(e) => setAuthData({ ...authData, password: e.target.value })}
-                  placeholder="At least 6 characters"
-                />
-              </div>
-
-
-              {/* Turnstile for both Sign In and Sign Up */}
-              <div>
-                <Label>Let us check if you are really a human</Label>
-                <CloudflareTurnstile
-                  onVerify={(token) => {
-                    setAuthData((prev) => ({ ...prev, turnstileToken: token }))
-                  }}
-                  onExpire={() => {
-                    setAuthData((prev) => ({ ...prev, turnstileToken: "" }))
-                    setAuthError("human check expired. Please verify again.")
-                  }}
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleAuth}
-                  className="flex-1"
-                  disabled={
-                    !authData.email ||
-                    !authData.password ||
-                    (authMode === "signup" && (!authData.username || !authData.turnstileToken))
-                  }
-                >
-                  {authMode === "signin"
-                    ? t?.community?.signIn || "Sign In"
-                    : t?.community?.createAccount || "Create Account"}
-                </Button>
-                <Button variant="outline" onClick={() => setShowAuth(false)}>
-                  {t?.common?.cancel || "Cancel"}
-                </Button>
-              </div>
             </div>
           </DialogContent>
         </Dialog>

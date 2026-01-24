@@ -318,6 +318,26 @@ export default function Dashboard() {
             <TabsTrigger value="community">{t.tabs.community}</TabsTrigger>
           </TabsList>
 
+          {/* Stale Data Warning */}
+          {(() => {
+            const lastReading = getLatestReadingTime()
+            if (!lastReading) return null
+            const diffInMinutes = Math.floor((new Date().getTime() - lastReading.getTime()) / (1000 * 60))
+            if (diffInMinutes > 7) {
+              return (
+                <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-6 rounded shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
+                  <div className="flex items-center gap-3 text-yellow-800">
+                    <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+                    <p className="font-medium text-sm sm:text-base">
+                      {t.alerts.sensorStale.replace("{minutes}", diffInMinutes.toString())}
+                    </p>
+                  </div>
+                </div>
+              )
+            }
+            return null
+          })()}
+
           <TabsContent value="overview" className="space-y-6">
             {/* Current Status Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -331,6 +351,20 @@ export default function Dashboard() {
                   <Badge variant={getStatusColor(currentLevel)} className="mb-2">
                     {getStatusText(currentLevel)}
                   </Badge>
+                  {(() => {
+                    const lastReading = getLatestReadingTime()
+                    if (!lastReading) return null
+                    return (
+                      <div className="text-xs text-muted-foreground mt-1 font-inter-numbers">
+                        {lastReading.toLocaleTimeString(language === "th" ? "th-TH" : "en-US", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                          hourCycle: "h23",
+                        })}
+                      </div>
+                    )
+                  })()}
                 </CardContent>
                 {!isConnected && (
                   <div className="w-full py-2 bg-red-600 rounded-b-xl flex items-center justify-center gap-2 text-white">
@@ -370,14 +404,30 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card
+                className={
+                  currentLevel >= dangerLevel ? "bg-red-600 border-red-700 text-white" : undefined
+                }
+              >
                 <CardHeader>
-                  <CardTitle className="text-sm font-medium">{t.cards.timeToWarning}</CardTitle>
-                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                  <CardTitle className={`text-sm font-medium ${currentLevel >= dangerLevel ? "text-white" : ""}`}>
+                    {currentLevel >= dangerLevel
+                      ? t.cards.criticalReached
+                      : currentLevel >= warningLevel
+                        ? t.cards.timeToDanger
+                        : t.cards.timeToWarning}
+                  </CardTitle>
+                  <AlertTriangle className={`h-4 w-4 ${currentLevel >= dangerLevel ? "text-white" : "text-yellow-600"}`} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{formatTimeToWarning()}</div>
-                  <p className="text-xs text-muted-foreground mt-2">{t.cards.timeToWarningDescription}</p>
+                  <div className={`text-2xl font-bold ${currentLevel >= dangerLevel ? "text-white" : ""}`}>
+                    {currentLevel >= dangerLevel ? t.status.danger : formatTimeToWarning()}
+                  </div>
+                  <p
+                    className={`text-xs mt-2 ${currentLevel >= dangerLevel ? "text-red-100" : "text-muted-foreground"}`}
+                  >
+                    {t.cards.timeToWarningDescription}
+                  </p>
                 </CardContent>
               </Card>
 

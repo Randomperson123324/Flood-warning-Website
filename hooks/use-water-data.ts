@@ -41,6 +41,7 @@ export function useWaterData() {
   const { t } = useLanguage()
   const [waterData, setWaterData] = useState<WaterReading[]>([])
   const [currentLevel, setCurrentLevel] = useState(0)
+  const [regressionRate, setRegressionRate] = useState(0)
   const [trend, setTrend] = useState<"rising" | "falling" | "stable">("stable")
   const [timeToWarningData, setTimeToWarningData] = useState<TimeToWarningData>({
     days: null,
@@ -196,18 +197,45 @@ export function useWaterData() {
       return
     }
 
-    // Use linear regression for more precise trend and ETA calculation
-    const n = Math.min(recentReadings.length, 20)
-    const regressionData = recentReadings.slice(-n)
+    // For 5-minute sensor updates, a window of 12 readings covers exactly 1 hour.
+    // This provides a balance between stability and responsiveness to flash floods.
+    const maxWindow = 12
+    const rawReadings = data.slice(0, maxWindow).reverse()
+
+    if (rawReadings.length < 5) {
+      setTrend("stable")
+      setRegressionRate(0)
+      setTimeToWarningData({ days: null, hours: null, minutes: null, isStable: true })
+      return
+    }
+
+    // 1. Noise Filtering: Remove outliers (sensor spikes)
+    // We use a simple filter: remove points that are significantly different from their neighbors
+    const filteredReadings = rawReadings.filter((reading, i, arr) => {
+      if (i === 0 || i === arr.length - 1) return true
+      const prev = arr[i - 1].level
+      const next = arr[i + 1].level
+      const avgNeighbor = (prev + next) / 2
+      // If the point is more than 5cm away from the average of its neighbors, it's likely noise
+      return Math.abs(reading.level - avgNeighbor) < 5
+    })
+
+    const n = filteredReadings.length
+    if (n < 5) {
+      setTrend("stable")
+      setRegressionRate(0)
+      setTimeToWarningData({ days: null, hours: null, minutes: null, isStable: true })
+      return
+    }
 
     let sumX = 0
     let sumY = 0
     let sumXY = 0
     let sumX2 = 0
 
-    const firstTimestamp = new Date(regressionData[0].timestamp).getTime()
+    const firstTimestamp = new Date(filteredReadings[0].timestamp).getTime()
 
-    regressionData.forEach((reading) => {
+    filteredReadings.forEach((reading) => {
       const x = (new Date(reading.timestamp).getTime() - firstTimestamp) / (1000 * 60) // minutes
       const y = reading.level
       sumX += x
@@ -219,6 +247,7 @@ export function useWaterData() {
     const denominator = n * sumX2 - sumX * sumX
     const ratePerMinute = denominator !== 0 ? (n * sumXY - sumX * sumY) / denominator : 0
     const ratePerHour = ratePerMinute * 60
+    setRegressionRate(ratePerHour)
 
     if (Math.abs(ratePerHour) < 0.05) {
       setTrend("stable")
@@ -227,24 +256,32 @@ export function useWaterData() {
       setTrend("rising")
 
       const currentLevel = data[0].level
-      if (currentLevel < warningLevel) {
-        const minutesToWarning = (warningLevel - currentLevel) / ratePerMinute
+      const { warningLevel, dangerLevel } = getWarningLevels()
 
-        if (minutesToWarning > 0) {
-          const totalMinutes = Math.floor(minutesToWarning)
-          const days = Math.floor(totalMinutes / 1440)
-          const hours = Math.floor((totalMinutes % 1440) / 60)
-          const minutes = totalMinutes % 60
+      // 2. Context-Aware Target: Warning if below, Danger if above warning
+      let targetLevel = warningLevel
+      if (currentLevel >= warningLevel && currentLevel < dangerLevel) {
+        targetLevel = dangerLevel
+      } else if (currentLevel >= dangerLevel) {
+        // Already at critical level
+        setTimeToWarningData({ days: null, hours: null, minutes: null, isStable: true })
+        return
+      }
 
-          setTimeToWarningData({
-            days: days > 0 ? days : null,
-            hours: hours > 0 || days > 0 ? hours : null,
-            minutes: minutes > 0 || (days === 0 && hours === 0) ? minutes : null,
-            isStable: false,
-          })
-        } else {
-          setTimeToWarningData({ days: null, hours: null, minutes: null, isStable: true })
-        }
+      const minutesToTarget = (targetLevel - currentLevel) / ratePerMinute
+
+      if (minutesToTarget > 0) {
+        const totalMinutes = Math.floor(minutesToTarget)
+        const days = Math.floor(totalMinutes / 1440)
+        const hours = Math.floor((totalMinutes % 1440) / 60)
+        const minutes = totalMinutes % 60
+
+        setTimeToWarningData({
+          days: days > 0 ? days : null,
+          hours: hours > 0 || days > 0 ? hours : null,
+          minutes: minutes > 0 || (days === 0 && hours === 0) ? minutes : null,
+          isStable: false,
+        })
       } else {
         setTimeToWarningData({ days: null, hours: null, minutes: null, isStable: true })
       }
@@ -255,27 +292,7 @@ export function useWaterData() {
   }
 
   const getCurrentRate = () => {
-    if (waterData.length < 2) {
-      return { ratePerHour: 0, timestamp: null }
-    }
-
-    const recentReadings = waterData.slice(0, 10).reverse()
-    const oldestReading = recentReadings[0]
-    const newestReading = recentReadings[recentReadings.length - 1]
-
-    const oldestTime = new Date(oldestReading.timestamp).getTime()
-    const newestTime = new Date(newestReading.timestamp).getTime()
-    const timeDiffMinutes = (newestTime - oldestTime) / (1000 * 60)
-
-    if (timeDiffMinutes <= 0) {
-      return { ratePerHour: 0, timestamp: new Date() }
-    }
-
-    const levelDiff = newestReading.level - oldestReading.level
-    const ratePerMinute = levelDiff / timeDiffMinutes
-    const ratePerHour = ratePerMinute * 60
-
-    return { ratePerHour: Math.round(ratePerHour * 100) / 100, timestamp: new Date() }
+    return { ratePerHour: Math.round(regressionRate * 100) / 100, timestamp: lastUpdateTime }
   }
 
   const getLatestReadingTime = () => {
