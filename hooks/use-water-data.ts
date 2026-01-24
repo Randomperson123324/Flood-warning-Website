@@ -368,14 +368,13 @@ export function useWaterData() {
     if (supabase && tableExists) {
       subscription = supabase
         .channel("water_readings")
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "water_readings" }, (payload: any) => {
+        .on("postgres_changes", { event: "*", schema: "public", table: "water_readings" }, (payload: any) => {
           console.log("New water reading:", payload.new)
           fetchWaterData()
         })
         .subscribe()
     }
 
-    const interval = setInterval(fetchWaterData, 10000)
     const connectionTest = setInterval(testConnection, 120000)
 
     const handleStorageChange = (e: StorageEvent) => {
