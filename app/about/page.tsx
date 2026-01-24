@@ -64,14 +64,13 @@ export default function AboutPage() {
                             <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Credits</h3>
                             <ul className="list-disc list-inside space-y-1 ml-2">
                                 <li>รูปภาพในหน้านี้นำมากจาก แนวหน้า</li>
-                                <li>ฟ้อนต์ในเว็บไซต์นี้คือฟ้อนต์ เสาชิงช้า(Sao Chingcha) ของกรุงเทพมหานคร</li>
                             </ul>
                         </section>                        
 
                         <section>
                             <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Contact Us</h3>
                             <p>
-                                https://forms.gle/1Te39d2yoXZYDfNr5 (โปรดใช้อีเมลโรงเรียนในการติดต่อ)
+                            <a href="https://forms.gle/1Te39d2yoXZYDfNr5">Click here</a> (โปรดใช้อีเมลโรงเรียนในการติดต่อ) 
                             </p>
                         </section>                 
 
