@@ -10,10 +10,11 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  Brush,
 } from "recharts"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ZoomIn, ZoomOut, RotateCcw, RefreshCw } from "lucide-react"
 import { useLanguage } from "../hooks/language-context"
 
 interface EnhancedWaterLevelChartProps {
@@ -25,57 +26,38 @@ interface EnhancedWaterLevelChartProps {
   }>
   warningLevel?: number
   dangerLevel?: number
-  defaultRange?: "1h" | "6h" | "12h" | "24h" | "all"
+  onRefresh?: () => void
+  isRefreshing?: boolean
+  showLast24Hours?: boolean
 }
 
 export function EnhancedWaterLevelChart({
   data,
   warningLevel = 20,
   dangerLevel = 40,
-  defaultRange = "24h",
+  onRefresh,
+  isRefreshing = false,
+  showLast24Hours = false,
   dateRangeLabel,
 }: EnhancedWaterLevelChartProps & { dateRangeLabel?: string }) {
   const { t } = useLanguage()
-  const [selectedRange, setSelectedRange] = useState(defaultRange)
+  const [zoomDomain, setZoomDomain] = useState<[number, number] | null>(null)
 
-  const getFilteredData = () => {
-    if (selectedRange === "all") return data
-
-    const now = new Date().getTime()
-    let filterMs = 0
-
-    switch (selectedRange) {
-      case "1h":
-        filterMs = 60 * 60 * 1000
-        break
-      case "6h":
-        filterMs = 6 * 60 * 60 * 1000
-        break
-      case "12h":
-        filterMs = 12 * 60 * 60 * 1000
-        break
-      case "24h":
-        filterMs = 24 * 60 * 60 * 1000
-        break
-      default:
-        return data
-    }
-
-    return data.filter((reading) => {
+  // Filter data for last 24 hours if requested
+  const filteredData = showLast24Hours
+    ? data.filter((reading) => {
       const readingTime = new Date(reading.timestamp).getTime()
-      return readingTime >= now - filterMs
+      const now = Date.now()
+      const twentyFourHoursAgo = now - 24 * 60 * 60 * 1000
+      return readingTime >= twentyFourHoursAgo
     })
-  }
-
-  const filteredData = getFilteredData()
+    : data
 
   const formatXAxis = (tickItem: string) => {
     const date = new Date(tickItem)
-    // If range is <= 24h, show time. Otherwise show date
-    if (selectedRange !== "all") {
-      return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
-    }
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+    return showLast24Hours
+      ? date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+      : date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
   }
 
   const getLineColor = (dataPoint: any) => {
@@ -92,32 +74,61 @@ export function EnhancedWaterLevelChart({
     }
   }
 
+  const handleZoomIn = () => {
+    if (filteredData.length > 0) {
+      const dataLength = filteredData.length
+      const start = Math.floor(dataLength * 0.25)
+      const end = Math.floor(dataLength * 0.75)
+      setZoomDomain([start, end])
+    }
+  }
+
+  const handleZoomOut = () => {
+    setZoomDomain(null)
+  }
+
+  const resetZoom = () => {
+    setZoomDomain(null)
+  }
+
   return (
     <div className="space-y-4">
       {/* Chart controls */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-xs">
-            {dateRangeLabel || (selectedRange === "all" ? t.chart.lastWeek : `${selectedRange}`)}
+            {dateRangeLabel || (showLast24Hours ? t.chart.last24Hours : t.chart.lastWeek)}
           </Badge>
           <Badge variant="outline" className="text-xs">
             {filteredData.length} readings
           </Badge>
         </div>
 
-        <Tabs
-          value={selectedRange}
-          onValueChange={(value) => setSelectedRange(value as any)}
-          className="w-full sm:w-auto"
-        >
-          <TabsList className="grid grid-cols-5 h-8">
-            <TabsTrigger value="1h" className="text-[10px] px-2">1h</TabsTrigger>
-            <TabsTrigger value="6h" className="text-[10px] px-2">6h</TabsTrigger>
-            <TabsTrigger value="12h" className="text-[10px] px-2">12h</TabsTrigger>
-            <TabsTrigger value="24h" className="text-[10px] px-2">24h</TabsTrigger>
-            <TabsTrigger value="all" className="text-[10px] px-2">All</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleZoomIn}
+            disabled={!filteredData.length}
+            title={t.cards.zoomIn}
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+
+          <Button variant="outline" size="sm" onClick={handleZoomOut} disabled={!zoomDomain} title={t.cards.zoomOut}>
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+
+          <Button variant="outline" size="sm" onClick={resetZoom} disabled={!zoomDomain} title={t.cards.resetZoom}>
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+
+          {onRefresh && (
+            <Button variant="outline" size="sm" onClick={onRefresh} disabled={isRefreshing} title={t.cards.refreshData}>
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Chart */}
@@ -129,11 +140,7 @@ export function EnhancedWaterLevelChart({
               dataKey="timestamp"
               tickFormatter={formatXAxis}
               interval="preserveStartEnd"
-            <XAxis
-              dataKey="timestamp"
-              tickFormatter={formatXAxis}
-              interval="preserveStartEnd"
-              domain={["auto", "auto"]}
+              domain={zoomDomain || ["dataMin", "dataMax"]}
             />
             <YAxis
               domain={[0, 200]}
@@ -170,6 +177,7 @@ export function EnhancedWaterLevelChart({
               dot={{ fill: "#2563eb", strokeWidth: 2, r: 4 }}
               activeDot={{ r: 6 }}
             />
+            {showLast24Hours && <Brush dataKey="timestamp" height={30} stroke="#2563eb" tickFormatter={formatXAxis} />}
           </LineChart>
         </ResponsiveContainer>
       </div>
