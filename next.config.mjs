@@ -17,7 +17,7 @@ const nextConfig = {
         headers: [
           {
             key: "Content-Security-Policy",
-            value: "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.openweathermap.org https://api.openweathermap.org https://tile.openstreetmap.org; frame-src 'self' https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self';",
+            value: "default-src 'self'; script-src 'self' https://challenges.cloudflare.com 'sha256-NOfepzg5i/G5ybaspY4lBPvq+X84AS+Wq5bCR7r/PCM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com https://raw.githubusercontent.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.openweathermap.org https://api.openweathermap.org https://tile.openstreetmap.org; frame-src 'self' https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self';",
           },
           {
             key: "X-Frame-Options",
