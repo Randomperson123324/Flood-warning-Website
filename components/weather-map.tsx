@@ -20,7 +20,7 @@ export function WeatherMap({ coordinates, city }: WeatherMapProps) {
     return null
   }
 
-  const mapUrl = "https://www.tmd.go.th/StromTrack" height="1000" scrolling="no" frameborder="0"
+  const mapUrl = "https://www.tmd.go.th/StromTrack" height="600" scrolling="no" frameborder="0"
 
   return (
     <Card>
