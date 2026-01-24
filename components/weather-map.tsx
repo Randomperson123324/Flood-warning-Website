@@ -20,6 +20,7 @@ export function WeatherMap({ coordinates, city }: WeatherMapProps) {
     return null
   }
 
+  const mapUrl = `https://openweathermap.org/weathermap?basemap=map&cities=true&layer=precipitation&lat=${coordinates.lat}&lon=${coordinates.lon}&zoom=10`
 
   return (
     <Card>
@@ -57,10 +58,19 @@ export function WeatherMap({ coordinates, city }: WeatherMapProps) {
 
       {showMap && (
         <CardContent>
-            <iframe src="https://www.tmd.go.th/StromTrack" height="600" scrolling="no" frameborder="0"></iframe>
+          <div className="relative w-full h-[400px] rounded-tr-lg rounded-bl-2xl overflow-hidden border">
+            <iframe
+              src={mapUrl}
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              title={`${t.weather.weatherMap} - ${city}`}
+            />
           </div>
           <p className="text-xs text-muted-foreground mt-2 text-center">
-            แผนที่พายุจาก กรมอุตุนิยมวิทยา
+            Interactive weather map showing precipitation and conditions
           </p>
         </CardContent>
       )}
