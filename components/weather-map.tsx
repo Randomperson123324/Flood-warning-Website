@@ -20,7 +20,7 @@ export function WeatherMap({ coordinates, city }: WeatherMapProps) {
     return null
   }
 
-  const mapUrl = `https://openweathermap.org/weathermap?basemap=map&cities=true&layer=precipitation&lat=${coordinates.lat}&lon=${coordinates.lon}&zoom=10`
+  const mapUrl = `https://www.tmd.go.th/StromTrack`
 
   return (
     <Card>
