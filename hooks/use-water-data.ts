@@ -129,7 +129,7 @@ export function useWaterData() {
         .from("water_readings")
         .select("*")
         .order("timestamp", { ascending: false })
-        .limit(100)
+        .limit(300)
 
       if (error) {
         if (error.message?.includes("relation") || error.message?.includes("does not exist")) {

@@ -447,13 +447,7 @@ export default function Dashboard() {
                   data={waterData}
                   warningLevel={warningLevel}
                   dangerLevel={dangerLevel}
-                  onRefresh={async () => {
-                    setIsRefreshing(true)
-                    await testConnection()
-                    setTimeout(() => setIsRefreshing(false), 1000)
-                  }}
-                  isRefreshing={isRefreshing}
-                  showLast24Hours={true}
+                  defaultRange="24h"
                 />
               </CardContent>
             </Card>
@@ -523,7 +517,7 @@ export default function Dashboard() {
                   data={dataComparison === "pastData" ? historicalData : waterData}
                   warningLevel={warningLevel}
                   dangerLevel={dangerLevel}
-                  showLast24Hours={dataComparison === "lastDay"}
+                  defaultRange={dataComparison === "pastData" ? "all" : "24h"}
                   dateRangeLabel={
                     dataComparison === "pastData"
                       ? date
@@ -531,7 +525,6 @@ export default function Dashboard() {
                         : t.analytics.selectDateRange
                       : undefined
                   }
-                  isRefreshing={dataComparison === "pastData" ? isFetchingHistorical : false}
                 />
               </CardContent>
             </Card>
