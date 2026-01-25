@@ -280,7 +280,7 @@ export async function GET(request: NextRequest) {
       // For production, you might want a longer cache like s-maxage=1800 (30 mins)
       return NextResponse.json(weatherData, {
         headers: {
-          "Cache-Control": "public, s-maxage=600, stale-while-revalidate=300", // 10 min cache
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=120", // 5 min cache
         },
       })
     } catch (fetchError) {
