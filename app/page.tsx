@@ -531,11 +531,11 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="weather" className="space-y-6">
-            {/* 1. Rain Dashboard (Precipitation) */}
-            <RainDashboard weatherData={weatherData} isLoading={weatherLoading} />
-
-            {/* 2. Current Weather Card */}
+            {/* 1. Current Weather Card */}
             <WeatherCard data={weatherData} isLoading={weatherLoading} error={weatherError} onRetry={refetchWeather} />
+
+            {/* 2. Rain Dashboard (Precipitation) */}
+            <RainDashboard weatherData={weatherData} isLoading={weatherLoading} />
 
             {/* 3. 3-Hour Forecast */}
             <HourlyForecast
