@@ -16,12 +16,14 @@ interface WeatherData {
     humidity: number
     windSpeed: number
     description: string
+    descriptionTh?: string // Thai description
     icon: string
   }
   forecast: Array<{
     date: string
     temp: number
     description: string
+    descriptionTh?: string // Thai description
     icon: string
     precipitation: number
   }>
@@ -170,7 +172,9 @@ export function WeatherCard({ data, isLoading, error, onRetry }: WeatherCardProp
               {data.coordinates.lat.toFixed(2)}, {data.coordinates.lon.toFixed(2)}
             </Badge>
           </CardDescription>
-          <CardDescription className="capitalize font-medium text-base">{data.current.description}</CardDescription>
+          <CardDescription className="capitalize font-medium text-base">
+            {t.language === "th" && data.current.descriptionTh ? data.current.descriptionTh : data.current.description}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
@@ -227,7 +231,9 @@ export function WeatherCard({ data, isLoading, error, onRetry }: WeatherCardProp
                   </div>
                   <div className="flex justify-center mb-2">{getWeatherIcon(day.icon)}</div>
                   <div className="text-lg font-bold font-inter-numbers">{day.temp}°C</div>
-                  <div className="text-sm text-muted-foreground capitalize">{day.description}</div>
+                  <div className="text-sm text-muted-foreground capitalize">
+                    {t.language === "th" && day.descriptionTh ? day.descriptionTh : day.description}
+                  </div>
                   {day.precipitation > 0 && (
                     <div className="text-xs text-blue-600 mt-1 font-medium font-inter-numbers">
                       {day.precipitation}mm rain
