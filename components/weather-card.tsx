@@ -18,6 +18,7 @@ interface WeatherData {
     description: string
     descriptionTh?: string // Thai description
     icon: string
+    rain?: number // Added for live rain data support
   }
   forecast: Array<{
     date: string
@@ -190,7 +191,7 @@ export function WeatherCard({ data, isLoading, error, onRetry, showCurrent = tru
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               <div className="flex items-center gap-3 p-3 bg-red-50 rounded-tr-lg rounded-bl-2xl">
                 <Thermometer className="h-5 w-5 text-red-500" />
                 <div>
@@ -210,6 +211,13 @@ export function WeatherCard({ data, isLoading, error, onRetry, showCurrent = tru
                 <div>
                   <div className="text-2xl font-bold font-inter-numbers">{data.current.windSpeed} m/s</div>
                   <div className="text-sm text-muted-foreground">Wind Speed</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-indigo-50 rounded-tr-lg rounded-bl-2xl">
+                <CloudRain className="h-5 w-5 text-indigo-500" />
+                <div>
+                  <div className="text-2xl font-bold font-inter-numbers">{data.current.rain || 0} mm</div>
+                  <div className="text-sm text-muted-foreground">Rain</div>
                 </div>
               </div>
             </div>
