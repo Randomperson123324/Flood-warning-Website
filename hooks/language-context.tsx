@@ -9,7 +9,7 @@ const translations = {
     subtitles: {
       overview: "Monitor current water levels and affected area based on reports.",
       analytics: "View weekly insights and analyze water level history.",
-      weather: "Check real-time weather and forecasts brought to you by Thai Meteorological Department (TMD).",
+      weather: "Check real-time weather and forecasts. we get data from Thai Meteorological Department (TMD).",
       community: "Help us report flood and affected area or just chat with others.",
     },
     tabs: {
