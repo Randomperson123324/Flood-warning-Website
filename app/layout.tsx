@@ -5,8 +5,7 @@ import { IBM_Plex_Sans_Thai } from "next/font/google"
 import { LanguageProvider } from "@/hooks/language-context"
 import { WeatherVotePopup } from "@/components/weather-vote-popup"
 import { WeatherVoteResults } from "@/components/weather-vote-results"
-
-
+import { TMDWarningBanner } from "@/components/tmd-warning-banner"
 
 // Define IBM Plex Sans Thai font for Thai text
 const ibmPlexSansThai = IBM_Plex_Sans_Thai({
@@ -31,6 +30,7 @@ export default function RootLayout({
     <html lang="en" className={ibmPlexSansThai.variable}>
       <body className="font-sans">
         <LanguageProvider>
+          <TMDWarningBanner />
           <WeatherVoteResults />
           {children}
           <WeatherVotePopup />
