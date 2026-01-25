@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Cloud, Sun, CloudRain, CloudSnow, Wind, Droplets, ChevronDown, ChevronUp } from "lucide-react"
+import { Cloud, Sun, CloudRain, CloudSnow, Wind, Droplets, ChevronDown, ChevronUp, RefreshCw } from "lucide-react"
 import { useLanguage } from "../hooks/language-context"
 
 interface HourlyForecastProps {
@@ -18,16 +18,20 @@ interface HourlyForecastProps {
     humidity: number
     windSpeed: number
   }>
+  isLoading?: boolean
 }
 
-export function HourlyForecast({ data }: HourlyForecastProps) {
+export function HourlyForecast({ data, isLoading }: HourlyForecastProps) {
   const { t, language } = useLanguage()
   const [isExpanded, setIsExpanded] = useState(false)
 
-  const displayData = isExpanded ? data : data.slice(0, 5)
+  // Debug log to trace data flow
+  console.log("HourlyForecast: Received data length:", data?.length, "isLoading:", isLoading)
+
+  const displayData = isExpanded ? data : (data ? data.slice(0, 5) : [])
 
   const getWeatherIcon = (iconCode: string) => {
-    const code = iconCode.toLowerCase()
+    const code = iconCode?.toLowerCase() || ""
 
     if (code.includes("rain") || code.includes("09") || code.includes("10")) {
       return <CloudRain className="h-6 w-6 text-blue-500" />
@@ -47,12 +51,33 @@ export function HourlyForecast({ data }: HourlyForecastProps) {
     return <Sun className="h-6 w-6 text-yellow-500" /> // Default icon
   }
 
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            {t.weather.hourlyForecast}
+            <Badge variant="outline" className="ml-2">
+              Hourly
+            </Badge>
+          </CardTitle>
+          <CardDescription>{t.common.loading}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center p-8">
+            <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   if (!data || data.length === 0) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>{t.weather.hourlyForecast}</CardTitle>
-          <CardDescription>No hourly forecast data available</CardDescription>
+          <CardDescription>No hourly forecast data available from API</CardDescription>
         </CardHeader>
       </Card>
     )
