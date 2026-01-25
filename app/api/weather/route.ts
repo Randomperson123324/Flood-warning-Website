@@ -76,8 +76,8 @@ export async function GET(request: NextRequest) {
       // Fetch hourly forecast for current conditions (next 24 hours, hourly)
       console.log("🔄 Server: Fetching hourly forecast from TMD API...")
 
-      // Request fields: tc (temp), rh (humidity), cond (condition code)
-      const hourlyUrl = `https://data.tmd.go.th/nwpapi/v1/forecast/location/hourly/at?lat=${lat}&lon=${lon}&fields=tc,rh,cond&date=${dateStr}&hour=${currentHour}&duration=24`
+      // Request fields: tc (temp), rh (humidity), cond (condition code), ws (wind speed), rain (rainfall)
+      const hourlyUrl = `https://data.tmd.go.th/nwpapi/v1/forecast/location/hourly/at?lat=${lat}&lon=${lon}&fields=tc,rh,cond,ws,rain&date=${dateStr}&hour=${currentHour}&duration=24`
       console.log("📡 Server: Hourly API URL (masked):", hourlyUrl.replace(apiToken, "***TOKEN***"))
 
       const hourlyResponse = await fetch(hourlyUrl, {
@@ -246,11 +246,13 @@ export async function GET(request: NextRequest) {
         current: {
           temp: Math.round(currentData.tc),
           humidity: Math.round(currentData.rh),
-          windSpeed: 0, // Wind speed not available in basic field set
+          windSpeed: currentData.ws || 0,
           description: currentWeatherDesc.en, // English description
           descriptionTh: currentWeatherDesc.th, // Thai description
           icon: getWeatherIcon(currentData.cond),
-          rain: undefined, // Rain volume not available in basic field set
+          rain: {
+            "1h": currentData.rain || 0,
+          },
         },
         forecast: dailyForecast,
         hourly: forecasts.slice(0, 24).map((item: any) => {
