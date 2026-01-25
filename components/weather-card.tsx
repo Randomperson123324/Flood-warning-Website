@@ -106,10 +106,11 @@ export function WeatherCard({ data, isLoading, error, onRetry }: WeatherCardProp
                 <div className="text-xs text-muted-foreground mt-2 p-2 bg-gray-50 rounded">
                   <strong>Troubleshooting Steps:</strong>
                   <br />
-                  1. Ensure `OPENWEATHER_API_KEY` is set in your `.env.local` (for local) or Vercel Environment
+                  1. Ensure `TMD_API_TOKEN` is set in your `.env.local` (for local) or Vercel Environment
                   Variables (for deployment).
                   <br />
-                  2. Verify your API key is correct and activated (can take up to 2 hours after signup).
+                  2. Verify your API token is correct and valid. Regenerate if needed at
+                  https://data.tmd.go.th/nwpapi/login.
                   <br />
                   3. Check `LATITUDE`, `LONGITUDE`, and `CITY_NAME` in your environment variables.
                 </div>
