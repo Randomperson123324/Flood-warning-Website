@@ -23,7 +23,8 @@ interface WeatherData {
   }
   forecast: Array<{
     date: string
-    temp: number
+    tempMax: number
+    tempMin: number
     description: string
     descriptionTh?: string // Thai description
     icon: string
