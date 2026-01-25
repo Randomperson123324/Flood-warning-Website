@@ -75,9 +75,9 @@ export async function GET(request: NextRequest) {
 
       // Fetch hourly forecast for current conditions (next 24 hours, hourly)
       console.log("🔄 Server: Fetching hourly forecast from TMD API...")
-      
+
       // Request fields: tc (temp celsius), rh (relative humidity), ws (wind speed), rain (rainfall)
-      const hourlyUrl = `https://data.tmd.go.th/nwpapi/v1/forecast/location/hourly/at?lat=${lat}&lon=${lon}&fields=tc,rh,ws,rain,slp,cond&date=${dateStr}&hour=${currentHour}&duration=24`
+      const hourlyUrl = `https://data.tmd.go.th/nwpapi/v1/forecast/location/hourly/at?lat=${lat}&lon=${lon}&fields=tc,rh,ws,rain&date=${dateStr}&hour=${currentHour}&duration=24`
       console.log("📡 Server: Hourly API URL (masked):", hourlyUrl.replace(apiToken, "***TOKEN***"))
 
       const hourlyResponse = await fetch(hourlyUrl, {
@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
 
       // Extract current weather from first hourly forecast
       const forecasts = hourlyData.WeatherForecasts?.[0]?.forecasts || []
-      
+
       if (forecasts.length === 0) {
         throw new Error("No forecast data available from TMD API")
       }
@@ -142,50 +142,41 @@ export async function GET(request: NextRequest) {
       console.log("🌡️ Server: Current temperature:", currentData.tc + "°C")
       console.log("💧 Server: Current humidity:", currentData.rh + "%")
       console.log("💨 Server: Current wind speed:", currentData.ws + " m/s")
-      
+
       // Log precipitation data if available
       if (currentData.rain !== undefined && currentData.rain !== null) {
         console.log("🌧️ Server: Rain data:", currentData.rain, "mm")
       }
 
-      // Map weather condition code to description
-      const getWeatherDescription = (cond: number | undefined): string => {
-        if (!cond) return "Partly Cloudy"
-        
-        // TMD condition codes (based on typical meteorological standards)
-        const conditionMap: { [key: number]: string } = {
-          1: "Clear",
-          2: "Partly Cloudy",
-          3: "Cloudy",
-          4: "Overcast",
-          5: "Light Rain",
-          6: "Moderate Rain",
-          7: "Heavy Rain",
-          8: "Thunderstorm",
-          9: "Fog",
-          10: "Haze",
+
+      // Map weather condition based on rain and humidity data
+      const getWeatherDescription = (rain: number | undefined, rh: number | undefined): string => {
+        if (rain !== undefined && rain !== null && rain > 0) {
+          if (rain > 10) return "Heavy Rain"
+          if (rain > 2.5) return "Moderate Rain"
+          return "Light Rain"
         }
-        
-        return conditionMap[cond] || "Partly Cloudy"
+
+        // No rain - determine by humidity
+        if (rh !== undefined && rh > 80) return "Cloudy"
+        if (rh !== undefined && rh > 60) return "Partly Cloudy"
+        return "Clear"
       }
 
-      // Map condition to icon code (using similar codes to OpenWeather for compatibility)
-      const getWeatherIcon = (cond: number | undefined, rain: number | undefined): string => {
-        if (rain && rain > 0) {
+      // Map to icon code (using similar codes to OpenWeather for compatibility)
+      const getWeatherIcon = (rain: number | undefined, rh: number | undefined): string => {
+        if (rain !== undefined && rain !== null && rain > 0) {
           if (rain > 10) return "10d" // Heavy rain
+          if (rain > 2.5) return "10d" // Moderate rain
           return "09d" // Light rain
         }
-        
-        if (!cond) return "02d" // Partly cloudy default
-        
-        if (cond === 1) return "01d" // Clear
-        if (cond <= 3) return "02d" // Partly cloudy
-        if (cond === 4) return "04d" // Overcast
-        if (cond >= 5 && cond <= 7) return "10d" // Rain
-        if (cond === 8) return "11d" // Thunderstorm
-        
-        return "02d" // Default
+
+        // No rain - determine by humidity
+        if (rh !== undefined && rh > 80) return "04d" // Cloudy
+        if (rh !== undefined && rh > 60) return "02d" // Partly cloudy
+        return "01d" // Clear
       }
+
 
       // Fetch daily forecast (next 5 days)
       const dailyController = new AbortController()
@@ -222,8 +213,8 @@ export async function GET(request: NextRequest) {
         dailyForecast = dailyForecasts.map((item: any) => ({
           date: item.time,
           temp: Math.round((item.data.tc_max + item.data.tc_min) / 2), // Average of max and min
-          description: getWeatherDescription(item.data.cond),
-          icon: getWeatherIcon(item.data.cond, item.data.rain),
+          description: getWeatherDescription(item.data.rain, item.data.rh),
+          icon: getWeatherIcon(item.data.rain, item.data.rh),
           precipitation: item.data.rain || 0, // Rain volume in mm
         }))
 
@@ -238,8 +229,8 @@ export async function GET(request: NextRequest) {
           temp: Math.round(currentData.tc),
           humidity: Math.round(currentData.rh),
           windSpeed: Math.round(currentData.ws * 10) / 10,
-          description: getWeatherDescription(currentData.cond),
-          icon: getWeatherIcon(currentData.cond, currentData.rain),
+          description: getWeatherDescription(currentData.rain, currentData.rh),
+          icon: getWeatherIcon(currentData.rain, currentData.rh),
           rain: currentData.rain !== undefined && currentData.rain !== null ? { "1h": currentData.rain } : undefined, // Rain volume in mm
         },
         forecast: dailyForecast,
