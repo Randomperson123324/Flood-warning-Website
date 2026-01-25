@@ -532,9 +532,16 @@ export default function Dashboard() {
 
           <TabsContent value="weather" className="space-y-6">
             {/* 1. Current Weather Card */}
-            <WeatherCard data={weatherData} isLoading={weatherLoading} error={weatherError} onRetry={refetchWeather} />
+            <WeatherCard
+              data={weatherData}
+              isLoading={weatherLoading}
+              error={weatherError}
+              onRetry={refetchWeather}
+              showCurrent={true}
+              showForecast={false}
+            />
 
-            {/* 2. Rain Dashboard (Precipitation) */}
+            {/* 2. Current Precipitation Status */}
             <RainDashboard weatherData={weatherData} isLoading={weatherLoading} />
 
             {/* 3. 3-Hour Forecast */}
@@ -570,7 +577,17 @@ export default function Dashboard() {
               ]}
             />
 
-            {/* 5. Weather Map (last) */}
+            {/* 4. 5-Day Forecast */}
+            <WeatherCard
+              data={weatherData}
+              isLoading={weatherLoading}
+              error={weatherError}
+              onRetry={refetchWeather}
+              showCurrent={false}
+              showForecast={true}
+            />
+
+            {/* 5. Weather Map */}
             <WeatherMap coordinates={weatherData?.coordinates} city={weatherData?.city} />
           </TabsContent>
 
