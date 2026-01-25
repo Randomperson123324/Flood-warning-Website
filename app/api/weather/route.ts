@@ -76,8 +76,8 @@ export async function GET(request: NextRequest) {
       // Fetch hourly forecast for current conditions (next 24 hours, hourly)
       console.log("🔄 Server: Fetching hourly forecast from TMD API...")
 
-      // Request only basic fields that are guaranteed to exist: tc (temp), rh (humidity)
-      const hourlyUrl = `https://data.tmd.go.th/nwpapi/v1/forecast/location/hourly/at?lat=${lat}&lon=${lon}&fields=tc,rh&date=${dateStr}&hour=${currentHour}&duration=24`
+      // Request fields: tc (temp), rh (humidity), cond (condition code)
+      const hourlyUrl = `https://data.tmd.go.th/nwpapi/v1/forecast/location/hourly/at?lat=${lat}&lon=${lon}&fields=tc,rh,cond&date=${dateStr}&hour=${currentHour}&duration=24`
       console.log("📡 Server: Hourly API URL (masked):", hourlyUrl.replace(apiToken, "***TOKEN***"))
 
       const hourlyResponse = await fetch(hourlyUrl, {
@@ -149,32 +149,44 @@ export async function GET(request: NextRequest) {
       }
 
 
-      // Map weather condition based on rain and humidity data
-      const getWeatherDescription = (rain: number | undefined, rh: number | undefined): string => {
-        if (rain !== undefined && rain !== null && rain > 0) {
-          if (rain > 10) return "Heavy Rain"
-          if (rain > 2.5) return "Moderate Rain"
-          return "Light Rain"
+      // Map TMD condition codes to English descriptions (official TMD codes)
+      const getWeatherDescription = (cond: number | undefined): string => {
+        if (!cond) return "Partly Cloudy"
+
+        const conditionMap: { [key: number]: string } = {
+          1: "Clear",
+          2: "Partly Cloudy",
+          3: "Cloudy",
+          4: "Overcast",
+          5: "Light Rain",
+          6: "Moderate Rain",
+          7: "Heavy Rain",
+          8: "Thunderstorm",
+          9: "Very Cold",
+          10: "Cold",
+          11: "Cool",
+          12: "Very Hot",
         }
 
-        // No rain - determine by humidity
-        if (rh !== undefined && rh > 80) return "Cloudy"
-        if (rh !== undefined && rh > 60) return "Partly Cloudy"
-        return "Clear"
+        return conditionMap[cond] || "Partly Cloudy"
       }
 
-      // Map to icon code (using similar codes to OpenWeather for compatibility)
-      const getWeatherIcon = (rain: number | undefined, rh: number | undefined): string => {
-        if (rain !== undefined && rain !== null && rain > 0) {
-          if (rain > 10) return "10d" // Heavy rain
-          if (rain > 2.5) return "10d" // Moderate rain
-          return "09d" // Light rain
-        }
+      // Map TMD condition to weather icon codes
+      const getWeatherIcon = (cond: number | undefined): string => {
+        if (!cond) return "02d" // Partly cloudy default
 
-        // No rain - determine by humidity
-        if (rh !== undefined && rh > 80) return "04d" // Cloudy
-        if (rh !== undefined && rh > 60) return "02d" // Partly cloudy
-        return "01d" // Clear
+        if (cond === 1) return "01d" // Clear
+        if (cond === 2) return "02d" // Partly cloudy
+        if (cond === 3) return "03d" // Cloudy
+        if (cond === 4) return "04d" // Overcast
+        if (cond === 5) return "09d" // Light rain
+        if (cond === 6) return "10d" // Moderate rain
+        if (cond === 7) return "10d" // Heavy rain
+        if (cond === 8) return "11d" // Thunderstorm
+        if (cond >= 9 && cond <= 11) return "01d" // Cold weather (clear icon)
+        if (cond === 12) return "01d" // Very hot (clear icon)
+
+        return "02d" // Default
       }
 
 
@@ -184,7 +196,7 @@ export async function GET(request: NextRequest) {
 
       console.log("🔄 Server: Fetching daily forecast from TMD API...")
 
-      const dailyUrl = `https://data.tmd.go.th/nwpapi/v1/forecast/location/daily/at?lat=${lat}&lon=${lon}&fields=tc_max,tc_min,rh&date=${dateStr}&duration=5`
+      const dailyUrl = `https://data.tmd.go.th/nwpapi/v1/forecast/location/daily/at?lat=${lat}&lon=${lon}&fields=tc_max,tc_min,rh,cond&date=${dateStr}&duration=5`
       console.log("📡 Server: Daily API URL (masked):", dailyUrl.replace(apiToken, "***TOKEN***"))
 
       const dailyResponse = await fetch(dailyUrl, {
@@ -213,9 +225,9 @@ export async function GET(request: NextRequest) {
         dailyForecast = dailyForecasts.map((item: any) => ({
           date: item.time,
           temp: Math.round((item.data.tc_max + item.data.tc_min) / 2), // Average of max and min
-          description: getWeatherDescription(undefined, item.data.rh), // No rain data yet
-          icon: getWeatherIcon(undefined, item.data.rh),
-          precipitation: 0, // Rain data not available from basic fields
+          description: getWeatherDescription(item.data.cond),
+          icon: getWeatherIcon(item.data.cond),
+          precipitation: 0, // Rain volume not available in basic field set
         }))
 
         console.log("📅 Server: Processed forecast for", dailyForecast.length, "days")
@@ -228,10 +240,10 @@ export async function GET(request: NextRequest) {
         current: {
           temp: Math.round(currentData.tc),
           humidity: Math.round(currentData.rh),
-          windSpeed: 0, // Wind speed not available from basic fields
-          description: getWeatherDescription(undefined, currentData.rh), // No rain data yet
-          icon: getWeatherIcon(undefined, currentData.rh),
-          rain: undefined, // Rain data not available from basic fields
+          windSpeed: 0, // Wind speed not available in basic field set
+          description: getWeatherDescription(currentData.cond),
+          icon: getWeatherIcon(currentData.cond),
+          rain: undefined, // Rain volume not available in basic field set
         },
         forecast: dailyForecast,
         timestamp: new Date().toISOString(),
