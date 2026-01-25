@@ -27,6 +27,16 @@ interface WeatherData {
     icon: string
     precipitation: number
   }>
+  hourly: Array<{
+    time: string
+    temp: number
+    description: string
+    descriptionTh?: string // Thai description
+    icon: string
+    precipitation: number
+    humidity: number
+    windSpeed: number
+  }>
   source: string // Added to indicate data source (e.g., "Live Data")
   timestamp: string // Added to indicate when data was fetched
 }
