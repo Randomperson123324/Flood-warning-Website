@@ -1,8 +1,10 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Cloud, Sun, CloudRain, CloudSnow, Wind, Droplets } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Cloud, Sun, CloudRain, CloudSnow, Wind, Droplets, ChevronDown, ChevronUp } from "lucide-react"
 import { useLanguage } from "../hooks/language-context"
 
 interface HourlyForecastProps {
@@ -10,6 +12,7 @@ interface HourlyForecastProps {
     time: string
     temp: number
     description: string
+    descriptionTh?: string // Thai description
     icon: string
     precipitation: number
     humidity: number
@@ -18,7 +21,10 @@ interface HourlyForecastProps {
 }
 
 export function HourlyForecast({ data }: HourlyForecastProps) {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  const displayData = isExpanded ? data : data.slice(0, 5)
 
   const getWeatherIcon = (iconCode: string) => {
     const code = iconCode.toLowerCase()
@@ -58,14 +64,14 @@ export function HourlyForecast({ data }: HourlyForecastProps) {
         <CardTitle className="flex items-center gap-2">
           {t.weather.hourlyForecast}
           <Badge variant="outline" className="ml-2">
-            3-Hour
+            Hourly
           </Badge>
         </CardTitle>
         <CardDescription>Detailed weather conditions for the next few hours</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.map((hour, index) => (
+          {displayData.map((hour, index) => (
             <div
               key={index}
               className="p-4 border rounded-tr-lg rounded-bl-2xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
@@ -83,7 +89,9 @@ export function HourlyForecast({ data }: HourlyForecastProps) {
 
               <div className="text-2xl font-bold font-inter-numbers mb-1">{hour.temp}°C</div>
 
-              <div className="text-sm text-muted-foreground capitalize mb-3">{hour.description}</div>
+              <div className="text-sm text-muted-foreground capitalize mb-3">
+                {language === "th" && hour.descriptionTh ? hour.descriptionTh : hour.description}
+              </div>
 
               <div className="space-y-2">
                 {hour.precipitation > 0 && (
@@ -106,6 +114,19 @@ export function HourlyForecast({ data }: HourlyForecastProps) {
             </div>
           ))}
         </div>
+
+        {data.length > 5 && (
+          <div className="mt-6 flex justify-center">
+            <Button
+              variant="outline"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="w-full sm:w-auto"
+            >
+              {isExpanded ? t.weather.showLess : t.weather.showMore}
+              {isExpanded ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
