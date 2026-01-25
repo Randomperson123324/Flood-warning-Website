@@ -12,7 +12,14 @@ interface WeatherData {
     windSpeed: number
     descriptionTh?: string // Thai description
     icon: string
-    rain?: number // Simplified for consistency with API and components
+    rain?: {
+      "1h"?: number // Rain volume for last 1 hour in mm
+      "3h"?: number // Rain volume for last 3 hours in mm
+    }
+    snow?: {
+      "1h"?: number // Snow volume for last 1 hour in mm
+      "3h"?: number // Snow volume for last 3 hours in mm
+    }
   }
   forecast: Array<{
     date: string
