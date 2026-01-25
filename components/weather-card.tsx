@@ -34,11 +34,13 @@ interface WeatherData {
 interface WeatherCardProps {
   data: WeatherData | null
   isLoading: boolean
-  error?: string
+  error?: string | null
   onRetry?: () => void
+  showCurrent?: boolean // Control whether to show current weather section
+  showForecast?: boolean // Control whether to show forecast section
 }
 
-export function WeatherCard({ data, isLoading, error, onRetry }: WeatherCardProps) {
+export function WeatherCard({ data, isLoading, error, onRetry, showCurrent = true, showForecast = true }: WeatherCardProps) {
   const { t, language } = useLanguage()
 
   const getWeatherIcon = (iconCode: string) => {
@@ -152,63 +154,65 @@ export function WeatherCard({ data, isLoading, error, onRetry }: WeatherCardProp
   return (
     <div className="space-y-6">
       {/* Current Weather */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            {getWeatherIcon(data.current.icon)}
-            {t.weather.current}
-            <Badge variant="default" className="ml-2 bg-green-100 text-green-800">
-              <Eye className="h-3 w-3 mr-1" />
-              {data.source}
-            </Badge>
-          </CardTitle>
-          <CardDescription className="flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            <span className="font-medium">
-              {data.city}
-              {data.country && `, ${data.country}`}
-            </span>
-            <Badge variant="outline" className="ml-2 text-xs font-inter-numbers">
-              {data.coordinates.lat.toFixed(2)}, {data.coordinates.lon.toFixed(2)}
-            </Badge>
-          </CardDescription>
-          <CardDescription className="capitalize font-medium text-base">
-            {language === "th" && data.current.descriptionTh ? data.current.descriptionTh : data.current.description}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-            <div className="flex items-center gap-3 p-3 bg-red-50 rounded-tr-lg rounded-bl-2xl">
-              <Thermometer className="h-5 w-5 text-red-500" />
-              <div>
-                <div className="text-2xl font-bold font-inter-numbers">{data.current.temp}°C</div>
-                <div className="text-sm text-muted-foreground">Temperature</div>
+      {showCurrent && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              {getWeatherIcon(data.current.icon)}
+              {t.weather.current}
+              <Badge variant="default" className="ml-2 bg-green-100 text-green-800">
+                <Eye className="h-3 w-3 mr-1" />
+                {data.source}
+              </Badge>
+            </CardTitle>
+            <CardDescription className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              <span className="font-medium">
+                {data.city}
+                {data.country && `, ${data.country}`}
+              </span>
+              <Badge variant="outline" className="ml-2 text-xs font-inter-numbers">
+                {data.coordinates.lat.toFixed(2)}, {data.coordinates.lon.toFixed(2)}
+              </Badge>
+            </CardDescription>
+            <CardDescription className="capitalize font-medium text-base">
+              {language === "th" && data.current.descriptionTh ? data.current.descriptionTh : data.current.description}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+              <div className="flex items-center gap-3 p-3 bg-red-50 rounded-tr-lg rounded-bl-2xl">
+                <Thermometer className="h-5 w-5 text-red-500" />
+                <div>
+                  <div className="text-2xl font-bold font-inter-numbers">{data.current.temp}°C</div>
+                  <div className="text-sm text-muted-foreground">Temperature</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-tr-lg rounded-bl-2xl">
+                <Droplets className="h-5 w-5 text-blue-500" />
+                <div>
+                  <div className="text-2xl font-bold font-inter-numbers">{data.current.humidity}%</div>
+                  <div className="text-sm text-muted-foreground">Humidity</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-tr-lg rounded-bl-2xl">
+                <Wind className="h-5 w-5 text-gray-500" />
+                <div>
+                  <div className="text-2xl font-bold font-inter-numbers">{data.current.windSpeed} m/s</div>
+                  <div className="text-sm text-muted-foreground">Wind Speed</div>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-tr-lg rounded-bl-2xl">
-              <Droplets className="h-5 w-5 text-blue-500" />
-              <div>
-                <div className="text-2xl font-bold font-inter-numbers">{data.current.humidity}%</div>
-                <div className="text-sm text-muted-foreground">Humidity</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-tr-lg rounded-bl-2xl">
-              <Wind className="h-5 w-5 text-gray-500" />
-              <div>
-                <div className="text-2xl font-bold font-inter-numbers">{data.current.windSpeed} m/s</div>
-                <div className="text-sm text-muted-foreground">Wind Speed</div>
-              </div>
-            </div>
-          </div>
 
-          <div className="mt-4 text-xs text-muted-foreground text-center font-inter-numbers">
-            Last updated: {new Date(data.timestamp).toLocaleString()} • Data from {data.source}
-          </div>
-        </CardContent>
-      </Card>
+            <div className="mt-4 text-xs text-muted-foreground text-center font-inter-numbers">
+              Last updated: {new Date(data.timestamp).toLocaleString()} • Data from {data.source}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Forecast */}
-      {data.forecast.length > 0 && (
+      {showForecast && data.forecast.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
