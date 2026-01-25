@@ -39,7 +39,7 @@ interface WeatherCardProps {
 }
 
 export function WeatherCard({ data, isLoading, error, onRetry }: WeatherCardProps) {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
 
   const getWeatherIcon = (iconCode: string) => {
     const code = iconCode.toLowerCase()
@@ -173,7 +173,7 @@ export function WeatherCard({ data, isLoading, error, onRetry }: WeatherCardProp
             </Badge>
           </CardDescription>
           <CardDescription className="capitalize font-medium text-base">
-            {t.language === "th" && data.current.descriptionTh ? data.current.descriptionTh : data.current.description}
+            {language === "th" && data.current.descriptionTh ? data.current.descriptionTh : data.current.description}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -232,7 +232,7 @@ export function WeatherCard({ data, isLoading, error, onRetry }: WeatherCardProp
                   <div className="flex justify-center mb-2">{getWeatherIcon(day.icon)}</div>
                   <div className="text-lg font-bold font-inter-numbers">{day.temp}°C</div>
                   <div className="text-sm text-muted-foreground capitalize">
-                    {t.language === "th" && day.descriptionTh ? day.descriptionTh : day.description}
+                    {language === "th" && day.descriptionTh ? day.descriptionTh : day.description}
                   </div>
                   {day.precipitation > 0 && (
                     <div className="text-xs text-blue-600 mt-1 font-medium font-inter-numbers">
