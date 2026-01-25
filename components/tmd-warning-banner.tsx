@@ -62,7 +62,7 @@ export function TMDWarningBanner() {
                         )}
                         <div>
                             <div className="font-bold text-sm sm:text-base flex items-center gap-2">
-                                <span>TMD WEATHER STATUS:</span>
+                                <span>เตือนภัยสภาพอากาศจากกรมอุตุนิยมวิทยา:</span>
                                 <span className="opacity-90">
                                     {hasWarning
                                         ? (language === "th" ? "มีคำเตือนภัยสภาพอากาศ" : "ACTIVE WARNING")
