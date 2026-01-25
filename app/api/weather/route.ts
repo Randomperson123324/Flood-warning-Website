@@ -44,9 +44,9 @@ export async function GET(request: NextRequest) {
     )
 
     // Get coordinates from environment variables or use defaults
-    const lat = Number.parseFloat(process.env.LATITUDE || "13.7563") // Bangkok as default
-    const lon = Number.parseFloat(process.env.LONGITUDE || "100.5018")
-    const cityName = process.env.CITY_NAME || "Bangkok" // Default city name
+    const lat = Number.parseFloat(process.env.LATITUDE || "12.247857") // Bangkok as default
+    const lon = Number.parseFloat(process.env.LONGITUDE || "102.515297")
+    const cityName = process.env.CITY_NAME || "Trat" // Default city name
 
     // Validate parsed coordinates
     if (isNaN(lat) || isNaN(lon)) {
