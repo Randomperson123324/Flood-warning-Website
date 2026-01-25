@@ -88,25 +88,6 @@ export function useWaterData() {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    // For historical data that might span multiple days or a specific past day,
-    // we generally want to calculate stats for the entire dataset provided.
-    // But for the "live" view, we explicitly want "Today's" stats.
-    // The previous logic filtered for 'today'.
-    // Let's keep the logic flexible: if the data is "live" (contains today), filter for today.
-    // If it's historical (explicitly fetched range), use all of it.
-    // However, to keep it simple and reusable: let's assume the caller filters the data
-    // OR we check if the dataset looks like a "feed" vs a "range".
-
-    // Actually, looking at the previous implementation, it filtered `data` (which was limit 100)
-    // for readings >= today.
-
-    // Let's split this.
-    // 1. Live data analytics (Today)
-    // 2. Historical data analytics (Selected Range)
-
-    // We will just expose a simple calculator that processes ALL given data.
-    // For live data, we will filter it before passing it in.
-
     const dailyAverage = data.reduce((sum, reading) => sum + reading.level, 0) / data.length
     const peakLevel = Math.max(...data.map((reading) => reading.level))
 
@@ -133,7 +114,7 @@ export function useWaterData() {
 
       if (error) {
         if (error.message?.includes("relation") || error.message?.includes("does not exist")) {
-          console.log("ℹ️ Water readings table not found - feature disabled")
+          console.log("\u2139\ufe0f Water readings table not found - feature disabled")
           setTableExists(false)
           setIsConnected(false)
           setIsLoading(false)
@@ -164,15 +145,13 @@ export function useWaterData() {
         if (todayData.length > 0) {
           setAnalytics(calculateAnalytics(todayData))
         } else {
-          // Fallback to all data if no data for today? 
-          // Original code fell back to calculating on ALL data if todayData was empty.
           setAnalytics(calculateAnalytics(data))
         }
 
         calculateTrendAndWarning(data)
       }
     } catch (error) {
-      console.log("ℹ️ Water data unavailable:", error)
+      console.log("\u2139\ufe0f Water data unavailable:", error)
       setTableExists(false)
       setIsConnected(false)
     } finally {
@@ -197,8 +176,6 @@ export function useWaterData() {
       return
     }
 
-    // For 5-minute sensor updates, a window of 12 readings covers exactly 1 hour.
-    // This provides a balance between stability and responsiveness to flash floods.
     const maxWindow = 12
     const rawReadings = data.slice(0, maxWindow).reverse()
 
@@ -209,14 +186,11 @@ export function useWaterData() {
       return
     }
 
-    // 1. Noise Filtering: Remove outliers (sensor spikes)
-    // We use a simple filter: remove points that are significantly different from their neighbors
     const filteredReadings = rawReadings.filter((reading, i, arr) => {
       if (i === 0 || i === arr.length - 1) return true
       const prev = arr[i - 1].level
       const next = arr[i + 1].level
       const avgNeighbor = (prev + next) / 2
-      // If the point is more than 5cm away from the average of its neighbors, it's likely noise
       return Math.abs(reading.level - avgNeighbor) < 5
     })
 
@@ -258,12 +232,10 @@ export function useWaterData() {
       const currentLevel = data[0].level
       const { warningLevel, dangerLevel } = getWarningLevels()
 
-      // 2. Context-Aware Target: Warning if below, Danger if above warning
       let targetLevel = warningLevel
       if (currentLevel >= warningLevel && currentLevel < dangerLevel) {
         targetLevel = dangerLevel
       } else if (currentLevel >= dangerLevel) {
-        // Already at critical level
         setTimeToWarningData({ days: null, hours: null, minutes: null, isStable: true })
         return
       }
@@ -321,7 +293,7 @@ export function useWaterData() {
       setIsConnected(connected)
       return connected
     } catch (error) {
-      console.log("ℹ️ Connection test skipped - table not available")
+      console.log("\u2139\ufe0f Connection test skipped - table not available")
       setTableExists(false)
       setIsConnected(false)
       return false
@@ -333,7 +305,6 @@ export function useWaterData() {
 
     try {
       setIsFetchingHistorical(true)
-      // Ensure end date covers the full day
       const adjustedEnd = new Date(endDate)
       adjustedEnd.setHours(23, 59, 59, 999)
 
@@ -375,10 +346,8 @@ export function useWaterData() {
         .subscribe()
     }
 
-    const interval = setInterval(fetchWaterData, 10000) //remove later
+    const interval = setInterval(fetchWaterData, 10000)
     const connectionTest = setInterval(testConnection, 120000)
-
-
 
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "waterLevelSettings") {

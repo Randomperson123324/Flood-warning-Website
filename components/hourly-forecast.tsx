@@ -10,6 +10,7 @@ interface HourlyForecastProps {
     time: string
     temp: number
     description: string
+    descriptionTh?: string // Thai description
     icon: string
     precipitation: number
     humidity: number
@@ -18,7 +19,7 @@ interface HourlyForecastProps {
 }
 
 export function HourlyForecast({ data }: HourlyForecastProps) {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
 
   const getWeatherIcon = (iconCode: string) => {
     const code = iconCode.toLowerCase()
@@ -83,7 +84,9 @@ export function HourlyForecast({ data }: HourlyForecastProps) {
 
               <div className="text-2xl font-bold font-inter-numbers mb-1">{hour.temp}°C</div>
 
-              <div className="text-sm text-muted-foreground capitalize mb-3">{hour.description}</div>
+              <div className="text-sm text-muted-foreground capitalize mb-3">
+                {language === "th" && hour.descriptionTh ? hour.descriptionTh : hour.description}
+              </div>
 
               <div className="space-y-2">
                 {hour.precipitation > 0 && (

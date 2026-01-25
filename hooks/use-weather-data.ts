@@ -10,7 +10,7 @@ interface WeatherData {
     temp: number
     humidity: number
     windSpeed: number
-    description: string
+    descriptionTh?: string // Thai description
     icon: string
     rain?: {
       "1h"?: number // Rain volume for last 1 hour in mm
@@ -23,10 +23,22 @@ interface WeatherData {
   }
   forecast: Array<{
     date: string
-    temp: number
+    tempMax: number
+    tempMin: number
     description: string
+    descriptionTh?: string // Thai description
     icon: string
     precipitation: number
+  }>
+  hourly: Array<{
+    time: string
+    temp: number
+    description: string
+    descriptionTh?: string // Thai description
+    icon: string
+    precipitation: number
+    humidity: number
+    windSpeed: number
   }>
   source: string // Added to indicate data source (e.g., "Live Data")
   timestamp: string // Added to indicate when data was fetched
