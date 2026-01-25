@@ -21,7 +21,8 @@ interface WeatherData {
   }
   forecast: Array<{
     date: string
-    temp: number
+    tempMax: number
+    tempMin: number
     description: string
     descriptionTh?: string // Thai description
     icon: string
@@ -244,8 +245,11 @@ export function WeatherCard({ data, isLoading, error, onRetry, showCurrent = tru
                     {new Date(day.date).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })}
                   </div>
                   <div className="flex justify-center mb-2">{getWeatherIcon(day.icon)}</div>
-                  <div className="text-lg font-bold font-inter-numbers">{day.temp}°C</div>
-                  <div className="text-sm text-muted-foreground capitalize">
+                  <div className="text-lg font-bold font-inter-numbers flex flex-col items-center">
+                    <span className="text-red-500 text-sm">H: {day.tempMax}°C</span>
+                    <span className="text-blue-500 text-sm">L: {day.tempMin}°C</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground capitalize mt-2">
                     {language === "th" && day.descriptionTh ? day.descriptionTh : day.description}
                   </div>
                   {day.precipitation > 0 && (
