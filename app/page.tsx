@@ -556,35 +556,13 @@ export default function Dashboard() {
 
             {/* 3. 3-Hour Forecast */}
             <HourlyForecast
-              data={[
-                {
-                  time: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
-                  temp: weatherData?.current?.temp || 27,
-                  description: "partly cloudy",
-                  icon: "cloud",
-                  precipitation: 0.2,
-                  humidity: 65,
-                  windSpeed: 3.2,
-                },
-                {
-                  time: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
-                  temp: (weatherData?.current?.temp || 27) + 2,
-                  description: "light rain",
-                  icon: "rain",
-                  precipitation: 2.1,
-                  humidity: 78,
-                  windSpeed: 4.1,
-                },
-                {
-                  time: new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString(),
-                  temp: (weatherData?.current?.temp || 27) - 1,
-                  description: "overcast",
-                  icon: "cloud",
-                  precipitation: 0,
-                  humidity: 72,
-                  windSpeed: 2.8,
-                },
-              ]}
+              data={
+                weatherData?.hourly
+                  ? weatherData.hourly
+                    .filter((_: any, index: number) => (index + 1) % 3 === 0) // Every 3 hours
+                    .slice(0, 3) // Next 3 intervals (9 hours total)
+                  : []
+              }
             />
 
             {/* 4. 5-Day Forecast */}
