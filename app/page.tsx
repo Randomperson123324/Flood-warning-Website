@@ -531,6 +531,16 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="weather" className="space-y-6">
+            {/* TMD Attribution Header */}
+            <div className="flex items-center justify-center gap-3 pb-2">
+              <span className="text-lg font-medium text-gray-700 dark:text-gray-300">Weather data from</span>
+              <img
+                src="/images/TMD-logo.png"
+                alt="Thai Meteorological Department"
+                className="h-12 object-contain"
+              />
+            </div>
+
             {/* 1. Current Weather Card */}
             <WeatherCard
               data={weatherData}
