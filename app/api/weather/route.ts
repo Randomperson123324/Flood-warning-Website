@@ -68,10 +68,16 @@ export async function GET(request: NextRequest) {
     const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
 
     try {
-      // Get current date and time for TMD API
+      // Get current date and time for TMD API (ENFORCE BANGKOK TIMEZONE UTC+7)
       const now = new Date()
-      const dateStr = now.toISOString().split("T")[0] // YYYY-MM-DD format
-      const currentHour = now.getHours()
+      const bangkokTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Bangkok" }))
+
+      const dateStr = bangkokTime.getFullYear() + "-" +
+        String(bangkokTime.getMonth() + 1).padStart(2, '0') + "-" +
+        String(bangkokTime.getDate()).padStart(2, '0')
+      const currentHour = bangkokTime.getHours()
+
+      console.log(`🕒 Server: Bangkok local time: ${bangkokTime.toLocaleString()} (Hour: ${currentHour})`)
 
       // Fetch hourly forecast for current conditions (next 24 hours, hourly)
       console.log("🔄 Server: Fetching hourly forecast from TMD API...")
@@ -143,6 +149,17 @@ export async function GET(request: NextRequest) {
       console.log("💧 Server: Current humidity:", currentData.rh + "%")
       console.log("💨 Server: Current wind speed:", currentData.ws10m + " m/s")
 
+      // Filter forecasts to only include future Data (and current hour)
+      // This prevents "stale" hours from showing up in the hourly forecast UI
+      const futureForecasts = forecasts.filter((item: any) => {
+        const itemTime = new Date(item.time)
+        // Keep data if it's from the current hour or later
+        // We compare using timestamps to be timezone-agnostic
+        return itemTime.getTime() >= (bangkokTime.getTime() - 59 * 60 * 1000)
+      })
+
+      console.log(`📊 Server: Filtered hourly forecast from ${forecasts.length} down to ${futureForecasts.length} items`)
+
       // Log precipitation data if available
       if (currentData.rain !== undefined && currentData.rain !== null) {
         console.log("🌧️ Server: Rain data:", currentData.rain, "mm")
@@ -196,7 +213,7 @@ export async function GET(request: NextRequest) {
 
       console.log("🔄 Server: Fetching daily forecast from TMD API...")
 
-      const dailyUrl = `https://data.tmd.go.th/nwpapi/v1/forecast/location/daily/at?lat=${lat}&lon=${lon}&fields=tc_max,tc_min,rh,cond&date=${dateStr}&duration=5`
+      const dailyUrl = `https://data.tmd.go.th/nwpapi/v1/forecast/location/daily/at?lat=${lat}&lon=${lon}&fields=tc_max,tc_min,rh,cond,rain&date=${dateStr}&duration=5`
       console.log("📡 Server: Daily API URL (masked):", dailyUrl.replace(apiToken, "***TOKEN***"))
 
       const dailyResponse = await fetch(dailyUrl, {
@@ -226,12 +243,12 @@ export async function GET(request: NextRequest) {
           const weatherDesc = getWeatherDescription(item.data.cond)
           return {
             date: item.time,
-            tempMax: Math.round(item.data.tc_max),
-            tempMin: Math.round(item.data.tc_min),
+            tempMax: typeof item.data.tc_max === 'number' ? Math.round(item.data.tc_max) : undefined,
+            tempMin: typeof item.data.tc_min === 'number' ? Math.round(item.data.tc_min) : undefined,
             description: weatherDesc.en, // English description
             descriptionTh: weatherDesc.th, // Thai description
             icon: getWeatherIcon(item.data.cond),
-            precipitation: 0, // Rain volume not available in basic field set
+            precipitation: item.data.rain || 0,
           }
         })
 
@@ -244,18 +261,18 @@ export async function GET(request: NextRequest) {
         country: "TH", // Thailand
         coordinates: { lat, lon },
         current: {
-          temp: Math.round(currentData.tc),
-          humidity: Math.round(currentData.rh),
-          windSpeed: currentData.ws10m || 0,
+          temp: typeof currentData.tc === 'number' ? Math.round(currentData.tc) : undefined,
+          humidity: typeof currentData.rh === 'number' ? Math.round(currentData.rh) : undefined,
+          windSpeed: typeof currentData.ws10m === 'number' ? currentData.ws10m : undefined,
           description: currentWeatherDesc.en, // English description
           descriptionTh: currentWeatherDesc.th, // Thai description
           icon: getWeatherIcon(currentData.cond),
           rain: {
-            "1h": currentData.rain || 0,
+            "1h": typeof currentData.rain === 'number' ? currentData.rain : 0,
           },
         },
         forecast: dailyForecast,
-        hourly: forecasts.slice(0, 24).map((item: any) => {
+        hourly: futureForecasts.slice(0, 24).map((item: any) => {
           const weatherDesc = getWeatherDescription(item.data.cond)
           return {
             time: item.time,
@@ -265,7 +282,7 @@ export async function GET(request: NextRequest) {
             icon: getWeatherIcon(item.data.cond),
             precipitation: item.data.rain || 0,
             humidity: Math.round(item.data.rh),
-            windSpeed: item.data.ws10m || 0,
+            windSpeed: item.data.ws10m || undefined, // Use undefined instead of hardcoded 0 if missing
           }
         }),
         timestamp: new Date().toISOString(),
