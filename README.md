@@ -7,7 +7,7 @@ A comprehensive flood monitoring system using Raspberry Pi, ultrasonic sensors, 
 - 🌊 Real-time flood level monitoring
 - 📊 Interactive charts and analytics
 - ⚠️ Flood warning calculations and alerts
-- 🌤️ Weather forecast integration with city display
+- 🌤️ Weather forecast integration with Thai Meteorological Department (TMD)
 - 🔧 Developer settings panel (Password: **admin123**)
 - 📱 Responsive design
 - ⚡ Real-time data updates
@@ -31,11 +31,13 @@ This flood monitoring system is designed to help schools monitor water levels in
    - `create-water-readings-table.sql`
    - `insert-sample-data.sql` (for testing)
 
-### 2. OpenWeather API Setup
+### 2. TMD Weather API Setup
 
-1. Sign up at [openweathermap.org](https://openweathermap.org/api)
-2. Get your free API key
-3. Add it to your environment variables (server-side only)
+1. Register at [data.tmd.go.th/nwpapi/register](https://data.tmd.go.th/nwpapi/register)
+2. Log in at [data.tmd.go.th/nwpapi/login](https://data.tmd.go.th/nwpapi/login)
+3. Click "Create New Token" to generate an OAuth Access Token
+4. **Important:** Copy and save the token immediately - it's only shown once!
+5. Add it to your environment variables (server-side only)
 
 ### 3. Environment Variables
 
@@ -44,7 +46,7 @@ Create a `.env.local` file in your project root:
 \`\`\`env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-OPENWEATHER_API_KEY=your_openweather_api_key
+TMD_API_TOKEN=your_tmd_oauth_access_token
 
 # Cloudflare Turnstile (for Developer Settings CAPTCHA)
 # The public site key is fetched from the server-side API route.
@@ -57,7 +59,7 @@ LONGITUDE=100.5018
 CITY_NAME=Bangkok
 \`\`\`
 
-**Important:** The OpenWeather API key, Cloudflare Turnstile Site Key, and Secret Key are all handled server-side for security. The Cloudflare Turnstile Site Key is then exposed to the client via a dedicated API route.
+**Important:** The TMD API token, Cloudflare Turnstile Site Key, and Secret Key are all handled server-side for security. The Cloudflare Turnstile Site Key is then exposed to the client via a dedicated API route.
 
 
 ### 4. Changing the City/Location
@@ -155,7 +157,7 @@ Access developer settings by clicking the settings icon in the top-right corner.
 - Update intervals
 
 **Weather Configuration:**
-Weather data is now fetched securely through a server-side API. The OpenWeather API key should be set as a server environment variable. The city name and coordinates are displayed in the weather card.
+Weather data is fetched securely from the Thai Meteorological Department (TMD) API through a server-side route. The TMD OAuth access token should be set as a server environment variable. The system provides Thai-specific weather data with high accuracy for Thailand locations, including hourly and daily forecasts with rain volume data.
 
 ### Sensor Calibration
 
@@ -180,7 +182,7 @@ CREATE TABLE water_readings (
 
 ## API Endpoints
 
-- **GET /api/weather**: Fetches weather data securely from OpenWeather API
+- **GET /api/weather**: Fetches weather data securely from Thai Meteorological Department (TMD) API
 - **GET /api/turnstile-sitekey**: Fetches the Cloudflare Turnstile public site key
 - **Supabase**: Real-time database updates for water level data
 
@@ -189,12 +191,12 @@ CREATE TABLE water_readings (
 - **City Name**: Shows the actual city name from the weather API
 - **Country Code**: Displays the country abbreviation
 - **Coordinates**: Shows the exact latitude and longitude being monitored
-- **Current Conditions**: Temperature, humidity, wind speed, and description
-- **5-Day Forecast**: Daily weather predictions with precipitation data
+- **Current Conditions**: Temperature, humidity, wind speed, rain volume, and weather description
+- **5-Day Forecast**: Daily weather predictions with precipitation/rain volume data from TMD
 
 ## Security
 
-- OpenWeather API key is handled server-side only
+- TMD API OAuth token is handled server-side only
 - Supabase keys use Row Level Security
 - Developer settings are password protected
 - Cloudflare Turnstile site key is fetched from server, not exposed in client bundle
@@ -208,7 +210,7 @@ Set these environment variables in your deployment platform:
 \`\`\`env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-OPENWEATHER_API_KEY=your_openweather_api_key
+TMD_API_TOKEN=your_tmd_oauth_access_token
 CLOUDFLARE_TURNSTILE_SITE_KEY=your_cloudflare_turnstile_site_key # Now a server-only variable
 CLOUDFLARE_TURNSTILE_SECRET_KEY=your_cloudflare_turnstile_secret_key
 LATITUDE=your_latitude
@@ -227,9 +229,10 @@ CITY_NAME=your_city_name
 
 **Weather Data Not Loading:**
 - Check server logs for API errors
-- Verify OPENWEATHER_API_KEY is set server-side
-- Ensure API key is activated (can take up to 2 hours)
+- Verify TMD_API_TOKEN is set server-side
+- Ensure your OAuth token is valid (regenerate at https://data.tmd.go.th/nwpapi/login if needed)
 - Check that LATITUDE, LONGITUDE, and CITY_NAME are set correctly
+- Verify the token hasn't been deleted from your TMD account dashboard
 
 **Wrong City Showing:**
 - Verify your LATITUDE and LONGITUDE environment variables
