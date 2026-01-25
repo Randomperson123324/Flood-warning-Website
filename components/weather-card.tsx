@@ -195,21 +195,27 @@ export function WeatherCard({ data, isLoading, error, onRetry, showCurrent = tru
               <div className="flex items-center gap-3 p-3 bg-red-50 rounded-tr-lg rounded-bl-2xl">
                 <Thermometer className="h-5 w-5 text-red-500" />
                 <div>
-                  <div className="text-2xl font-bold font-inter-numbers">{data.current.temp}°C</div>
+                  <div className="text-2xl font-bold font-inter-numbers">
+                    {data.current.temp !== undefined ? `${data.current.temp}°C` : "--°C"}
+                  </div>
                   <div className="text-sm text-muted-foreground">Temperature</div>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-tr-lg rounded-bl-2xl">
                 <Droplets className="h-5 w-5 text-blue-500" />
                 <div>
-                  <div className="text-2xl font-bold font-inter-numbers">{data.current.humidity}%</div>
+                  <div className="text-2xl font-bold font-inter-numbers">
+                    {data.current.humidity !== undefined ? `${data.current.humidity}%` : "--%"}
+                  </div>
                   <div className="text-sm text-muted-foreground">Humidity</div>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-tr-lg rounded-bl-2xl">
                 <Wind className="h-5 w-5 text-gray-500" />
                 <div>
-                  <div className="text-2xl font-bold font-inter-numbers">{data.current.windSpeed} m/s</div>
+                  <div className="text-2xl font-bold font-inter-numbers">
+                    {data.current.windSpeed !== undefined ? `${data.current.windSpeed} m/s` : "-- m/s"}
+                  </div>
                   <div className="text-sm text-muted-foreground">Wind Speed</div>
                 </div>
               </div>
