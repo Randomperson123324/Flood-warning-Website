@@ -149,26 +149,26 @@ export async function GET(request: NextRequest) {
       }
 
 
-      // Map TMD condition codes to English descriptions (official TMD codes)
-      const getWeatherDescription = (cond: number | undefined): string => {
-        if (!cond) return "Partly Cloudy"
+      // Map TMD condition codes to descriptions in both English and Thai (official TMD codes)
+      const getWeatherDescription = (cond: number | undefined): { en: string; th: string } => {
+        if (!cond) return { en: "Partly Cloudy", th: "มีเมฆบางส่วน" }
 
-        const conditionMap: { [key: number]: string } = {
-          1: "Clear",
-          2: "Partly Cloudy",
-          3: "Cloudy",
-          4: "Overcast",
-          5: "Light Rain",
-          6: "Moderate Rain",
-          7: "Heavy Rain",
-          8: "Thunderstorm",
-          9: "Very Cold",
-          10: "Cold",
-          11: "Cool",
-          12: "Very Hot",
+        const conditionMap: { [key: number]: { en: string; th: string } } = {
+          1: { en: "Clear", th: "ท้องฟ้าแจ่มใส" },
+          2: { en: "Partly Cloudy", th: "มีเมฆบางส่วน" },
+          3: { en: "Cloudy", th: "เมฆเป็นส่วนมาก" },
+          4: { en: "Overcast", th: "มีเมฆมาก" },
+          5: { en: "Light Rain", th: "ฝนตกเล็กน้อย" },
+          6: { en: "Moderate Rain", th: "ฝนปานกลาง" },
+          7: { en: "Heavy Rain", th: "ฝนตกหนัก" },
+          8: { en: "Thunderstorm", th: "ฝนฟ้าคะนอง" },
+          9: { en: "Very Cold", th: "อากาศหนาวจัด" },
+          10: { en: "Cold", th: "อากาศหนาว" },
+          11: { en: "Cool", th: "อากาศเย็น" },
+          12: { en: "Very Hot", th: "อากาศร้อนจัด" },
         }
 
-        return conditionMap[cond] || "Partly Cloudy"
+        return conditionMap[cond] || { en: "Partly Cloudy", th: "มีเมฆบางส่วน" }
       }
 
       // Map TMD condition to weather icon codes
@@ -222,17 +222,22 @@ export async function GET(request: NextRequest) {
 
         const dailyForecasts = dailyData.WeatherForecasts?.[0]?.forecasts || []
 
-        dailyForecast = dailyForecasts.map((item: any) => ({
-          date: item.time,
-          temp: Math.round((item.data.tc_max + item.data.tc_min) / 2), // Average of max and min
-          description: getWeatherDescription(item.data.cond),
-          icon: getWeatherIcon(item.data.cond),
-          precipitation: 0, // Rain volume not available in basic field set
-        }))
+        dailyForecast = dailyForecasts.map((item: any) => {
+          const weatherDesc = getWeatherDescription(item.data.cond)
+          return {
+            date: item.time,
+            temp: Math.round((item.data.tc_max + item.data.tc_min) / 2), // Average of max and min
+            description: weatherDesc.en, // English description
+            descriptionTh: weatherDesc.th, // Thai description
+            icon: getWeatherIcon(item.data.cond),
+            precipitation: 0, // Rain volume not available in basic field set
+          }
+        })
 
         console.log("📅 Server: Processed forecast for", dailyForecast.length, "days")
       }
 
+      const currentWeatherDesc = getWeatherDescription(currentData.cond)
       const weatherData = {
         city: cityName,
         country: "TH", // Thailand
@@ -241,7 +246,8 @@ export async function GET(request: NextRequest) {
           temp: Math.round(currentData.tc),
           humidity: Math.round(currentData.rh),
           windSpeed: 0, // Wind speed not available in basic field set
-          description: getWeatherDescription(currentData.cond),
+          description: currentWeatherDesc.en, // English description
+          descriptionTh: currentWeatherDesc.th, // Thai description
           icon: getWeatherIcon(currentData.cond),
           rain: undefined, // Rain volume not available in basic field set
         },
