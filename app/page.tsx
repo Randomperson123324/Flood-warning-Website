@@ -34,10 +34,10 @@ import { SystemStatus } from "../components/system-status"
 import { AnnouncementBanner } from "../components/announcement-banner"
 import { StatusSummary } from "../components/status-summary"
 import { StickyHeader } from "../components/sticky-header"
-import { useLanguage } from "../hooks/language-context"
+import { useLanguage } from "@/hooks/language-context"
 import { LanguageToggle } from "../components/language-toggle"
-import { useWaterData } from "../hooks/use-water-data"
-import { useWeatherData } from "../hooks/use-weather-data"
+import { useWaterData } from "@/hooks/use-water-data"
+import { useWeatherData } from "@/hooks/use-weather-data"
 import { Footer } from "../components/footer"
 import React from "react"
 import type { JSX } from "react/jsx-runtime"
@@ -554,38 +554,7 @@ export default function Dashboard() {
             {/* 2. Current Precipitation Status */}
             <RainDashboard weatherData={weatherData} isLoading={weatherLoading} />
 
-            {/* 3. 3-Hour Forecast */}
-            <HourlyForecast
-              data={[
-                {
-                  time: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
-                  temp: weatherData?.current?.temp || 27,
-                  description: "partly cloudy",
-                  icon: "cloud",
-                  precipitation: 0.2,
-                  humidity: 65,
-                  windSpeed: 3.2,
-                },
-                {
-                  time: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
-                  temp: (weatherData?.current?.temp || 27) + 2,
-                  description: "light rain",
-                  icon: "rain",
-                  precipitation: 2.1,
-                  humidity: 78,
-                  windSpeed: 4.1,
-                },
-                {
-                  time: new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString(),
-                  temp: (weatherData?.current?.temp || 27) - 1,
-                  description: "overcast",
-                  icon: "cloud",
-                  precipitation: 0,
-                  humidity: 72,
-                  windSpeed: 2.8,
-                },
-              ]}
-            />
+            <HourlyForecast data={weatherData?.hourly || []} />
 
             {/* 4. 5-Day Forecast */}
             <WeatherCard
