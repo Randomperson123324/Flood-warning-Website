@@ -194,7 +194,7 @@ export async function GET(request: NextRequest) {
       const dailyController = new AbortController()
       const dailyTimeoutId = setTimeout(() => dailyController.abort(), 15000)
 
-      console.log("🔄 Server: Fetching daily forecast from TMD API...")
+      console.log("🔄 Server: Fetching daily forecast from TMD API 5 day...")
 
       const dailyUrl = `https://data.tmd.go.th/nwpapi/v1/forecast/location/daily/at?lat=${lat}&lon=${lon}&fields=tc_max,tc_min,rh,cond&date=${dateStr}&duration=5`
       console.log("📡 Server: Daily API URL (masked):", dailyUrl.replace(apiToken, "***TOKEN***"))
