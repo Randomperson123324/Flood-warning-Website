@@ -115,8 +115,8 @@ export function useWeatherData() {
     // Fetch immediately on mount
     fetchWeatherData()
 
-    // Update weather data every 30 minutes (1800000 ms)
-    const interval = setInterval(fetchWeatherData, 1800000)
+    // Update weather data every 5 minutes (300000 ms)
+    const interval = setInterval(fetchWeatherData, 300000)
 
     return () => clearInterval(interval)
   }, [])
