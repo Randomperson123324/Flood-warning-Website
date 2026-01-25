@@ -44,9 +44,9 @@ export async function GET(request: NextRequest) {
     )
 
     // Get coordinates from environment variables or use defaults
-    const lat = Number.parseFloat(process.env.LATITUDE || "12.247857") // Bangkok as default
-    const lon = Number.parseFloat(process.env.LONGITUDE || "102.515297")
-    const cityName = process.env.CITY_NAME || "Trat" // Default city name
+    const lat = Number.parseFloat(process.env.LATITUDE || "13.7563") // Bangkok as default
+    const lon = Number.parseFloat(process.env.LONGITUDE || "100.5018")
+    const cityName = process.env.CITY_NAME || "Bangkok" // Default city name
 
     // Validate parsed coordinates
     if (isNaN(lat) || isNaN(lon)) {
@@ -194,7 +194,7 @@ export async function GET(request: NextRequest) {
       const dailyController = new AbortController()
       const dailyTimeoutId = setTimeout(() => dailyController.abort(), 15000)
 
-      console.log("🔄 Server: Fetching daily forecast from TMD API 5 day...")
+      console.log("🔄 Server: Fetching daily forecast from TMD API...")
 
       const dailyUrl = `https://data.tmd.go.th/nwpapi/v1/forecast/location/daily/at?lat=${lat}&lon=${lon}&fields=tc_max,tc_min,rh,cond&date=${dateStr}&duration=5`
       console.log("📡 Server: Daily API URL (masked):", dailyUrl.replace(apiToken, "***TOKEN***"))
@@ -252,6 +252,19 @@ export async function GET(request: NextRequest) {
           rain: undefined, // Rain volume not available in basic field set
         },
         forecast: dailyForecast,
+        hourly: forecasts.slice(0, 24).map((item: any) => {
+          const weatherDesc = getWeatherDescription(item.data.cond)
+          return {
+            time: item.time,
+            temp: Math.round(item.data.tc),
+            description: weatherDesc.en,
+            descriptionTh: weatherDesc.th,
+            icon: getWeatherIcon(item.data.cond),
+            precipitation: item.data.rain || 0,
+            humidity: Math.round(item.data.rh),
+            windSpeed: item.data.ws || 0,
+          }
+        }),
         timestamp: new Date().toISOString(),
         source: "Thai Meteorological Department (TMD)",
       }
