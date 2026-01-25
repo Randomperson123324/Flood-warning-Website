@@ -245,11 +245,14 @@ export async function GET(request: NextRequest) {
         current: {
           temp: Math.round(currentData.tc),
           humidity: Math.round(currentData.rh),
-          windSpeed: currentData.ws || 0,
-          description: currentWeatherDesc.en,
-          descriptionTh: currentWeatherDesc.th,
+          description: currentWeatherDesc.en, // English description
+          descriptionTh: currentWeatherDesc.th, // Thai description
           icon: getWeatherIcon(currentData.cond),
-          rain: currentData.rain || 0,
+          rain: currentData.rain !== undefined && currentData.rain !== null ? {
+            "1h": currentData.rain,
+            "3h": currentData.rain // TMD Hourly provides per-hour, so we'll use it as 1h reference
+          } : undefined,
+          windSpeed: currentData.ws || 0,
         },
         forecast: dailyForecast,
         hourly: forecasts.slice(0, 24).map((item: any) => {
