@@ -76,8 +76,8 @@ export async function GET(request: NextRequest) {
       // Fetch hourly forecast for current conditions (next 24 hours, hourly)
       console.log("🔄 Server: Fetching hourly forecast from TMD API...")
 
-      // Request fields: tc (temp), rh (humidity), cond (condition code), ws (wind speed), rain (precipitation)
-      const hourlyUrl = `https://data.tmd.go.th/nwpapi/v1/forecast/location/hourly/at?lat=${lat}&lon=${lon}&fields=tc,rh,cond,ws,rain&date=${dateStr}&hour=${currentHour}&duration=24`
+      // Request fields: tc (temp), rh (humidity), cond (condition code), ws10m (wind speed), tp (total precipitation)
+      const hourlyUrl = `https://data.tmd.go.th/nwpapi/v1/forecast/location/hourly/at?lat=${lat}&lon=${lon}&fields=tc,rh,cond,ws10m,tp&date=${dateStr}&hour=${currentHour}&duration=24`
       console.log("📡 Server: Hourly API URL (masked):", hourlyUrl.replace(apiToken, "***TOKEN***"))
 
       const hourlyResponse = await fetch(hourlyUrl, {
@@ -248,11 +248,11 @@ export async function GET(request: NextRequest) {
           description: currentWeatherDesc.en, // English description
           descriptionTh: currentWeatherDesc.th, // Thai description
           icon: getWeatherIcon(currentData.cond),
-          rain: currentData.rain !== undefined && currentData.rain !== null ? {
-            "1h": currentData.rain,
-            "3h": currentData.rain // TMD Hourly provides per-hour, so we'll use it as 1h reference
+          rain: (currentData.tp !== undefined && currentData.tp !== null) ? {
+            "1h": currentData.tp,
+            "3h": currentData.tp
           } : undefined,
-          windSpeed: currentData.ws || 0,
+          windSpeed: currentData.ws10m || 0,
         },
         forecast: dailyForecast,
         hourly: forecasts.slice(0, 24).map((item: any) => {
@@ -263,9 +263,9 @@ export async function GET(request: NextRequest) {
             description: weatherDesc.en,
             descriptionTh: weatherDesc.th,
             icon: getWeatherIcon(item.data.cond),
-            precipitation: item.data.rain || 0,
+            precipitation: item.data.tp || 0,
             humidity: Math.round(item.data.rh),
-            windSpeed: item.data.ws || 0,
+            windSpeed: item.data.ws10m || 0,
           }
         }),
         timestamp: new Date().toISOString(),
