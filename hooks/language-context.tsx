@@ -9,7 +9,7 @@ const translations = {
     subtitles: {
       overview: "Monitor current water levels and affected area based on reports.",
       analytics: "View weekly insights and analyze water level history.",
-      weather: "Check real-time weather and forecasts brought to you by OpenWeather.",
+      weather: "Check real-time weather and forecasts brought to you by Thai Meteorological Department (TMD).",
       community: "Help us report flood and affected area or just chat with others.",
     },
     tabs: {
@@ -307,7 +307,7 @@ const translations = {
     subtitles: {
       overview: "ตรวจสอบระดับน้ำและพื้นที่ได้รับผลกระทบจากการรายงานปัจจุบัน.",
       analytics: "ตรวจสอบระดับน้ำรายสัปดาห์และวิเคราห์ระดับน้ำในอดีต",
-      weather: "สภาพอากาศปัจจุบันและการพยากรณ์บริการโดย OpenWeather",
+      weather: "สภาพอากาศปัจจุบันและการพยากรณ์บริการโดย กรมอุตุนิยมวิทยา",
       community: "ช่วยรายงานน้ำท่วมหรือพื้นที่ที่ได้รับผบกระทบและพูดคุยกับคนอื่น",
     },
     tabs: {
