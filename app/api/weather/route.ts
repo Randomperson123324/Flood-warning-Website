@@ -76,8 +76,8 @@ export async function GET(request: NextRequest) {
       // Fetch hourly forecast for current conditions (next 24 hours, hourly)
       console.log("🔄 Server: Fetching hourly forecast from TMD API...")
 
-      // Request fields: tc (temp celsius), rh (relative humidity), ws (wind speed), rain (rainfall)
-      const hourlyUrl = `https://data.tmd.go.th/nwpapi/v1/forecast/location/hourly/at?lat=${lat}&lon=${lon}&fields=tc,rh,ws,rain&date=${dateStr}&hour=${currentHour}&duration=24`
+      // Request only basic fields that are guaranteed to exist: tc (temp), rh (humidity)
+      const hourlyUrl = `https://data.tmd.go.th/nwpapi/v1/forecast/location/hourly/at?lat=${lat}&lon=${lon}&fields=tc,rh&date=${dateStr}&hour=${currentHour}&duration=24`
       console.log("📡 Server: Hourly API URL (masked):", hourlyUrl.replace(apiToken, "***TOKEN***"))
 
       const hourlyResponse = await fetch(hourlyUrl, {
@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
 
       console.log("🔄 Server: Fetching daily forecast from TMD API...")
 
-      const dailyUrl = `https://data.tmd.go.th/nwpapi/v1/forecast/location/daily/at?lat=${lat}&lon=${lon}&fields=tc_max,tc_min,rh,rain&date=${dateStr}&duration=5`
+      const dailyUrl = `https://data.tmd.go.th/nwpapi/v1/forecast/location/daily/at?lat=${lat}&lon=${lon}&fields=tc_max,tc_min,rh&date=${dateStr}&duration=5`
       console.log("📡 Server: Daily API URL (masked):", dailyUrl.replace(apiToken, "***TOKEN***"))
 
       const dailyResponse = await fetch(dailyUrl, {
@@ -213,9 +213,9 @@ export async function GET(request: NextRequest) {
         dailyForecast = dailyForecasts.map((item: any) => ({
           date: item.time,
           temp: Math.round((item.data.tc_max + item.data.tc_min) / 2), // Average of max and min
-          description: getWeatherDescription(item.data.rain, item.data.rh),
-          icon: getWeatherIcon(item.data.rain, item.data.rh),
-          precipitation: item.data.rain || 0, // Rain volume in mm
+          description: getWeatherDescription(undefined, item.data.rh), // No rain data yet
+          icon: getWeatherIcon(undefined, item.data.rh),
+          precipitation: 0, // Rain data not available from basic fields
         }))
 
         console.log("📅 Server: Processed forecast for", dailyForecast.length, "days")
@@ -228,10 +228,10 @@ export async function GET(request: NextRequest) {
         current: {
           temp: Math.round(currentData.tc),
           humidity: Math.round(currentData.rh),
-          windSpeed: Math.round(currentData.ws * 10) / 10,
-          description: getWeatherDescription(currentData.rain, currentData.rh),
-          icon: getWeatherIcon(currentData.rain, currentData.rh),
-          rain: currentData.rain !== undefined && currentData.rain !== null ? { "1h": currentData.rain } : undefined, // Rain volume in mm
+          windSpeed: 0, // Wind speed not available from basic fields
+          description: getWeatherDescription(undefined, currentData.rh), // No rain data yet
+          icon: getWeatherIcon(undefined, currentData.rh),
+          rain: undefined, // Rain data not available from basic fields
         },
         forecast: dailyForecast,
         timestamp: new Date().toISOString(),
