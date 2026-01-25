@@ -110,7 +110,6 @@ export function RainDashboard({ weatherData, isLoading }: RainDashboardProps) {
               {isPrecipitating ? t.precipitation?.active || "Active" : t.precipitation?.dry || "Dry"}
             </Badge>
           </CardTitle>
-          <CardDescription className="capitalize font-medium text-base">{current.description}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
