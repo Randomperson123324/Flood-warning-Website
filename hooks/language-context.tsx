@@ -99,6 +99,8 @@ const translations = {
       weatherMap: "Weather Map",
       showMap: "Show Weather Map",
       hideMap: "Hide Weather Map",
+      showMore: "Show More",
+      showLess: "Show Less",
     },
     community: {
       title: "Community Reports",
@@ -397,6 +399,8 @@ const translations = {
       weatherMap: "แผนที่สภาพอากาศ",
       showMap: "แสดงแผนที่สภาพอากาศ",
       hideMap: "ซ่อนแผนที่สภาพอากาศ",
+      showMore: "แสดงเพิ่มเติม",
+      showLess: "แสดงน้อยลง",
     },
     community: {
       title: "รายงานชุมชน",
