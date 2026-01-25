@@ -554,7 +554,10 @@ export default function Dashboard() {
             {/* 2. Current Precipitation Status */}
             <RainDashboard weatherData={weatherData} isLoading={weatherLoading} />
 
-            <HourlyForecast data={weatherData?.hourly || []} />
+            <HourlyForecast
+              data={weatherData?.hourly || []}
+              isLoading={weatherLoading}
+            />
 
             {/* 4. 5-Day Forecast */}
             <WeatherCard
