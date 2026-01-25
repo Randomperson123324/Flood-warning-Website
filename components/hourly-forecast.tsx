@@ -103,7 +103,9 @@ export function HourlyForecast({ data }: HourlyForecastProps) {
 
                 <div className="flex items-center gap-2 text-xs">
                   <Wind className="h-3 w-3 text-gray-400" />
-                  <span className="font-inter-numbers">{hour.windSpeed} m/s</span>
+                  <span className="font-inter-numbers">
+                    {hour.windSpeed !== undefined ? `${hour.windSpeed} m/s` : "-- m/s"}
+                  </span>
                 </div>
               </div>
             </div>
