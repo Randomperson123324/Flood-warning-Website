@@ -4,6 +4,7 @@ export async function GET(request: NextRequest) {
     try {
         const response = await fetch("https://data.tmd.go.th/api/WeatherWarningNews/v2/?uid=demo&ukey=demokey", {
             cache: "no-store",
+            console.log("TMD sucess" ${response.status})
         })
 
         if (!response.ok) {
