@@ -243,7 +243,7 @@ export default function Dashboard() {
   return (
     <div
       className={`min-h-screen bg-gradient-to-br from-blue-100 via-blue-50 to-blue-200 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900`}
-    />
+    >
       {/* Sticky Header */}
       <StickyHeader
         activeTab={activeTab}
