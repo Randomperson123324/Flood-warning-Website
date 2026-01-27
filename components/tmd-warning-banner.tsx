@@ -75,7 +75,7 @@ export function TMDWarningBanner() {
                                         ? (language === "th" ? "มีคำเตือนภัยสภาพอากาศ" : "ACTIVE WARNING")
                                         : isError
                                             ? (language === "th" ? "ไม่สามารถดึงข้อมูลได้" : "CAN'T FETCH DATA")
-                                            : (language === "th" ? "ปกติ" : "NO WARNING")}
+                                            : (language === "th" ? "ไม่มีเตือนภัย" : "NO WARNING")}
                                 </span>
                             </div>
                             {hasWarning && data?.description && (
