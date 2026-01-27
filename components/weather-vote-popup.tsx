@@ -101,7 +101,7 @@ export function WeatherVotePopup() {
 
             const isCloudyAndHumid =
                 weatherData.current.humidity > 10 &&
-                weatherData.current.description.toLowerCase().includes("cloud")
+                weatherData.current.description.toLowerCase().includes("clear")
 
             console.log("VotePopup: Conditions:", { isRaining, isCloudyAndHumid })
 
