@@ -66,41 +66,52 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const authHeader = request.headers.get("Authorization")
-        if (!authHeader) {
-            return NextResponse.json({ error: "Missing Authorization header" }, { status: 401 })
-        }
-
-        const token = authHeader.replace("Bearer ", "")
-
-        // Create authenticated client
-        const supabase = createSupabaseClient(token)
-
-        const {
-            data: { user },
-            error: authError,
-        } = await supabase.auth.getUser(token)
-
-        if (authError || !user) {
-            console.error("Auth verification failed:", authError)
-            return NextResponse.json({ error: "Unauthorized: Invalid token" }, { status: 401 })
-        }
-
         const body = await request.json()
-        const { is_raining, location } = body
+        const { is_raining, location, visitor_id } = body
 
         // Allow boolean or null (for unsure)
         if (is_raining !== null && typeof is_raining !== "boolean") {
             return NextResponse.json({ error: "Invalid input: is_raining must be a boolean or null" }, { status: 400 })
         }
 
-        // Check if user has voted in the last 30 minutes
+        const authHeader = request.headers.get("Authorization")
+        let user_id = null
+        let supabase = createSupabaseClient()
+
+        if (authHeader) {
+            const token = authHeader.replace("Bearer ", "")
+            supabase = createSupabaseClient(token)
+
+            const {
+                data: { user },
+                error: authError,
+            } = await supabase.auth.getUser(token)
+
+            if (!authError && user) {
+                user_id = user.id
+            }
+        }
+
+        // Must have either user_id (from auth) or visitor_id
+        if (!user_id && !visitor_id) {
+            return NextResponse.json({ error: "Unauthorized: Missing authentication or visitor ID" }, { status: 401 })
+        }
+
+        // Check if user/visitor has voted in the last 30 minutes
         const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString()
-        const { data: existingVotes, error: checkError } = await supabase
+
+        let query = supabase
             .from("weather_votes")
             .select("id")
-            .eq("user_id", user.id)
             .gte("created_at", thirtyMinutesAgo)
+
+        if (user_id) {
+            query = query.eq("user_id", user_id)
+        } else {
+            query = query.eq("visitor_id", visitor_id)
+        }
+
+        const { data: existingVotes, error: checkError } = await query
 
         if (checkError) {
             console.error("Error checking existing votes:", checkError)
@@ -113,7 +124,8 @@ export async function POST(request: NextRequest) {
 
         // Insert new vote
         const { error: insertError } = await supabase.from("weather_votes").insert({
-            user_id: user.id,
+            user_id,
+            visitor_id: user_id ? null : visitor_id, // Prefer user_id if available
             is_raining,
             location: location || "Unknown",
         })
