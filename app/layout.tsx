@@ -31,7 +31,6 @@ export default function RootLayout({
       <body className="font-sans">
         <LanguageProvider>
           <TMDWarningBanner />
-          <WeatherVoteResults />
           {children}
           <WeatherVotePopup />
         </LanguageProvider>
