@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export async function GET(request: NextRequest) {
     try {
-        const response = await fetch("https://data.tmd.go.th/api/WatherWarningNews/v2/?uid=demo&ukey=demokey", {
+        const response = await fetch("https://data.tmd.go.th/api/WeatherWrningNews/v2/?uid=demo&ukey=demokey", {
             cache: "no-store",
         })
 
