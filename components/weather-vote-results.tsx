@@ -16,7 +16,6 @@ export function WeatherVoteResults() {
     const { t } = useLanguage()
     const [stats, setStats] = useState<VoteStats | null>(null)
     const [isVisible, setIsVisible] = useState(false)
-    const [topOffset, setTopOffset] = useState(0)
 
     const fetchStats = async () => {
         try {
@@ -37,34 +36,17 @@ export function WeatherVoteResults() {
         return () => clearInterval(interval)
     }, [])
 
-    useEffect(() => {
-        const handleScroll = () => {
-            // If sticky header is visible (scroll > 100), push this bar down
-            // Sticky header height is approx 60px
-            if (window.scrollY > 100) {
-                setTopOffset(60)
-            } else {
-                setTopOffset(0)
-            }
-        }
-        window.addEventListener("scroll", handleScroll)
-        return () => window.removeEventListener("scroll", handleScroll)
-    }, [])
-
     if (!stats || !isVisible) return null
 
     const isRainingConsensus = stats.rainPercentage >= 50
-    const bgColor = isRainingConsensus ? "bg-blue-100 dark:bg-blue-900/50" : "bg-red-100 dark:bg-red-900/50"
+    const bgColor = isRainingConsensus ? "bg-blue-100 dark:bg-blue-900/40" : "bg-red-100 dark:bg-red-900/40"
     const borderColor = isRainingConsensus ? "border-blue-200 dark:border-blue-800" : "border-red-200 dark:border-red-800"
     const textColor = isRainingConsensus ? "text-blue-700 dark:text-blue-300" : "text-red-700 dark:text-red-300"
     const Icon = isRainingConsensus ? CloudRain : Sun
 
     return (
-        <div
-            className={`fixed left-0 right-0 z-40 flex justify-center items-center py-2 transition-all duration-300 ease-in-out backdrop-blur-md border-b shadow-sm ${bgColor} ${borderColor}`}
-            style={{ top: `${topOffset}px` }}
-        >
-            <div className={`flex items-center gap-2 text-sm px-4 ${textColor}`}>
+        <div className={`w-full py-2 mb-4 rounded-lg flex justify-start items-center px-4 border shadow-sm transition-all duration-300 ease-in-out ${bgColor} ${borderColor}`}>
+            <div className={`flex items-center gap-2 text-sm ${textColor}`}>
                 <Icon className="h-4 w-4" />
                 <span className="font-medium whitespace-nowrap">
                     {t.weatherVote.communityReport}: {isRainingConsensus ? stats.rainPercentage : 100 - stats.rainPercentage}% {isRainingConsensus ? t.weatherVote.yes : t.weatherVote.no}
