@@ -32,6 +32,7 @@ import { AffectedAreas } from "../components/affected-areas"
 import { DeveloperSettings } from "../components/developer-settings"
 import { SystemStatus } from "../components/system-status"
 import { AnnouncementBanner } from "../components/announcement-banner"
+import { WeatherVoteResults } from "../components/weather-vote-results"
 import { StatusSummary } from "../components/status-summary"
 import { StickyHeader } from "../components/sticky-header"
 import { useLanguage } from "@/hooks/language-context"
@@ -309,6 +310,8 @@ export default function Dashboard() {
             </Button>
           </div>
         </div>
+
+        <WeatherVoteResults />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
           <TabsList className="grid w-full grid-cols-4">
