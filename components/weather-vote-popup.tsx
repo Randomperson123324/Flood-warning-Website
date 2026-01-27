@@ -17,6 +17,7 @@ export function WeatherVotePopup() {
     const [hasVoted, setHasVoted] = useState(false)
     const [isAuthenticated, setIsAuthenticated] = useState(false)
     const [userId, setUserId] = useState<string | null>(null)
+    const [visitorId, setVisitorId] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const supabase = createClient(
@@ -24,7 +25,7 @@ export function WeatherVotePopup() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
     )
 
-    // Check authentication status
+    // Check authentication status and initialize visitor ID
     useEffect(() => {
         const checkAuth = async () => {
             const { data: { session } } = await supabase.auth.getSession()
@@ -33,6 +34,14 @@ export function WeatherVotePopup() {
         }
 
         checkAuth()
+
+        // Handle Visitor ID
+        let vid = localStorage.getItem("weather_visitor_id")
+        if (!vid) {
+            vid = `v_${Math.random().toString(36).substring(2, 15)}_${Date.now()}`
+            localStorage.setItem("weather_visitor_id", vid)
+        }
+        setVisitorId(vid)
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setIsAuthenticated(!!session)
@@ -44,8 +53,9 @@ export function WeatherVotePopup() {
 
     // Check if user has voted recently (using localStorage to avoid API spam, but API also checks)
     useEffect(() => {
-        if (userId) {
-            const lastVoteTime = localStorage.getItem(`weather_vote_${userId}`)
+        const idToCheck = userId || visitorId
+        if (idToCheck) {
+            const lastVoteTime = localStorage.getItem(`weather_vote_${idToCheck}`)
             if (lastVoteTime) {
                 const timeDiff = Date.now() - parseInt(lastVoteTime)
                 // 30 minutes cooldown
@@ -56,7 +66,7 @@ export function WeatherVotePopup() {
                 }
             }
         }
-    }, [userId])
+    }, [userId, visitorId])
 
     // Check weather conditions and trigger popup
     useEffect(() => {
@@ -64,10 +74,7 @@ export function WeatherVotePopup() {
             console.log("VotePopup: No weather data")
             return
         }
-        if (!isAuthenticated) {
-            console.log("VotePopup: Not authenticated")
-            return
-        }
+        // Removed isAuthenticated requirement to allow visitors to vote
         if (hasVoted) {
             console.log("VotePopup: Already voted (local state)")
             return
@@ -80,6 +87,7 @@ export function WeatherVotePopup() {
         let cleanup: (() => void) | undefined
 
         const checkConditions = () => {
+            // ... (rest of the code remains same)
             console.log("VotePopup: Checking conditions...", {
                 rain: weatherData.current.rain,
                 rain1h: weatherData.current.rain?.["1h"],
@@ -114,14 +122,15 @@ export function WeatherVotePopup() {
         return () => {
             if (cleanup) cleanup()
         }
-    }, [weatherData, isAuthenticated, hasVoted, isOpen])
+    }, [weatherData, hasVoted, isOpen])
 
     // Dismiss without local storage (or with short timeout) - now unused for voting, but keeping function if needed
     const handleDismiss = () => {
         setHasVoted(true)
         setIsOpen(false)
-        if (userId) {
-            localStorage.setItem(`weather_vote_${userId}`, Date.now().toString())
+        const idToSet = userId || visitorId
+        if (idToSet) {
+            localStorage.setItem(`weather_vote_${idToSet}`, Date.now().toString())
         }
     }
 
@@ -129,20 +138,22 @@ export function WeatherVotePopup() {
         setIsSubmitting(true)
         try {
             const { data: { session } } = await supabase.auth.getSession()
-            if (!session) {
-                setIsSubmitting(false)
-                return
+
+            const headers: Record<string, string> = {
+                "Content-Type": "application/json",
+            }
+
+            if (session) {
+                headers["Authorization"] = `Bearer ${session.access_token}`
             }
 
             const response = await fetch("/api/weather/vote", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${session.access_token}`
-                },
+                headers,
                 body: JSON.stringify({
                     is_raining: isRaining,
-                    location: weatherData?.city
+                    location: weatherData?.city,
+                    visitor_id: !session ? visitorId : undefined
                 })
             })
 
@@ -150,17 +161,18 @@ export function WeatherVotePopup() {
                 toast.success(t.weatherVote.thankYou)
                 setHasVoted(true)
                 setIsOpen(false)
-                if (userId) {
-                    localStorage.setItem(`weather_vote_${userId}`, Date.now().toString())
+                const idToSet = userId || visitorId
+                if (idToSet) {
+                    localStorage.setItem(`weather_vote_${idToSet}`, Date.now().toString())
                 }
             } else {
-                const error = await response.json()
                 if (response.status === 429) {
                     toast.error(t.weatherVote.alreadyVoted)
                     setHasVoted(true)
                     setIsOpen(false)
-                    if (userId) {
-                        localStorage.setItem(`weather_vote_${userId}`, Date.now().toString())
+                    const idToSet = userId || visitorId
+                    if (idToSet) {
+                        localStorage.setItem(`weather_vote_${idToSet}`, Date.now().toString())
                     }
                 } else {
                     toast.error(t.weatherVote.error)
