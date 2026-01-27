@@ -29,6 +29,7 @@ import { RainDashboard } from "../components/rain-dashboard"
 import { CommunityChat } from "../components/community-chat"
 import { FloodReport } from "../components/flood-report"
 import { AffectedAreas } from "../components/affected-areas"
+import { WeatherVoteResults } from "../components/weather-vote-results"
 import { DeveloperSettings } from "../components/developer-settings"
 import { SystemStatus } from "../components/system-status"
 import { AnnouncementBanner } from "../components/announcement-banner"
@@ -266,6 +267,7 @@ export default function Dashboard() {
               {activeTab === "weather" && t.tabstitle.weather}
               {activeTab === "community" && t.tabstitle.community}
             </h1>
+            <WeatherVoteResults />
 
             <p className="text-gray-600 dark:text-gray-300 mt-2 text-sm sm:text-base">
               {activeTab === "overview" && t.subtitles.overview}
@@ -591,6 +593,6 @@ export default function Dashboard() {
         <Footer />
       </div>
 
-    </div>
+    </div >
   )
 }
