@@ -69,13 +69,13 @@ export function TMDWarningBanner() {
                         )}
                         <div>
                             <div className="font-bold text-sm sm:text-base flex items-center gap-2">
-                                <span>{language === "th" ? "เตือนภัยสภาพอากาศ (TMD):" : "Weather Warning (TMD):"}</span>
+                                <span>{language === "th" ? "เตือนภัยสภาพอากาศ (กรมอุตุนิยมวิทยา):" : "Weather Warning (TMD):"}</span>
                                 <span className="opacity-90">
                                     {hasWarning
                                         ? (language === "th" ? "มีคำเตือนภัยสภาพอากาศ" : "ACTIVE WARNING")
                                         : isError
                                             ? (language === "th" ? "ไม่สามารถดึงข้อมูลได้" : "CAN'T FETCH DATA")
-                                            : (language === "th" ? "ปกติ" : "NO WARNING")}
+                                            : (language === "th" ? "ไม่มีเตือนภัย" : "NO WARNING")}
                                 </span>
                             </div>
                             {hasWarning && data?.description && (
@@ -96,7 +96,7 @@ export function TMDWarningBanner() {
                         </button>
                         {hasWarning && (
                             <a
-                                href="https://www.tmd.go.th/warning"
+                                href="https://www.tmd.go.th/"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-xs underline font-medium hover:text-white/80"
