@@ -103,7 +103,7 @@ export function WeatherVotePopup() {
             const isCloudyAndHumid =
                 weatherData.current.humidity > 80 &&
                 (weatherData.current.description.toLowerCase().includes("overcast") ||
-                 weatherData.current.description.toLowerCase().includes("cloud"))
+                    weatherData.current.description.toLowerCase().includes("cloud"))
 
             console.log("VotePopup: Conditions:", { isRaining, isCloudyAndHumid })
 
@@ -189,7 +189,13 @@ export function WeatherVotePopup() {
     }
 
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isOpen} onOpenChange={(open) => {
+            if (!open) {
+                handleDismiss()
+            } else {
+                setIsOpen(true)
+            }
+        }}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>{t.weatherVote.title}</DialogTitle>
