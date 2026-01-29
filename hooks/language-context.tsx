@@ -118,7 +118,7 @@ const translations = {
       like: "Like",
       dislike: "Dislike",
       vote: "Vote",
-      isRaining: "Is it raining in your area?",
+      isRaining: "Is it raining in StreePasertSin School?",
       yes: "Yes",
       no: "No",
       affectedAreas: "Affected Areas",
@@ -288,7 +288,7 @@ const translations = {
     weatherVote: {
       title: "Weather Report",
       pleaseWait: "Please wait...",
-      description: "It looks like it might be raining. Can you confirm the weather at your location?",
+      description: "It looks like it might be raining. Can you confirm the weather at StreePasertSin School?",
       confirmRain: "Raining",
       confirmNoRain: "No Rain",
       iDontKnow: "I don't know / Not sure",
@@ -586,7 +586,7 @@ const translations = {
     weatherVote: {
       title: "รายงานสภาพอากาศ",
       pleaseWait: "กรุณารอสักครู่...",
-      description: "ดูเหมือนว่าฝนอาจจะกำลังตก ช่วยยืนยันสภาพอากาศในพื้นที่ของคุณได้ไหม?",
+      description: "ดูเหมือนว่าฝนอาจจะกำลังตก ช่วยยืนยันสภาพอากาศในโรงเรียนสตรีประเสริฐศิลป์หน่อย",
       confirmRain: "ฝนตก",
       confirmNoRain: "ฝนไม่ตก",
       iDontKnow: "ไม่แน่ใจ / ไม่ทราบ",
