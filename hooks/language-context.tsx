@@ -297,7 +297,7 @@ const translations = {
       alreadyVoted: "You have already voted recently.",
       error: "Failed to submit vote. Please try again.",
       communityReport: "Is it raining? Community Report",
-      votes: "votes / 30m",
+      votes: "all votes in the last 30m",
       yes: "Yes",
       no: "No",
     },
