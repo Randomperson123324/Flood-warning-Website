@@ -19,6 +19,7 @@ export function WeatherVotePopup() {
     const [userId, setUserId] = useState<string | null>(null)
     const [visitorId, setVisitorId] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [submitError, setSubmitError] = useState<string | null>(null)
 
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL || "",
@@ -169,15 +170,16 @@ export function WeatherVotePopup() {
                 }
             } else {
                 if (response.status === 429) {
-                    toast.error(t.weatherVote.alreadyVoted)
+                    setSubmitError(`${t.weatherVote.alreadyVoted} (HTTP ${response.status})`)
+                    // Keep the popup open but show error, or we can close after a delay
+                    // For now, let's keep it open so they see the red text
                     setHasVoted(true)
-                    setIsOpen(false)
                     const idToSet = userId || visitorId
                     if (idToSet) {
                         localStorage.setItem(`weather_vote_${idToSet}`, Date.now().toString())
                     }
                 } else {
-                    toast.error(t.weatherVote.error)
+                    setSubmitError(`${t.weatherVote.error} (HTTP ${response.status})`)
                 }
             }
         } catch (error) {
@@ -229,6 +231,11 @@ export function WeatherVotePopup() {
                             </Button>
                         </div>
                         <DialogFooter className="flex-col sm:justify-center gap-2">
+                            {submitError && (
+                                <p className="text-sm font-medium text-red-500 w-full text-center mb-2 animate-in fade-in slide-in-from-top-1">
+                                    {submitError}
+                                </p>
+                            )}
                             <Button variant="ghost" size="sm" onClick={() => handleVote(null)} className="w-full sm:w-auto text-muted-foreground">
                                 {t.weatherVote.iDontKnow}
                             </Button>
