@@ -132,6 +132,12 @@ export async function POST(request: NextRequest) {
 
         if (insertError) {
             console.error("Error inserting vote:", insertError)
+            console.error("Insert error details:", {
+                code: insertError.code,
+                message: insertError.message,
+                details: insertError.details,
+                hint: insertError.hint
+            })
             return NextResponse.json({ error: "Database insert error: " + insertError.message }, { status: 500 })
         }
 
