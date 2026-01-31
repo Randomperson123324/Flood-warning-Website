@@ -120,6 +120,9 @@ export function CommunityChat() {
       .on("postgres_changes", { event: "*", schema: "public", table: "message_reactions" }, (payload) => {
         const { message_id, reaction_type, user_id } = payload.new || payload.old || {}
 
+        // Ignore updates from the current user as they are handled optimistically
+        if (user_id === currentUser?.id) return
+
         setMessages((prev) =>
           prev.map((m) => {
             if (m.id !== message_id) return m
@@ -635,55 +638,71 @@ export function CommunityChat() {
   const handleReaction = async (messageId: string, reactionType: string) => {
     if (!supabase || !currentUser) return
 
-    try {
-      const { data: existingReaction } = await supabase
-        .from("message_reactions")
-        .select("*")
-        .eq("message_id", messageId)
-        .eq("user_id", currentUser.id)
-        .single()
+    // 1. Capture current state for rollback
+    const previousMessages = [...messages]
 
-      let newUserReaction: string | undefined = reactionType
+    // 2. Find the message and current user reaction from STATE, not DB
+    const messageIndex = messages.findIndex((m) => m.id === messageId)
+    if (messageIndex === -1) return
 
-      if (existingReaction?.reaction_type === reactionType) {
-        // Remove reaction
-        await supabase.from("message_reactions").delete().eq("id", existingReaction.id)
-        newUserReaction = undefined
-      } else {
-        // Replace/add reaction
-        if (existingReaction) {
-          await supabase.from("message_reactions").delete().eq("id", existingReaction.id)
+    const message = messages[messageIndex]
+    const currentUserReactionType = message.userReaction
+
+    // 3. Determine new reaction state
+    let newUserReactionType: string | undefined = reactionType
+    if (currentUserReactionType === reactionType) {
+      newUserReactionType = undefined // Toggle off
+    }
+
+    // 4. Optimistic Update
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== messageId) return m
+
+        const reactions = { ...m.reactions }
+
+        // Remove old reaction count if it existed
+        if (currentUserReactionType) {
+          reactions[currentUserReactionType] = Math.max((reactions[currentUserReactionType] || 1) - 1, 0)
         }
+
+        // Add new reaction count if one is set
+        if (newUserReactionType) {
+          reactions[newUserReactionType] = (reactions[newUserReactionType] || 0) + 1
+        }
+
+        return { ...m, reactions, userReaction: newUserReactionType }
+      }),
+    )
+
+    // 5. Async DB Operations
+    try {
+      if (currentUserReactionType === reactionType) {
+        // Toggle off - just delete
+        await supabase.from("message_reactions").delete().eq("message_id", messageId).eq("user_id", currentUser.id)
+      } else {
+        // Switch/Add - Delete old (to ensure one reaction per user) then Insert new
+        await supabase.from("message_reactions").delete().eq("message_id", messageId).eq("user_id", currentUser.id)
+
         await supabase.from("message_reactions").insert({
           message_id: messageId,
           user_id: currentUser.id,
           reaction_type: reactionType,
         })
       }
-
-      // Update state locally
-      setMessages((prev) =>
-        prev.map((m) => {
-          if (m.id !== messageId) return m
-
-          const reactions = { ...m.reactions }
-
-          // Adjust counts
-          if (existingReaction) {
-            reactions[existingReaction.reaction_type] = Math.max(
-              (reactions[existingReaction.reaction_type] || 1) - 1,
-              0,
-            )
-          }
-          if (newUserReaction) {
-            reactions[newUserReaction] = (reactions[newUserReaction] || 0) + 1
-          }
-
-          return { ...m, reactions, userReaction: newUserReaction }
-        }),
-      )
     } catch (error) {
       console.error("[v0] Error handling reaction:", error)
+      // Revert to previous state
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.id === messageId) {
+            // Restore the specific message from the snapshot
+            const original = previousMessages.find((pm) => pm.id === messageId)
+            return original || m
+          }
+          return m
+        }),
+      )
     }
   }
 
