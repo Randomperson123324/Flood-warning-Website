@@ -40,6 +40,7 @@ import { LanguageToggle } from "../components/language-toggle"
 import { useWaterData } from "@/hooks/use-water-data"
 import { useWeatherData } from "@/hooks/use-weather-data"
 import { Footer } from "../components/footer"
+import { LoadingOverlay } from "../components/loading-overlay"
 import React from "react"
 import type { JSX } from "react/jsx-runtime"
 
