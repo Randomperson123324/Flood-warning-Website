@@ -269,6 +269,7 @@ export async function GET(request: NextRequest) {
           icon: getWeatherIcon(currentData.cond),
           rain: {
             "1h": typeof currentData.rain === 'number' ? currentData.rain : 0,
+            "24h": dailyForecast.length > 0 ? dailyForecast[0].precipitation : 0,
           },
         },
         forecast: dailyForecast,

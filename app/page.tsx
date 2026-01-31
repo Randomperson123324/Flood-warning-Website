@@ -40,6 +40,7 @@ import { LanguageToggle } from "../components/language-toggle"
 import { useWaterData } from "@/hooks/use-water-data"
 import { useWeatherData } from "@/hooks/use-weather-data"
 import { Footer } from "../components/footer"
+import { LoadingOverlay } from "../components/loading-overlay"
 import React from "react"
 import type { JSX } from "react/jsx-runtime"
 
@@ -342,249 +343,254 @@ export default function Dashboard() {
           })()}
 
           <TabsContent value="overview" className="space-y-6">
-            {/* Current Status Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              <Card className={getCardBackgroundColor(currentLevel)}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{t.cards.currentLevel}</CardTitle>
-                  <Droplets className="h-4 w-4 text-blue-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold font-inter-numbers mb-2">{currentLevel} cm</div>
-                  <Badge variant={getStatusColor(currentLevel)} className="mb-2">
-                    {getStatusText(currentLevel)}
-                  </Badge>
-                  {(() => {
-                    const lastReading = getLatestReadingTime()
-                    if (!lastReading) return null
-                    return (
-                      <div className="text-xs text-muted-foreground mt-1 font-inter-numbers">
-                        {lastReading.toLocaleTimeString(language === "th" ? "th-TH" : "en-US", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          second: "2-digit",
-                          hourCycle: "h23",
-                        })}
-                      </div>
-                    )
-                  })()}
-                </CardContent>
-                {!isConnected && (
-                  <div className="w-full py-2 bg-red-600 rounded-b-xl flex items-center justify-center gap-2 text-white">
-                    <WifiOff className="h-4 w-4" />
-                    <span className="text-sm font-medium">{t.system.disconnected}</span>
-                  </div>
-                )}
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{t.cards.trend}</CardTitle>
-                  {getTrendIcon()}
-                </CardHeader>
-                <CardContent>
-                  <div className={`text-2xl font-bold capitalize ${getTrendColor()}`}>{t.trends[trend]}</div>
-                  <p className="text-xs text-muted-foreground mt-2">{t.cards.trendDescription}</p>
-                  <div className="text-sm font-inter-numbers text-muted-foreground">
+            <LoadingOverlay isLoading={isLoading}>
+              {/* Current Status Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                <Card className={getCardBackgroundColor(currentLevel)}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">{t.cards.currentLevel}</CardTitle>
+                    <Droplets className="h-4 w-4 text-blue-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold font-inter-numbers mb-2">{currentLevel} cm</div>
+                    <Badge variant={getStatusColor(currentLevel)} className="mb-2">
+                      {getStatusText(currentLevel)}
+                    </Badge>
                     {(() => {
-                      const { ratePerHour, timestamp } = getCurrentRate()
+                      const lastReading = getLatestReadingTime()
+                      if (!lastReading) return null
                       return (
-                        <>
-                          Rate: {ratePerHour} {t.trends.ratePerHour}
-                          {timestamp && (
-                            <div className="text-xs mt-1">
-                              {timestamp.toLocaleTimeString("en-US", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                hourCycle: "h23",
-                              })}
-                            </div>
-                          )}
-                        </>
+                        <div className="text-xs text-muted-foreground mt-1 font-inter-numbers">
+                          {lastReading.toLocaleTimeString(language === "th" ? "th-TH" : "en-US", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            hourCycle: "h23",
+                          })}
+                        </div>
                       )
                     })()}
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                  {!isConnected && (
+                    <div className="w-full py-2 bg-red-600 rounded-b-xl flex items-center justify-center gap-2 text-white">
+                      <WifiOff className="h-4 w-4" />
+                      <span className="text-sm font-medium">{t.system.disconnected}</span>
+                    </div>
+                  )}
+                </Card>
 
-              <Card
-                className={
-                  currentLevel >= dangerLevel ? "bg-red-600 border-red-700 text-white" : undefined
-                }
-              >
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">{t.cards.trend}</CardTitle>
+                    {getTrendIcon()}
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`text-2xl font-bold capitalize ${getTrendColor()}`}>{t.trends[trend]}</div>
+                    <p className="text-xs text-muted-foreground mt-2">{t.cards.trendDescription}</p>
+                    <div className="text-sm font-inter-numbers text-muted-foreground">
+                      {(() => {
+                        const { ratePerHour, timestamp } = getCurrentRate()
+                        return (
+                          <>
+                            Rate: {ratePerHour} {t.trends.ratePerHour}
+                            {timestamp && (
+                              <div className="text-xs mt-1">
+                                {timestamp.toLocaleTimeString("en-US", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hourCycle: "h23",
+                                })}
+                              </div>
+                            )}
+                          </>
+                        )
+                      })()}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card
+                  className={
+                    currentLevel >= dangerLevel ? "bg-red-600 border-red-700 text-white" : undefined
+                  }
+                >
+                  <CardHeader>
+                    <CardTitle className={`text-sm font-medium ${currentLevel >= dangerLevel ? "text-white" : ""}`}>
+                      {currentLevel >= dangerLevel
+                        ? t.cards.criticalReached
+                        : currentLevel >= warningLevel
+                          ? t.cards.timeToDanger
+                          : t.cards.timeToWarning}
+                    </CardTitle>
+                    <AlertTriangle className={`h-4 w-4 ${currentLevel >= dangerLevel ? "text-white" : "text-yellow-600"}`} />
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`text-2xl font-bold ${currentLevel >= dangerLevel ? "text-white" : ""}`}>
+                      {currentLevel >= dangerLevel ? t.status.danger : formatTimeToWarning()}
+                    </div>
+                    <p
+                      className={`text-xs mt-2 ${currentLevel >= dangerLevel ? "text-red-100" : "text-muted-foreground"}`}
+                    >
+                      {t.cards.timeToWarningDescription}
+                    </p>
+                  </CardContent>
+                </Card>
+
+
+              </div>
+
+              <AffectedAreas />
+
+              {/* Enhanced Water Level Chart */}
+              <Card>
                 <CardHeader>
-                  <CardTitle className={`text-sm font-medium ${currentLevel >= dangerLevel ? "text-white" : ""}`}>
-                    {currentLevel >= dangerLevel
-                      ? t.cards.criticalReached
-                      : currentLevel >= warningLevel
-                        ? t.cards.timeToDanger
-                        : t.cards.timeToWarning}
-                  </CardTitle>
-                  <AlertTriangle className={`h-4 w-4 ${currentLevel >= dangerLevel ? "text-white" : "text-yellow-600"}`} />
+                  <CardTitle>{t.chart.title}</CardTitle>
+                  <CardDescription>{t.chart.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className={`text-2xl font-bold ${currentLevel >= dangerLevel ? "text-white" : ""}`}>
-                    {currentLevel >= dangerLevel ? t.status.danger : formatTimeToWarning()}
-                  </div>
-                  <p
-                    className={`text-xs mt-2 ${currentLevel >= dangerLevel ? "text-red-100" : "text-muted-foreground"}`}
-                  >
-                    {t.cards.timeToWarningDescription}
-                  </p>
+                  <EnhancedWaterLevelChart
+                    data={waterData}
+                    warningLevel={warningLevel}
+                    dangerLevel={dangerLevel}
+                    defaultRange="24h"
+                  />
                 </CardContent>
               </Card>
-
-
-            </div>
-
-            <AffectedAreas />
-
-            {/* Enhanced Water Level Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{t.chart.title}</CardTitle>
-                <CardDescription>{t.chart.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <EnhancedWaterLevelChart
-                  data={waterData}
-                  warningLevel={warningLevel}
-                  dangerLevel={dangerLevel}
-                  defaultRange="24h"
-                />
-              </CardContent>
-            </Card>
+            </LoadingOverlay>
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
-            {/* Data Comparison Controls */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={dataComparison === "lastDay" ? "default" : "outline"}
-                  onClick={() => setDataComparison("lastDay")}
-                >
-                  {t.analytics.lastDay}
-                </Button>
-                <Button
-                  variant={dataComparison === "pastData" ? "default" : "outline"}
-                  onClick={() => setDataComparison("pastData")}
-                >
-                  {t.analytics.pastData}
-                </Button>
-              </div>
-              {dataComparison === "pastData" && (
-                <div className="animate-in fade-in slide-in-from-left-4 duration-300">
-                  <DatePickerWithRange date={date} setDate={setDate} />
+            <LoadingOverlay isLoading={isLoading}>
+              {/* Data Comparison Controls */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={dataComparison === "lastDay" ? "default" : "outline"}
+                    onClick={() => setDataComparison("lastDay")}
+                  >
+                    {t.analytics.lastDay}
+                  </Button>
+                  <Button
+                    variant={dataComparison === "pastData" ? "default" : "outline"}
+                    onClick={() => setDataComparison("pastData")}
+                  >
+                    {t.analytics.pastData}
+                  </Button>
                 </div>
-              )}
-            </div>
+                {dataComparison === "pastData" && (
+                  <div className="animate-in fade-in slide-in-from-left-4 duration-300">
+                    <DatePickerWithRange date={date} setDate={setDate} />
+                  </div>
+                )}
+              </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{t.analytics.dailyAverage}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold font-inter-numbers">
+                      {dataComparison === "pastData" ? historicalAnalytics.dailyAverage : analytics.dailyAverage} cm
+                    </div>
+                    <p className="text-sm text-muted-foreground">{t.analytics.dailyAverageDescription}</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{t.analytics.peakLevel}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold font-inter-numbers">
+                      {dataComparison === "pastData" ? historicalAnalytics.peakLevel : analytics.peakLevel} cm
+                    </div>
+                    <p className="text-sm text-muted-foreground">{t.analytics.peakLevelDescription}</p>
+                  </CardContent>
+                </Card>
+              </div>
+
               <Card>
                 <CardHeader>
-                  <CardTitle>{t.analytics.dailyAverage}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold font-inter-numbers">
-                    {dataComparison === "pastData" ? historicalAnalytics.dailyAverage : analytics.dailyAverage} cm
-                  </div>
-                  <p className="text-sm text-muted-foreground">{t.analytics.dailyAverageDescription}</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t.analytics.peakLevel}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold font-inter-numbers">
-                    {dataComparison === "pastData" ? historicalAnalytics.peakLevel : analytics.peakLevel} cm
-                  </div>
-                  <p className="text-sm text-muted-foreground">{t.analytics.peakLevelDescription}</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t.analytics.weeklyTrend}</CardTitle>
-                <CardDescription>
+                  <CardTitle>{t.analytics.weeklyTrend}</CardTitle>
                   <CardDescription>
-                    {dataComparison === "lastDay" ? t.chart.last24Hours : t.analytics.pastData}
+                    <CardDescription>
+                      {dataComparison === "lastDay" ? t.chart.last24Hours : t.analytics.pastData}
+                    </CardDescription>
                   </CardDescription>
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <EnhancedWaterLevelChart
-                  data={dataComparison === "pastData" ? historicalData : waterData}
-                  warningLevel={warningLevel}
-                  dangerLevel={dangerLevel}
-                  defaultRange={dataComparison === "pastData" ? "all" : "24h"}
-                  dateRangeLabel={
-                    dataComparison === "pastData"
-                      ? date
-                        ? date.toLocaleDateString()
-                        : t.analytics.selectDateRange
-                      : undefined
-                  }
-                />
-              </CardContent>
-            </Card>
+                </CardHeader>
+                <CardContent>
+                  <EnhancedWaterLevelChart
+                    data={dataComparison === "pastData" ? historicalData : waterData}
+                    warningLevel={warningLevel}
+                    dangerLevel={dangerLevel}
+                    defaultRange={dataComparison === "pastData" ? "all" : "24h"}
+                    dateRangeLabel={
+                      dataComparison === "pastData"
+                        ? date
+                          ? date.toLocaleDateString()
+                          : t.analytics.selectDateRange
+                        : undefined
+                    }
+                  />
+                </CardContent>
+              </Card>
+            </LoadingOverlay>
           </TabsContent>
 
           <TabsContent value="weather" className="space-y-6">
-            {/* TMD Attribution Header */}
-            <div className="flex items-center justify-center gap-3 pb-2">
-              <span className="text-lg font-medium text-gray-700 dark:text-gray-300">Weather data from</span>
-              <img
-                src="/images/TMD-logo.png"
-                alt="Thai Meteorological Department"
-                className="h-12 object-contain"
+            <LoadingOverlay isLoading={weatherLoading} message="Retrieving weather data...">
+              {/* TMD Attribution Header */}
+              <div className="flex items-center justify-center gap-3 pb-2">
+                <span className="text-lg font-medium text-gray-700 dark:text-gray-300">Weather data from</span>
+                <img
+                  src="/images/TMD-logo.png"
+                  alt="Thai Meteorological Department"
+                  className="h-12 object-contain"
+                />
+              </div>
+
+              {/* 1. Current Weather Card */}
+              <WeatherCard
+                data={weatherData}
+                isLoading={weatherLoading}
+                error={weatherError}
+                onRetry={refetchWeather}
+                showCurrent={true}
+                showForecast={false}
               />
-            </div>
 
-            {/* 1. Current Weather Card */}
-            <WeatherCard
-              data={weatherData}
-              isLoading={weatherLoading}
-              error={weatherError}
-              onRetry={refetchWeather}
-              showCurrent={true}
-              showForecast={false}
-            />
+              {/* 2. Current Precipitation Status */}
+              <RainDashboard weatherData={weatherData} isLoading={weatherLoading} />
 
-            {/* 2. Current Precipitation Status */}
-            <RainDashboard weatherData={weatherData} isLoading={weatherLoading} />
+              {/* 3. 3-Hour Forecast */}
+              <HourlyForecast
+                data={
+                  weatherData?.hourly || []
+                }
 
-            {/* 3. 3-Hour Forecast */}
-            <HourlyForecast
-              data={
-                weatherData?.hourly
-                  ? weatherData.hourly
-                    .filter((_: any, index: number) => (index + 1) % 3 === 0) // Every 3 hours
-                    .slice(0, 3) // Next 3 intervals (9 hours total)
-                  : []
-              }
-            />
+              />
 
-            {/* 4. 5-Day Forecast */}
-            <WeatherCard
-              data={weatherData}
-              isLoading={weatherLoading}
-              error={weatherError}
-              onRetry={refetchWeather}
-              showCurrent={false}
-              showForecast={true}
-            />
+              {/* 4. 5-Day Forecast */}
+              <WeatherCard
+                data={weatherData}
+                isLoading={weatherLoading}
+                error={weatherError}
+                onRetry={refetchWeather}
+                showCurrent={false}
+                showForecast={true}
+              />
 
-            {/* 5. Weather Map */}
-            <WeatherMap coordinates={weatherData?.coordinates} city={weatherData?.city} />
+              {/* 5. Weather Map */}
+              <WeatherMap coordinates={weatherData?.coordinates} city={weatherData?.city} />
+            </LoadingOverlay>
           </TabsContent>
 
           <TabsContent value="community" className="space-y-6">
-            <FloodReport />
-            <CommunityChat />
+            <LoadingOverlay isLoading={isLoading}>
+              <FloodReport />
+              <CommunityChat />
+            </LoadingOverlay>
           </TabsContent>
         </Tabs>
 

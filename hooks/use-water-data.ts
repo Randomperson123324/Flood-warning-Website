@@ -346,7 +346,7 @@ export function useWaterData() {
         .subscribe()
     }
 
-    const interval = setInterval(fetchWaterData, 10000)
+
     const connectionTest = setInterval(testConnection, 120000)
 
     const handleStorageChange = (e: StorageEvent) => {
@@ -360,7 +360,7 @@ export function useWaterData() {
       if (subscription) {
         subscription.unsubscribe()
       }
-      clearInterval(interval)
+
       clearInterval(connectionTest)
       window.removeEventListener("storage", handleStorageChange)
     }
