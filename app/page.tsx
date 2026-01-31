@@ -560,11 +560,8 @@ export default function Dashboard() {
             {/* 3. 3-Hour Forecast */}
             <HourlyForecast
               data={
-                weatherData?.hourly
-                  ? weatherData.hourly
-                    .filter((_: any, index: number) => (index + 1) % 3 === 0) // Every 3 hours
-                    .slice(0, 3) // Next 3 intervals (9 hours total)
-                  : []
+                weatherData?.hourly || []
+              }
               }
             />
 

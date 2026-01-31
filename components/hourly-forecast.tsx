@@ -1,8 +1,10 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Cloud, Sun, CloudRain, CloudSnow, Wind, Droplets } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Cloud, Sun, CloudRain, CloudSnow, Wind, Droplets, ChevronDown, ChevronUp } from "lucide-react"
 import { useLanguage } from "../hooks/language-context"
 
 interface HourlyForecastProps {
@@ -42,6 +44,10 @@ export function HourlyForecast({ data }: HourlyForecastProps) {
     return <Sun className="h-6 w-6 text-yellow-500" /> // Default icon
   }
 
+  const [showAll, setShowAll] = useState(false)
+
+  const displayData = showAll ? data : data.slice(0, 5)
+
   if (!data || data.length === 0) {
     return (
       <Card>
@@ -59,14 +65,14 @@ export function HourlyForecast({ data }: HourlyForecastProps) {
         <CardTitle className="flex items-center gap-2">
           {t.weather.hourlyForecast}
           <Badge variant="outline" className="ml-2">
-            3-Hour
+            Hourly
           </Badge>
         </CardTitle>
-        <CardDescription>Detailed weather conditions for the next few hours</CardDescription>
+        <CardDescription>Detailed weather conditions for the next {showAll ? "24" : "5"} hours</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.map((hour, index) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+          {displayData.map((hour, index) => (
             <div
               key={index}
               className="p-4 border rounded-tr-lg rounded-bl-2xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
@@ -111,6 +117,27 @@ export function HourlyForecast({ data }: HourlyForecastProps) {
             </div>
           ))}
         </div>
+
+        {data.length > 5 && (
+          <div className="flex justify-center mt-4 pt-2 border-t">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAll(!showAll)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              {showAll ? (
+                <>
+                  Show Less <ChevronUp className="ml-2 h-4 w-4" />
+                </>
+              ) : (
+                <>
+                  Show More ({data.length - 5} more) <ChevronDown className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
