@@ -562,7 +562,7 @@ export default function Dashboard() {
               data={
                 weatherData?.hourly || []
               }
-              }
+
             />
 
             {/* 4. 5-Day Forecast */}
