@@ -11,6 +11,7 @@ interface RainDashboardProps {
       rain?: {
         "1h"?: number
         "3h"?: number
+        "24h"?: number
       }
       snow?: {
         "1h"?: number
@@ -131,6 +132,13 @@ export function RainDashboard({ weatherData, isLoading }: RainDashboardProps) {
                   <div className="text-sm text-blue-500">{t.precipitation?.lastThreeHours || "Last Three Hours"}</div>
                 </div>
               )}
+
+              <div className="text-center p-4 rounded-tr-lg rounded-bl-lg bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100">
+                <div className="text-2xl font-bold font-inter-numbers text-indigo-700 mb-1">
+                  {(current.rain?.["24h"] || 0).toFixed(1)} mm
+                </div>
+                <div className="text-sm text-indigo-600">Last 24 Hours</div>
+              </div>
             </div>
 
             {/* Flood Risk Assessment */}

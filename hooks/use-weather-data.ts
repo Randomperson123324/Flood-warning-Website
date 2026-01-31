@@ -15,6 +15,7 @@ interface WeatherData {
     rain?: {
       "1h"?: number // Rain volume for last 1 hour in mm
       "3h"?: number // Rain volume for last 3 hours in mm
+      "24h"?: number // Rain volume for last 24 hours in mm
     }
     snow?: {
       "1h"?: number // Snow volume for last 1 hour in mm
