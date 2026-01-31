@@ -456,6 +456,7 @@ export default function Dashboard() {
                   />
                 </CardContent>
               </Card>
+            </LoadingOverlay>
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
@@ -534,6 +535,7 @@ export default function Dashboard() {
                   />
                 </CardContent>
               </Card>
+            </LoadingOverlay>
           </TabsContent>
 
           <TabsContent value="weather" className="space-y-6">
@@ -581,6 +583,7 @@ export default function Dashboard() {
 
               {/* 5. Weather Map */}
               <WeatherMap coordinates={weatherData?.coordinates} city={weatherData?.city} />
+            </LoadingOverlay>
           </TabsContent>
 
           <TabsContent value="community" className="space-y-6">
