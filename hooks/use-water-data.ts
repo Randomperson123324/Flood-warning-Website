@@ -369,6 +369,46 @@ export function useWaterData() {
     }
   }
 
+  const fetchSampledData = async (): Promise<WaterReading[]> => {
+    if (!supabase || !tableExists) return []
+
+    try {
+      setIsFetchingHistorical(true)
+      const sampled: WaterReading[] = []
+
+      // Fetch for the last 7 days individually to guarantee 20 points per day
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date()
+        date.setDate(date.getDate() - i)
+
+        const startOfDay = new Date(date)
+        startOfDay.setHours(0, 0, 0, 0)
+
+        const endOfDay = new Date(date)
+        endOfDay.setHours(23, 59, 59, 999)
+
+        const { data, error } = await supabase
+          .from("water_readings")
+          .select("*")
+          .gte("timestamp", startOfDay.toISOString())
+          .lte("timestamp", endOfDay.toISOString())
+          .order("timestamp", { ascending: true })
+          .limit(20)
+
+        if (!error && data) {
+          sampled.push(...data)
+        }
+      }
+
+      return sampled.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+    } catch (error) {
+      console.error("Error sampling data:", error)
+      return []
+    } finally {
+      setIsFetchingHistorical(false)
+    }
+  }
+
   useEffect(() => {
     if (typeof window === "undefined") return
 
@@ -423,5 +463,7 @@ export function useWaterData() {
     fetchHistoricalData,
     historicalAnalytics,
     fetchMultiDateData,
+    fetchSampledData,
+    fetchWaterData,
   }
 }
