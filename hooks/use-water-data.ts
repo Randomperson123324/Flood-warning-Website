@@ -369,6 +369,74 @@ export function useWaterData() {
     }
   }
 
+  const fetchSampledData = async (): Promise<WaterReading[]> => {
+    if (!supabase || !tableExists) return []
+
+    try {
+      setIsFetchingHistorical(true)
+      const sevenDaysAgo = new Date()
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+      sevenDaysAgo.setHours(0, 0, 0, 0)
+
+      const { data, error } = await supabase
+        .from("water_readings")
+        .select("*")
+        .gte("timestamp", sevenDaysAgo.toISOString())
+        .order("timestamp", { ascending: false })
+        .limit(1000)
+
+      if (error || !data) {
+        console.error("Error fetching sampled data:", error)
+        return []
+      }
+
+      // Sample data: Morning (08:00), Noon (12:00), Evening (18:00)
+      const sampled: WaterReading[] = []
+      const dayMap = new Map<string, { morning?: WaterReading; noon?: WaterReading; evening?: WaterReading }>()
+
+      data.forEach((reading) => {
+        const d = new Date(reading.timestamp)
+        const dateStr = d.toLocaleDateString()
+        const hour = d.getHours()
+
+        if (!dayMap.has(dateStr)) {
+          dayMap.set(dateStr, {})
+        }
+
+        const dayEntries = dayMap.get(dateStr)!
+
+        // Find closest to target hours
+        if (hour >= 6 && hour <= 10) {
+          if (!dayEntries.morning || Math.abs(d.getHours() - 8) < Math.abs(new Date(dayEntries.morning.timestamp).getHours() - 8)) {
+            dayEntries.morning = reading
+          }
+        } else if (hour >= 11 && hour <= 14) {
+          if (!dayEntries.noon || Math.abs(d.getHours() - 12) < Math.abs(new Date(dayEntries.noon.timestamp).getHours() - 12)) {
+            dayEntries.noon = reading
+          }
+        } else if (hour >= 17 && hour <= 21) {
+          if (!dayEntries.evening || Math.abs(d.getHours() - 18) < Math.abs(new Date(dayEntries.evening.timestamp).getHours() - 18)) {
+            dayEntries.evening = reading
+          }
+        }
+      })
+
+      // Convert back to sorted array
+      dayMap.forEach((entries) => {
+        if (entries.morning) sampled.push(entries.morning)
+        if (entries.noon) sampled.push(entries.noon)
+        if (entries.evening) sampled.push(entries.evening)
+      })
+
+      return sampled.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+    } catch (error) {
+      console.error("Error sampling data:", error)
+      return []
+    } finally {
+      setIsFetchingHistorical(false)
+    }
+  }
+
   useEffect(() => {
     if (typeof window === "undefined") return
 
@@ -423,5 +491,7 @@ export function useWaterData() {
     fetchHistoricalData,
     historicalAnalytics,
     fetchMultiDateData,
+    fetchSampledData,
+    fetchWaterData,
   }
 }
