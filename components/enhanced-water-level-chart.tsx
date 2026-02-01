@@ -18,12 +18,13 @@ import { ZoomIn, ZoomOut, RotateCcw, RefreshCw } from "lucide-react"
 import { useLanguage } from "../hooks/language-context"
 
 interface EnhancedWaterLevelChartProps {
-  data: Array<{
+  data?: Array<{
     timestamp: string
     level: number
     temperature?: number
     source?: "website" | "community" | "combined"
   }>
+  multiData?: { [key: string]: any[] } // For comparison: { "DateLabel": data[] }
   warningLevel?: number
   dangerLevel?: number
   onRefresh?: () => void
@@ -33,6 +34,7 @@ interface EnhancedWaterLevelChartProps {
 
 export function EnhancedWaterLevelChart({
   data,
+  multiData,
   warningLevel = 20,
   dangerLevel = 40,
   onRefresh,
@@ -43,39 +45,46 @@ export function EnhancedWaterLevelChart({
   const { t } = useLanguage()
   const [zoomDomain, setZoomDomain] = useState<[number, number] | null>(null)
 
-  // Filter data for last 24 hours if requested
-  const filteredData = showLast24Hours
-    ? data.filter((reading) => {
-      const readingTime = new Date(reading.timestamp).getTime()
-      const now = Date.now()
-      const twentyFourHoursAgo = now - 24 * 60 * 60 * 1000
-      return readingTime >= twentyFourHoursAgo
-    })
-    : data
+  // Use either single data or transform multiData
+  const isComparison = !!multiData && Object.keys(multiData).length > 0
 
-  const formatXAxis = (tickItem: string) => {
+  const filteredData = isComparison
+    ? [] // We'll handle multiData differently
+    : (showLast24Hours
+      ? (data || []).filter((reading) => {
+        const readingTime = new Date(reading.timestamp).getTime()
+        const now = Date.now()
+        const twentyFourHoursAgo = now - 24 * 60 * 60 * 1000
+        return readingTime >= twentyFourHoursAgo
+      })
+      : (data || []))
+
+  // For comparison, we need to normalize timestamps to just time of day
+  const normalizedMultiData = isComparison ? Object.entries(multiData!).map(([label, readings]) => {
+    return {
+      label,
+      data: readings.map(r => ({
+        ...r,
+        // Create a fake date with same year/month/day to align them on X axis
+        normalizedTime: new Date(r.timestamp).getHours() * 60 + new Date(r.timestamp).getMinutes()
+      }))
+    }
+  }) : []
+
+  const formatXAxis = (tickItem: any) => {
+    if (isComparison) {
+      const hours = Math.floor(tickItem / 60)
+      const minutes = tickItem % 60
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+    }
     const date = new Date(tickItem)
     return showLast24Hours
       ? date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
       : date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
   }
 
-  const getLineColor = (dataPoint: any) => {
-    if (!dataPoint.source) return "#2563eb"
-    switch (dataPoint.source) {
-      case "website":
-        return "#2563eb" // Blue
-      case "community":
-        return "#10b981" // Green
-      case "combined":
-        return "#8b5cf6" // Purple
-      default:
-        return "#2563eb"
-    }
-  }
-
   const handleZoomIn = () => {
-    if (filteredData.length > 0) {
+    if (!isComparison && filteredData.length > 0) {
       const dataLength = filteredData.length
       const start = Math.floor(dataLength * 0.25)
       const end = Math.floor(dataLength * 0.75)
@@ -91,17 +100,28 @@ export function EnhancedWaterLevelChart({
     setZoomDomain(null)
   }
 
+  const colors = ["#2563eb", "#10b981", "#f59e0b", "#ef4444"]
+
   return (
     <div className="space-y-4">
       {/* Chart controls */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs">
-            {dateRangeLabel || (showLast24Hours ? t.chart.last24Hours : t.chart.lastWeek)}
-          </Badge>
-          <Badge variant="outline" className="text-xs">
-            {filteredData.length} readings
-          </Badge>
+          {!isComparison && (
+            <>
+              <Badge variant="outline" className="text-xs">
+                {dateRangeLabel || (showLast24Hours ? t.chart.last24Hours : t.chart.lastWeek)}
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                {filteredData.length} readings
+              </Badge>
+            </>
+          )}
+          {isComparison && (
+            <Badge variant="outline" className="text-xs">
+              {t.chart.compareData}
+            </Badge>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -109,7 +129,7 @@ export function EnhancedWaterLevelChart({
             variant="outline"
             size="sm"
             onClick={handleZoomIn}
-            disabled={!filteredData.length}
+            disabled={isComparison || !filteredData.length}
             title={t.cards.zoomIn}
           >
             <ZoomIn className="h-4 w-4" />
@@ -134,13 +154,14 @@ export function EnhancedWaterLevelChart({
       {/* Chart */}
       <div className="h-[400px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={filteredData}>
+          <LineChart>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
-              dataKey="timestamp"
+              dataKey={isComparison ? "normalizedTime" : "timestamp"}
+              type={isComparison ? "number" : "category"}
+              domain={isComparison ? [0, 1440] : (zoomDomain || ["dataMin", "dataMax"])}
               tickFormatter={formatXAxis}
-              interval="preserveStartEnd"
-              domain={zoomDomain || ["dataMin", "dataMax"]}
+              interval={isComparison ? 120 : "preserveStartEnd"}
             />
             <YAxis
               domain={[0, 200]}
@@ -148,8 +169,13 @@ export function EnhancedWaterLevelChart({
               fontFamily="var(--font-sao-chingcha)"
             />
             <Tooltip
-              labelFormatter={(value) =>
-                new Date(value).toLocaleString("en-US", {
+              labelFormatter={(value) => {
+                if (isComparison) {
+                  const hours = Math.floor(value / 60)
+                  const minutes = value % 60
+                  return `Time: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+                }
+                return new Date(value).toLocaleString("en-US", {
                   year: "numeric",
                   month: "numeric",
                   day: "numeric",
@@ -158,26 +184,45 @@ export function EnhancedWaterLevelChart({
                   second: "2-digit",
                   hourCycle: "h23",
                 })
-              }
+              }}
               formatter={(value: number, name: string, props: any) => {
                 const sourceLabel = props.payload.source
                   ? ` (${t.cards[props.payload.source as keyof typeof t.cards] || props.payload.source})`
                   : ""
-                return [`${value} cm${sourceLabel}`, t.chart.waterLevel]
+                return [`${value} cm${sourceLabel}`, name || t.chart.waterLevel]
               }}
               contentStyle={{ fontFamily: "var(--font-sao-chingcha)" }}
             />
             <ReferenceLine y={dangerLevel} stroke="red" strokeDasharray="5 5" label={t.chart.dangerLevel} />
             <ReferenceLine y={warningLevel} stroke="orange" strokeDasharray="5 5" label={t.chart.warningLevel} />
-            <Line
-              type="monotone"
-              dataKey="level"
-              stroke="#2563eb"
-              strokeWidth={2}
-              dot={{ fill: "#2563eb", strokeWidth: 2, r: 4 }}
-              activeDot={{ r: 6 }}
-            />
-            {showLast24Hours && <Brush dataKey="timestamp" height={30} stroke="#2563eb" tickFormatter={formatXAxis} />}
+
+            {isComparison ? (
+              normalizedMultiData.map((series, idx) => (
+                <Line
+                  key={series.label}
+                  data={series.data}
+                  type="monotone"
+                  dataKey="level"
+                  name={new Date(series.label).toLocaleDateString()}
+                  stroke={colors[idx % colors.length]}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 6 }}
+                  connectNulls
+                />
+              ))
+            ) : (
+              <Line
+                data={filteredData}
+                type="monotone"
+                dataKey="level"
+                stroke="#2563eb"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 6 }}
+              />
+            )}
+            {!isComparison && showLast24Hours && <Brush dataKey="timestamp" height={30} stroke="#2563eb" tickFormatter={formatXAxis} />}
           </LineChart>
         </ResponsiveContainer>
       </div>
