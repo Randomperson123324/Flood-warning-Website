@@ -110,7 +110,7 @@ export function useWaterData() {
         .from("water_readings")
         .select("*")
         .order("timestamp", { ascending: false })
-        .limit(100)
+        .limit(300)
 
       if (error) {
         if (error.message?.includes("relation") || error.message?.includes("does not exist")) {
@@ -329,6 +329,46 @@ export function useWaterData() {
     }
   }
 
+  const fetchMultiDateData = async (dates: Date[]) => {
+    if (!supabase || !tableExists || dates.length === 0) return
+
+    try {
+      setIsFetchingHistorical(true)
+
+      // We fetch all data in one go for the selected days
+      // Or we can fetch individually. Let's fetch individually to be precise about the days.
+      const allResults: { [key: string]: WaterReading[] } = {}
+
+      for (const date of dates) {
+        const start = new Date(date)
+        start.setHours(0, 0, 0, 0)
+        const end = new Date(date)
+        end.setHours(23, 59, 59, 999)
+
+        const { data, error } = await supabase
+          .from("water_readings")
+          .select("*")
+          .gte("timestamp", start.toISOString())
+          .lte("timestamp", end.toISOString())
+          .order("timestamp", { ascending: true })
+          .limit(1000)
+
+        if (error) {
+          console.error(`Error fetching data for ${date.toDateString()}:`, error)
+          continue
+        }
+
+        allResults[date.toISOString()] = data || []
+      }
+
+      return allResults
+    } catch (error) {
+      console.error("Error fetching multi-date data:", error)
+    } finally {
+      setIsFetchingHistorical(false)
+    }
+  }
+
   useEffect(() => {
     if (typeof window === "undefined") return
 
@@ -382,5 +422,6 @@ export function useWaterData() {
     isFetchingHistorical,
     fetchHistoricalData,
     historicalAnalytics,
+    fetchMultiDateData,
   }
 }
