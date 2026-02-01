@@ -374,49 +374,31 @@ export function useWaterData() {
 
     try {
       setIsFetchingHistorical(true)
-      // Dynamic Range: Last 7 Days
-      const startDate = new Date()
-      startDate.setDate(startDate.getDate() - 7)
-      startDate.setHours(0, 0, 0, 0)
-
-      const endDate = new Date()
-
-      const { data, error } = await supabase
-        .from("water_readings")
-        .select("*")
-        .gte("timestamp", startDate.toISOString())
-        .lte("timestamp", endDate.toISOString())
-        .order("timestamp", { ascending: true })
-        .limit(5000)
-
-      if (error || !data) {
-        console.error("Error fetching sampled data:", error)
-        return []
-      }
-
-      // Group by day to sample 20 points per day
-      const dayMap = new Map<string, WaterReading[]>()
-      data.forEach(reading => {
-        const dateKey = new Date(reading.timestamp).toLocaleDateString()
-        if (!dayMap.has(dateKey)) {
-          dayMap.set(dateKey, [])
-        }
-        dayMap.get(dateKey)!.push(reading)
-      })
-
       const sampled: WaterReading[] = []
-      dayMap.forEach((readings) => {
-        if (readings.length <= 20) {
-          sampled.push(...readings)
-        } else {
-          // Sample 20 points evenly
-          const step = readings.length / 20
-          for (let i = 0; i < 20; i++) {
-            const index = Math.floor(i * step)
-            sampled.push(readings[index])
-          }
+
+      // Fetch for the last 7 days individually to guarantee 20 points per day
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date()
+        date.setDate(date.getDate() - i)
+
+        const startOfDay = new Date(date)
+        startOfDay.setHours(0, 0, 0, 0)
+
+        const endOfDay = new Date(date)
+        endOfDay.setHours(23, 59, 59, 999)
+
+        const { data, error } = await supabase
+          .from("water_readings")
+          .select("*")
+          .gte("timestamp", startOfDay.toISOString())
+          .lte("timestamp", endOfDay.toISOString())
+          .order("timestamp", { ascending: true })
+          .limit(20)
+
+        if (!error && data) {
+          sampled.push(...data)
         }
-      })
+      }
 
       return sampled.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
     } catch (error) {
