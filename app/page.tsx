@@ -74,6 +74,7 @@ export default function Dashboard() {
   const [date, setDate] = useState<Date | undefined>()
   const [showLineQR, setShowLineQR] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+  const [isFirstLoad, setIsFirstLoad] = useState(true)
   const router = useRouter()
 
   // Get warning levels from localStorage or use defaults
@@ -128,6 +129,15 @@ export default function Dashboard() {
       fetchHistoricalData(date, date)
     }
   }, [dataComparison, date])
+
+  useEffect(() => {
+    if (!isLoading && isFirstLoad) {
+      const timer = setTimeout(() => {
+        setIsFirstLoad(false)
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [isLoading, isFirstLoad])
 
   const { warningLevel, dangerLevel } = warningLevels
 
@@ -312,38 +322,38 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <WeatherVoteResults />
+        <LoadingOverlay isLoading={isFirstLoad}>
+          <WeatherVoteResults />
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">{t.tabs.overview}</TabsTrigger>
-            <TabsTrigger value="analytics">{t.tabs.analytics}</TabsTrigger>
-            <TabsTrigger value="weather">{t.tabs.weather}</TabsTrigger>
-            <TabsTrigger value="community">{t.tabs.community}</TabsTrigger>
-          </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="overview">{t.tabs.overview}</TabsTrigger>
+              <TabsTrigger value="analytics">{t.tabs.analytics}</TabsTrigger>
+              <TabsTrigger value="weather">{t.tabs.weather}</TabsTrigger>
+              <TabsTrigger value="community">{t.tabs.community}</TabsTrigger>
+            </TabsList>
 
-          {/* Stale Data Warning */}
-          {(() => {
-            const lastReading = getLatestReadingTime()
-            if (!lastReading) return null
-            const diffInMinutes = Math.floor((new Date().getTime() - lastReading.getTime()) / (1000 * 60))
-            if (diffInMinutes > 7) {
-              return (
-                <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-6 rounded shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
-                  <div className="flex items-center gap-3 text-yellow-800">
-                    <AlertTriangle className="h-5 w-5 flex-shrink-0" />
-                    <p className="font-medium text-sm sm:text-base">
-                      {t.alerts.sensorStale.replace("{minutes}", diffInMinutes.toString())}
-                    </p>
+            {/* Stale Data Warning */}
+            {(() => {
+              const lastReading = getLatestReadingTime()
+              if (!lastReading) return null
+              const diffInMinutes = Math.floor((new Date().getTime() - lastReading.getTime()) / (1000 * 60))
+              if (diffInMinutes > 7) {
+                return (
+                  <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-6 rounded shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
+                    <div className="flex items-center gap-3 text-yellow-800">
+                      <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+                      <p className="font-medium text-sm sm:text-base">
+                        {t.alerts.sensorStale.replace("{minutes}", diffInMinutes.toString())}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )
-            }
-            return null
-          })()}
+                )
+              }
+              return null
+            })()}
 
-          <TabsContent value="overview" className="space-y-6">
-            <LoadingOverlay isLoading={isLoading}>
+            <TabsContent value="overview" className="space-y-6">
               {/* Current Status Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 <Card className={getCardBackgroundColor(currentLevel)}>
@@ -456,11 +466,9 @@ export default function Dashboard() {
                   />
                 </CardContent>
               </Card>
-            </LoadingOverlay>
-          </TabsContent>
+            </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-6">
-            <LoadingOverlay isLoading={isLoading}>
+            <TabsContent value="analytics" className="space-y-6">
               {/* Data Comparison Controls */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <div className="flex items-center gap-2">
@@ -535,11 +543,9 @@ export default function Dashboard() {
                   />
                 </CardContent>
               </Card>
-            </LoadingOverlay>
-          </TabsContent>
+            </TabsContent>
 
-          <TabsContent value="weather" className="space-y-6">
-            <LoadingOverlay isLoading={weatherLoading} message="Retrieving weather data...">
+            <TabsContent value="weather" className="space-y-6">
               {/* TMD Attribution Header */}
               <div className="flex items-center justify-center gap-3 pb-2">
                 <span className="text-lg font-medium text-gray-700 dark:text-gray-300">Weather data from</span>
@@ -583,16 +589,14 @@ export default function Dashboard() {
 
               {/* 5. Weather Map */}
               <WeatherMap coordinates={weatherData?.coordinates} city={weatherData?.city} />
-            </LoadingOverlay>
-          </TabsContent>
+            </TabsContent>
 
-          <TabsContent value="community" className="space-y-6">
-            <LoadingOverlay isLoading={isLoading}>
+            <TabsContent value="community" className="space-y-6">
               <FloodReport />
               <CommunityChat />
-            </LoadingOverlay>
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+          </Tabs>
+        </LoadingOverlay>
 
         {/* Developer Settings Modal */}
         <DeveloperSettings open={showDeveloperSettings} onOpenChange={setShowDeveloperSettings} />
