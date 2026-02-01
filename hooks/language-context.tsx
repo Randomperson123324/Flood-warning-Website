@@ -59,6 +59,7 @@ const translations = {
       weatherGood: "and the weather looks good at",
       notRaining: "with no rain",
       raining: "with rain",
+      createdBy: "Created by students of StreePasertSin School",
     },
     trends: {
       rising: "Rising",
@@ -357,6 +358,7 @@ const translations = {
       weatherGood: "และสภาพอากาศดีที่",
       notRaining: "และไม่มีฝนตก",
       raining: "และมีฝนตก",
+      createdBy: "สร้างโดยนักเรียนโรงเรียนสตรีประเสริฐศิลป์",
     },
     trends: {
       rising: "เพิ่มขึ้น",
