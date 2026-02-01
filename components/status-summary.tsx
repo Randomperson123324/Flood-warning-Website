@@ -3,6 +3,7 @@
 import { useLanguage } from "../hooks/language-context"
 import { useWeatherData } from "../hooks/use-weather-data"
 import { Droplets, Cloud, CloudRain } from "lucide-react"
+import { useState, useEffect } from "react"
 
 interface StatusSummaryProps {
   currentLevel: number
@@ -13,6 +14,23 @@ interface StatusSummaryProps {
 export function StatusSummary({ currentLevel, warningLevel, dangerLevel }: StatusSummaryProps) {
   const { t } = useLanguage()
   const { weatherData } = useWeatherData()
+  const [showSplash, setShowSplash] = useState(true)
+  const [isFadingOut, setIsFadingOut] = useState(false)
+
+  useEffect(() => {
+    const fadeOutTimer = setTimeout(() => {
+      setIsFadingOut(true)
+    }, 3300)
+
+    const switchTimer = setTimeout(() => {
+      setShowSplash(false)
+    }, 4000)
+
+    return () => {
+      clearTimeout(fadeOutTimer)
+      clearTimeout(switchTimer)
+    }
+  }, [])
 
   const getTimeOfDay = () => {
     const hour = new Date().getHours()
@@ -94,11 +112,6 @@ export function StatusSummary({ currentLevel, warningLevel, dangerLevel }: Statu
     return statusText
   }
 
-  const getTextColor = () => {
-    const timeOfDay = getTimeOfDay()
-    return timeOfDay === "night" ? "text-white" : "text-gray-800"
-  }
-
   const getWeatherIcon = () => {
     if (!weatherData?.current) return null
 
@@ -110,8 +123,35 @@ export function StatusSummary({ currentLevel, warningLevel, dangerLevel }: Statu
     return isRaining ? <CloudRain className="w-5 h-5 text-blue-500" /> : <Cloud className="w-5 h-5 text-gray-500" />
   }
 
+  if (showSplash) {
+    return (
+      <div
+        className={`mb-6 flex flex-col items-center justify-center p-6 bg-white/40 dark:bg-gray-800/40 rounded-2xl backdrop-blur-md border border-white/20 shadow-sm transition-all duration-700 ${isFadingOut ? "opacity-0 scale-95" : "opacity-100 scale-100 animate-in fade-in duration-700"
+          }`}
+      >
+        <div className="flex items-center gap-8 mb-4">
+          <img
+            src="/images/streelogo.png"
+            alt="Stree Logo"
+            className="w-14 h-14 object-contain drop-shadow-sm filter dark:brightness-110"
+          />
+          <img
+            src="/images/floodlogo.png"
+            alt="Flood Logo"
+            className="w-14 h-14 object-contain drop-shadow-sm filter dark:brightness-110"
+          />
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent">
+            {t.status.createdBy}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="mb-6">
+    <div className="mb-6 animate-in fade-in slide-in-from-bottom-2 duration-700">
       <div className="flex items-center justify-between">
         <div className={`text-2xl font-semibold ${getTimeBasedGradient()}`}>{getStatusText()}</div>
         <div className="flex items-center gap-2 ml-4">
