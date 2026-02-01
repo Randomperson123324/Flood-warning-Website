@@ -70,10 +70,9 @@ export default function Dashboard() {
   const [warningLevels, setWarningLevels] = useState({ warningLevel: 20, dangerLevel: 40 })
   const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState("overview")
-  const [analyticsTab, setAnalyticsTab] = useState("insights")
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [dataComparison, setDataComparison] = useState<"lastDay" | "pastData">("lastDay")
+  const [dataComparison, setDataComparison] = useState<"lastDay" | "pastData" | "compare">("lastDay")
   const [date, setDate] = useState<Date | undefined>()
   const [compareDates, setCompareDates] = useState<Date[]>([])
   const [compareData, setCompareData] = useState<{ [key: string]: any[] }>({})
@@ -84,7 +83,7 @@ export default function Dashboard() {
 
   // Effect for multi-date comparison
   useEffect(() => {
-    if (analyticsTab === "compare" && compareDates.length > 0) {
+    if (dataComparison === "compare" && compareDates.length > 0) {
       const fetchData = async () => {
         const results = await fetchMultiDateData(compareDates)
         if (results) {
@@ -93,7 +92,7 @@ export default function Dashboard() {
       }
       fetchData()
     }
-  }, [analyticsTab, compareDates])
+  }, [dataComparison, compareDates])
 
   // Get warning levels from localStorage or use defaults
   useEffect(() => {
@@ -487,138 +486,136 @@ export default function Dashboard() {
             </TabsContent>
 
             <TabsContent value="analytics" className="space-y-6">
-              <Tabs value={analyticsTab} onValueChange={setAnalyticsTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-6">
-                  <TabsTrigger value="insights">Insights</TabsTrigger>
-                  <TabsTrigger value="compare">Compare</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="insights" className="space-y-6">
-                  {/* Data Comparison Controls */}
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant={dataComparison === "lastDay" ? "default" : "outline"}
-                        onClick={() => setDataComparison("lastDay")}
-                      >
-                        {t.analytics.lastDay}
-                      </Button>
-                      <Button
-                        variant={dataComparison === "pastData" ? "default" : "outline"}
-                        onClick={() => setDataComparison("pastData")}
-                      >
-                        {t.analytics.pastData}
-                      </Button>
+              {/* Data Comparison Controls */}
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={dataComparison === "lastDay" ? "default" : "outline"}
+                      onClick={() => setDataComparison("lastDay")}
+                    >
+                      {t.analytics.lastDay}
+                    </Button>
+                    <Button
+                      variant={dataComparison === "pastData" ? "default" : "outline"}
+                      onClick={() => setDataComparison("pastData")}
+                    >
+                      {t.analytics.pastData}
+                    </Button>
+                    <Button
+                      variant={dataComparison === "compare" ? "default" : "outline"}
+                      onClick={() => setDataComparison("compare")}
+                    >
+                      {t.analytics.compare}
+                    </Button>
+                  </div>
+                  {dataComparison === "pastData" && (
+                    <div className="animate-in fade-in slide-in-from-left-4 duration-300">
+                      <DatePickerWithRange date={date} setDate={setDate} />
                     </div>
-                    {dataComparison === "pastData" && (
-                      <div className="animate-in fade-in slide-in-from-left-4 duration-300">
-                        <DatePickerWithRange date={date} setDate={setDate} />
-                      </div>
+                  )}
+                </div>
+
+                {dataComparison === "compare" && (
+                  <div className="flex flex-wrap gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                    {compareDates.map((d: Date, i: number) => (
+                      <Badge key={i} variant="secondary" className="flex items-center gap-1 py-1 pr-1">
+                        {d.toLocaleDateString()}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-4 w-4 rounded-full"
+                          onClick={() => setCompareDates((prev: Date[]) => prev.filter((_, idx) => idx !== i))}
+                        >
+                          <span className="sr-only">Remove</span>
+                          &times;
+                        </Button>
+                      </Badge>
+                    ))}
+                    {compareDates.length < 4 && (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="sm">Add Date ({compareDates.length}/4)</Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            onSelect={(newDate: Date | undefined) => {
+                              if (newDate) {
+                                setCompareDates((prev: Date[]) => [...prev, newDate])
+                              }
+                            }}
+                            disabled={(d: Date) => d > new Date() || compareDates.some((existing: Date) => existing.toDateString() === d.toDateString())}
+                          />
+                        </PopoverContent>
+                      </Popover>
                     )}
                   </div>
+                )}
+              </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>{t.analytics.dailyAverage}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold font-inter-numbers">
-                          {dataComparison === "pastData" ? historicalAnalytics.dailyAverage : analytics.dailyAverage} cm
-                        </div>
-                        <p className="text-sm text-muted-foreground">{t.analytics.dailyAverageDescription}</p>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>{t.analytics.peakLevel}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold font-inter-numbers">
-                          {dataComparison === "pastData" ? historicalAnalytics.peakLevel : analytics.peakLevel} cm
-                        </div>
-                        <p className="text-sm text-muted-foreground">{t.analytics.peakLevelDescription}</p>
-                      </CardContent>
-                    </Card>
-                  </div>
+              {dataComparison !== "compare" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>{t.analytics.dailyAverage}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-3xl font-bold font-inter-numbers">
+                        {dataComparison === "pastData" ? historicalAnalytics.dailyAverage : analytics.dailyAverage} cm
+                      </div>
+                      <p className="text-sm text-muted-foreground">{t.analytics.dailyAverageDescription}</p>
+                    </CardContent>
+                  </Card>
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>{t.analytics.weeklyTrend}</CardTitle>
-                      <CardDescription>
-                        {dataComparison === "lastDay" ? t.chart.last24Hours : t.analytics.pastData}
-                      </CardDescription>
+                      <CardTitle>{t.analytics.peakLevel}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <EnhancedWaterLevelChart
-                        data={dataComparison === "pastData" ? historicalData : waterData}
-                        warningLevel={warningLevel}
-                        dangerLevel={dangerLevel}
-                        dateRangeLabel={
-                          dataComparison === "pastData"
-                            ? date
-                              ? date.toLocaleDateString()
-                              : t.analytics.selectDateRange
-                            : undefined
-                        }
-                      />
+                      <div className="text-3xl font-bold font-inter-numbers">
+                        {dataComparison === "pastData" ? historicalAnalytics.peakLevel : analytics.peakLevel} cm
+                      </div>
+                      <p className="text-sm text-muted-foreground">{t.analytics.peakLevelDescription}</p>
                     </CardContent>
                   </Card>
-                </TabsContent>
+                </div>
+              )}
 
-                <TabsContent value="compare" className="space-y-6">
-                  <div className="flex flex-col gap-4">
-                    <div className="flex flex-wrap gap-2">
-                      {compareDates.map((d: Date, i: number) => (
-                        <Badge key={i} variant="secondary" className="flex items-center gap-1 py-1 pr-1">
-                          {d.toLocaleDateString()}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-4 w-4 rounded-full"
-                            onClick={() => setCompareDates((prev: Date[]) => prev.filter((_, idx) => idx !== i))}
-                          >
-                            <span className="sr-only">Remove</span>
-                            &times;
-                          </Button>
-                        </Badge>
-                      ))}
-                      {compareDates.length < 4 && (
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" size="sm">Add Date ({compareDates.length}/4)</Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              onSelect={(newDate: Date | undefined) => {
-                                if (newDate) {
-                                  setCompareDates((prev: Date[]) => [...prev, newDate])
-                                }
-                              }}
-                              disabled={(d: Date) => d > new Date() || compareDates.some((existing: Date) => existing.toDateString() === d.toDateString())}
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      )}
-                    </div>
-
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>{t.chart.compareData}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <EnhancedWaterLevelChart
-                          multiData={compareData}
-                          warningLevel={warningLevel}
-                          dangerLevel={dangerLevel}
-                        />
-                      </CardContent>
-                    </Card>
-                  </div>
-                </TabsContent>
-              </Tabs>
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    {dataComparison === "compare" ? t.chart.compareData : t.analytics.weeklyTrend}
+                  </CardTitle>
+                  {dataComparison !== "compare" && (
+                    <CardDescription>
+                      {dataComparison === "lastDay" ? t.chart.last24Hours : t.analytics.pastData}
+                    </CardDescription>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  {dataComparison === "compare" ? (
+                    <EnhancedWaterLevelChart
+                      multiData={compareData}
+                      warningLevel={warningLevel}
+                      dangerLevel={dangerLevel}
+                    />
+                  ) : (
+                    <EnhancedWaterLevelChart
+                      data={dataComparison === "pastData" ? historicalData : waterData}
+                      warningLevel={warningLevel}
+                      dangerLevel={dangerLevel}
+                      dateRangeLabel={
+                        dataComparison === "pastData"
+                          ? date
+                            ? date.toLocaleDateString()
+                            : t.analytics.selectDateRange
+                          : undefined
+                      }
+                    />
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="weather" className="space-y-6">

@@ -88,6 +88,7 @@ const translations = {
       lastDay: "Last Day",
       lastWeek: "Last Week",
       pastData: "Past Data",
+      compare: "Compare",
       selectDateRange: "Select Date Range",
     },
     weather: {
@@ -387,6 +388,7 @@ const translations = {
       lastDay: "วันที่ผ่านมา",
       lastWeek: "สัปดาห์ที่ผ่านมา",
       pastData: "ข้อมูลในอดีต",
+      compare: "เปรียบเทียบ",
       selectDateRange: "เลือกช่วงเวลา",
     },
     weather: {
