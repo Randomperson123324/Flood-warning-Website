@@ -374,58 +374,45 @@ export function useWaterData() {
 
     try {
       setIsFetchingHistorical(true)
-      const sevenDaysAgo = new Date()
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-      sevenDaysAgo.setHours(0, 0, 0, 0)
+      // Range: Jan 29 to Feb 1
+      const startDate = new Date("2026-01-29T00:00:00")
+      const endDate = new Date("2026-02-01T23:59:59")
 
       const { data, error } = await supabase
         .from("water_readings")
         .select("*")
-        .gte("timestamp", sevenDaysAgo.toISOString())
-        .order("timestamp", { ascending: false })
-        .limit(1000)
+        .gte("timestamp", startDate.toISOString())
+        .lte("timestamp", endDate.toISOString())
+        .order("timestamp", { ascending: true })
+        .limit(2000)
 
       if (error || !data) {
         console.error("Error fetching sampled data:", error)
         return []
       }
 
-      // Sample data: Morning (08:00), Noon (12:00), Evening (18:00)
-      const sampled: WaterReading[] = []
-      const dayMap = new Map<string, { morning?: WaterReading; noon?: WaterReading; evening?: WaterReading }>()
-
-      data.forEach((reading) => {
-        const d = new Date(reading.timestamp)
-        const dateStr = d.toLocaleDateString()
-        const hour = d.getHours()
-
-        if (!dayMap.has(dateStr)) {
-          dayMap.set(dateStr, {})
+      // Group by day to sample 20 points per day
+      const dayMap = new Map<string, WaterReading[]>()
+      data.forEach(reading => {
+        const dateKey = new Date(reading.timestamp).toLocaleDateString()
+        if (!dayMap.has(dateKey)) {
+          dayMap.set(dateKey, [])
         }
-
-        const dayEntries = dayMap.get(dateStr)!
-
-        // Find closest to target hours
-        if (hour >= 6 && hour <= 10) {
-          if (!dayEntries.morning || Math.abs(d.getHours() - 8) < Math.abs(new Date(dayEntries.morning.timestamp).getHours() - 8)) {
-            dayEntries.morning = reading
-          }
-        } else if (hour >= 11 && hour <= 14) {
-          if (!dayEntries.noon || Math.abs(d.getHours() - 12) < Math.abs(new Date(dayEntries.noon.timestamp).getHours() - 12)) {
-            dayEntries.noon = reading
-          }
-        } else if (hour >= 17 && hour <= 21) {
-          if (!dayEntries.evening || Math.abs(d.getHours() - 18) < Math.abs(new Date(dayEntries.evening.timestamp).getHours() - 18)) {
-            dayEntries.evening = reading
-          }
-        }
+        dayMap.get(dateKey)!.push(reading)
       })
 
-      // Convert back to sorted array
-      dayMap.forEach((entries) => {
-        if (entries.morning) sampled.push(entries.morning)
-        if (entries.noon) sampled.push(entries.noon)
-        if (entries.evening) sampled.push(entries.evening)
+      const sampled: WaterReading[] = []
+      dayMap.forEach((readings) => {
+        if (readings.length <= 20) {
+          sampled.push(...readings)
+        } else {
+          // Sample 20 points evenly
+          const step = readings.length / 20
+          for (let i = 0; i < 20; i++) {
+            const index = Math.floor(i * step)
+            sampled.push(readings[index])
+          }
+        }
       })
 
       return sampled.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
