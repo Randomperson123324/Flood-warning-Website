@@ -1,7 +1,7 @@
 "use client"
 
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { DatePickerWithRange } from "../components/date-range-picker"
 import { Calendar } from "@/components/ui/calendar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -42,7 +42,6 @@ import { useWaterData } from "@/hooks/use-water-data"
 import { useWeatherData } from "@/hooks/use-weather-data"
 import { Footer } from "../components/footer"
 import { LoadingOverlay } from "../components/loading-overlay"
-import React from "react"
 import type { JSX } from "react/jsx-runtime"
 
 export default function Dashboard() {
@@ -64,6 +63,8 @@ export default function Dashboard() {
     isFetchingHistorical,
     historicalAnalytics,
     fetchMultiDateData,
+    fetchSampledData,
+    fetchWaterData,
   } = useWaterData()
   const { weatherData, isLoading: weatherLoading, error: weatherError, refetch: refetchWeather } = useWeatherData()
   const [showDeveloperSettings, setShowDeveloperSettings] = useState(false)
@@ -72,10 +73,11 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [dataComparison, setDataComparison] = useState<"lastDay" | "pastData" | "compare">("lastDay")
+  const [dataComparison, setDataComparison] = useState<"today" | "last7Days" | "pastData" | "compare">("today")
   const [date, setDate] = useState<Date | undefined>()
   const [compareDates, setCompareDates] = useState<Date[]>([])
   const [compareData, setCompareData] = useState<{ [key: string]: any[] }>({})
+  const [sampledData, setSampledData] = useState<any[]>([])
   const [showLineQR, setShowLineQR] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [isFirstLoad, setIsFirstLoad] = useState(true)
@@ -91,6 +93,12 @@ export default function Dashboard() {
         }
       }
       fetchData()
+    } else if (dataComparison === "last7Days") {
+      const fetchSampled = async () => {
+        const results = await fetchSampledData()
+        setSampledData(results)
+      }
+      fetchSampled()
     }
   }, [dataComparison, compareDates])
 
@@ -131,14 +139,22 @@ export default function Dashboard() {
     }
     window.addEventListener("storage", handleStorageChange)
 
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange)
-    }
     return () => {
       window.removeEventListener("storage", handleStorageChange)
     }
   }, [])
+
+  // Chronological data for charts (Supabase returns descending)
+  const sortedWaterData = useMemo(() => {
+    return [...waterData].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+  }, [waterData])
+
+  // Only today's data for the "Now" section
+  const todayWaterData = useMemo(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return sortedWaterData.filter((reading: any) => new Date(reading.timestamp) >= today)
+  }, [sortedWaterData])
 
   // Fetch historical data when date changes
   useEffect(() => {
@@ -476,10 +492,9 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent>
                   <EnhancedWaterLevelChart
-                    data={waterData}
+                    data={todayWaterData}
                     warningLevel={warningLevel}
                     dangerLevel={dangerLevel}
-                    defaultRange="24h"
                   />
                 </CardContent>
               </Card>
@@ -491,10 +506,16 @@ export default function Dashboard() {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                   <div className="flex items-center gap-2">
                     <Button
-                      variant={dataComparison === "lastDay" ? "default" : "outline"}
-                      onClick={() => setDataComparison("lastDay")}
+                      variant={dataComparison === "today" ? "default" : "outline"}
+                      onClick={() => setDataComparison("today")}
                     >
-                      {t.analytics.lastDay}
+                      {t.analytics.today}
+                    </Button>
+                    <Button
+                      variant={dataComparison === "last7Days" ? "default" : "outline"}
+                      onClick={() => setDataComparison("last7Days")}
+                    >
+                      {t.analytics.last7Days}
                     </Button>
                     <Button
                       variant={dataComparison === "pastData" ? "default" : "outline"}
@@ -519,7 +540,7 @@ export default function Dashboard() {
                 {dataComparison === "compare" && (
                   <div className="flex flex-wrap gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
                     {compareDates.map((d: Date, i: number) => (
-                      <Badge key={i} variant="secondary" className="flex items-center gap-1 py-1 pr-1">
+                      <Badge key={`badge-${i}-${d.getTime()}`} variant="secondary" className="flex items-center gap-1 py-1 pr-1">
                         {d.toLocaleDateString()}
                         <Button
                           variant="ghost"
@@ -589,7 +610,11 @@ export default function Dashboard() {
                   </CardTitle>
                   {dataComparison !== "compare" && (
                     <CardDescription>
-                      {dataComparison === "lastDay" ? t.chart.last24Hours : t.analytics.pastData}
+                      {dataComparison === "today"
+                        ? t.chart.last24Hours // We can keep "Last 24 Hours" label or use a new one if available
+                        : dataComparison === "last7Days"
+                          ? t.chart.lastWeek
+                          : t.analytics.pastData}
                     </CardDescription>
                   )}
                 </CardHeader>
@@ -602,7 +627,13 @@ export default function Dashboard() {
                     />
                   ) : (
                     <EnhancedWaterLevelChart
-                      data={dataComparison === "pastData" ? historicalData : waterData}
+                      data={
+                        dataComparison === "pastData"
+                          ? historicalData
+                          : dataComparison === "last7Days"
+                            ? sampledData
+                            : todayWaterData
+                      }
                       warningLevel={warningLevel}
                       dangerLevel={dangerLevel}
                       dateRangeLabel={
