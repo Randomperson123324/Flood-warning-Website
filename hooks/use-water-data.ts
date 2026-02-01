@@ -374,9 +374,12 @@ export function useWaterData() {
 
     try {
       setIsFetchingHistorical(true)
-      // Range: Jan 29 to Feb 1
-      const startDate = new Date("2026-01-29T00:00:00")
-      const endDate = new Date("2026-02-01T23:59:59")
+      // Dynamic Range: Last 7 Days
+      const startDate = new Date()
+      startDate.setDate(startDate.getDate() - 7)
+      startDate.setHours(0, 0, 0, 0)
+
+      const endDate = new Date()
 
       const { data, error } = await supabase
         .from("water_readings")
@@ -384,7 +387,7 @@ export function useWaterData() {
         .gte("timestamp", startDate.toISOString())
         .lte("timestamp", endDate.toISOString())
         .order("timestamp", { ascending: true })
-        .limit(2000)
+        .limit(5000)
 
       if (error || !data) {
         console.error("Error fetching sampled data:", error)
