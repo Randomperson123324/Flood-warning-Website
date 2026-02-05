@@ -28,7 +28,7 @@ export function WaterLevelChart({ data, warningLevel = 5, dangerLevel = 10 }: Wa
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="timestamp" tickFormatter={formatXAxis} interval="preserveStartEnd" />
           <YAxis
-            domain={[0, 200]}
+            domain={[0, (dataMax: number) => Math.max(20, Math.ceil(dataMax / 10) * 10)]}
             label={{ value: t.chart.yAxisLabel, angle: -90, position: "insideLeft" }}
             fontFamily="var(--font-sao-chingcha)" // Apply SaoChingcha font to YAxis numbers
           />
