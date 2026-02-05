@@ -68,7 +68,7 @@ export default function Dashboard() {
   } = useWaterData()
   const { weatherData, isLoading: weatherLoading, error: weatherError, refetch: refetchWeather } = useWeatherData()
   const [showDeveloperSettings, setShowDeveloperSettings] = useState(false)
-  const [warningLevels, setWarningLevels] = useState({ warningLevel: 20, dangerLevel: 40 })
+  const [warningLevels, setWarningLevels] = useState({ warningLevel: 5, dangerLevel: 10 })
   const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState("overview")
   const [isDarkMode, setIsDarkMode] = useState(false)
@@ -112,14 +112,14 @@ export default function Dashboard() {
         if (saved) {
           const settings = JSON.parse(saved)
           return {
-            warningLevel: Number.parseFloat(settings.warningLevel) || 20,
-            dangerLevel: Number.parseFloat(settings.dangerLevel) || 40,
+            warningLevel: Number.parseFloat(settings.warningLevel) || 5,
+            dangerLevel: Number.parseFloat(settings.dangerLevel) || 10,
           }
         }
       } catch (error) {
         console.error("Error reading localStorage:", error)
       }
-      return { warningLevel: 20, dangerLevel: 40 }
+      return { warningLevel: 5, dangerLevel: 10 }
     }
 
     setWarningLevels(getWarningLevels())

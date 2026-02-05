@@ -13,7 +13,7 @@ interface WeeklyTrendChartProps {
   dangerLevel?: number
 }
 
-export function WeeklyTrendChart({ data, warningLevel = 50, dangerLevel = 100 }: WeeklyTrendChartProps) {
+export function WeeklyTrendChart({ data, warningLevel = 5, dangerLevel = 10 }: WeeklyTrendChartProps) {
   const { t } = useLanguage()
 
   // Process data to show daily averages for the past week

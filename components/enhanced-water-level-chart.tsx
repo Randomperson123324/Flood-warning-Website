@@ -35,8 +35,8 @@ interface EnhancedWaterLevelChartProps {
 export function EnhancedWaterLevelChart({
   data,
   multiData,
-  warningLevel = 20,
-  dangerLevel = 40,
+  warningLevel = 5,
+  dangerLevel = 10,
   onRefresh,
   isRefreshing = false,
   showLast24Hours = false,

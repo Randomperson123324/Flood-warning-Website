@@ -13,7 +13,7 @@ interface WaterLevelChartProps {
   dangerLevel?: number
 }
 
-export function WaterLevelChart({ data, warningLevel = 50, dangerLevel = 100 }: WaterLevelChartProps) {
+export function WaterLevelChart({ data, warningLevel = 5, dangerLevel = 10 }: WaterLevelChartProps) {
   const { t } = useLanguage()
 
   const formatXAxis = (tickItem: string) => {
