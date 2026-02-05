@@ -35,8 +35,8 @@ interface EnhancedWaterLevelChartProps {
 export function EnhancedWaterLevelChart({
   data,
   multiData,
-  warningLevel = 20,
-  dangerLevel = 40,
+  warningLevel = 5,
+  dangerLevel = 10,
   onRefresh,
   isRefreshing = false,
   showLast24Hours = false,
@@ -164,7 +164,7 @@ export function EnhancedWaterLevelChart({
               interval={isComparison ? 120 : "preserveStartEnd"}
             />
             <YAxis
-              domain={[0, 200]}
+              domain={[0, (dataMax: number) => Math.max(20, Math.ceil(dataMax / 10) * 10)]}
               label={{ value: t.chart.yAxisLabel, angle: -90, position: "insideLeft" }}
               fontFamily="var(--font-sao-chingcha)"
             />

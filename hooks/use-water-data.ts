@@ -60,7 +60,7 @@ export function useWaterData() {
 
   const getWarningLevels = () => {
     if (typeof window === "undefined") {
-      return { warningLevel: 20, dangerLevel: 40, updateInterval: 30 }
+      return { warningLevel: 5, dangerLevel: 10, updateInterval: 30 }
     }
 
     try {
@@ -68,8 +68,8 @@ export function useWaterData() {
       if (saved) {
         const settings = JSON.parse(saved)
         return {
-          warningLevel: Number.parseFloat(settings.warningLevel) || 20,
-          dangerLevel: Number.parseFloat(settings.dangerLevel) || 40,
+          warningLevel: Number.parseFloat(settings.warningLevel) || 5,
+          dangerLevel: Number.parseFloat(settings.dangerLevel) || 10,
           updateInterval: Number.parseInt(settings.updateInterval) || 30,
         }
       }
@@ -77,7 +77,7 @@ export function useWaterData() {
       console.error("Error reading localStorage:", error)
     }
 
-    return { warningLevel: 20, dangerLevel: 40, updateInterval: 30 }
+    return { warningLevel: 5, dangerLevel: 10, updateInterval: 30 }
   }
 
   const calculateAnalytics = (data: WaterReading[]): WaterAnalytics => {
