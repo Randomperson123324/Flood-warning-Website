@@ -303,6 +303,28 @@ const translations = {
       yes: "Yes",
       no: "No",
     },
+    warningScreen: {
+      title: "WARNING",
+      subtitle: "Please Read Carefully",
+      warningLevel: "Warning Level",
+      dangerLevel: "Dangerous Level",
+      instructions: {
+        warning: [
+          "Move your belongings higher",
+          "Cut the electricity to prevent electrical hazards",
+          "Evacuate from high risk area immediately",
+          "Monitor water level closely and follow instructions from relevant authorities strictly",
+        ],
+        danger: [
+          "Carefully evacuate from high risk area immediately",
+          "Cut nearby electricity to prevent electrical hazards",
+          "Help others if possible",
+          "Monitor water level closely and follow instructions from relevant authorities strictly",
+        ],
+      },
+      agreement: "I understand that หมูแดดเดียว will not be held responsible for any damage resulting from my failure to execute this command.",
+      continue: "I Understand",
+    },
   },
   th: {
     title: "ระบบตรวจสอบน้ำท่วม",
@@ -602,6 +624,28 @@ const translations = {
       votes: "โหวต / 30นาที",
       yes: "ใช่",
       no: "ไม่ใช่",
+    },
+    warningScreen: {
+      title: "คำเตือน",
+      subtitle: "โปรดอ่านอย่างละเอียด",
+      warningLevel: "ระดับเฝ้าระวัง",
+      dangerLevel: "ระดับอันตราย",
+      instructions: {
+        warning: [
+          "ย้ายของขึ้นที่สูง",
+          "ตัดไฟเพื่อป้องกันอันตรายจากไฟฟ้า",
+          "อพยพจากพื้นที่เสี่ยงทันที",
+          "ติดตามและปฏิบัติตามคำสั่งของหน่วยงานที่เกี่ยวข้องอย่างเคร่งครัด",
+        ],
+        danger: [
+          "อพยพออกจากพื้นที่เสี่ยงทันทีอย่างระมัดระวัง",
+          "ตัดไฟบริเวณใกล้เคียงเพื่อป้องกันอันตรายจากไฟฟ้า",
+          "ช่วยเหลือผู้อื่นหากเป็นไปได้",
+          "ติดตามและปฏิบัติตามคำสั่งของหน่วยงานที่เกี่ยวข้องอย่างเคร่งครัด",
+        ],
+      },
+      agreement: "ฉันเข้าใจว่า หมูแดดเดียว จะไม่รับผิดชอบต่อความเสียหาย หากฉันไม่สามารถปัฎิบัติตามคำแนะนำนี้ได้",
+      continue: "ฉันเข้าใจ",
     },
   },
 }
