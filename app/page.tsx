@@ -42,6 +42,8 @@ import { useWaterData } from "@/hooks/use-water-data"
 import { useWeatherData } from "@/hooks/use-weather-data"
 import { Footer } from "../components/footer"
 import { LoadingOverlay } from "../components/loading-overlay"
+import { CurrentStatusDashboard } from "../components/current-status-dashboard"
+import { WarningScreen } from "../components/warning-screen"
 import type { JSX } from "react/jsx-runtime"
 
 export default function Dashboard() {
@@ -288,6 +290,17 @@ export default function Dashboard() {
     <div
       className={`min-h-screen bg-gradient-to-br from-blue-100 via-blue-50 to-blue-200 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900`}
     >
+      <WarningScreen
+        currentLevel={currentLevel}
+        warningLevel={warningLevel}
+        dangerLevel={dangerLevel}
+        trend={trend}
+        timeToWarningData={timeToWarningData}
+        isConnected={isConnected}
+        latestReadingTime={getLatestReadingTime()}
+        currentRate={getCurrentRate().ratePerHour}
+        currentRateTimestamp={getCurrentRate().timestamp}
+      />
       {/* Sticky Header */}
       <StickyHeader
         activeTab={activeTab}
@@ -388,99 +401,17 @@ export default function Dashboard() {
 
             <TabsContent value="overview" className="space-y-6">
               {/* Current Status Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                <Card className={getCardBackgroundColor(currentLevel)}>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">{t.cards.currentLevel}</CardTitle>
-                    <Droplets className="h-4 w-4 text-blue-600" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold font-inter-numbers mb-2">{currentLevel} cm</div>
-                    <Badge variant={getStatusColor(currentLevel)} className="mb-2">
-                      {getStatusText(currentLevel)}
-                    </Badge>
-                    {(() => {
-                      const lastReading = getLatestReadingTime()
-                      if (!lastReading) return null
-                      return (
-                        <div className="text-xs text-muted-foreground mt-1 font-inter-numbers">
-                          {lastReading.toLocaleTimeString(language === "th" ? "th-TH" : "en-US", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            second: "2-digit",
-                            hourCycle: "h23",
-                          })}
-                        </div>
-                      )
-                    })()}
-                  </CardContent>
-                  {!isConnected && (
-                    <div className="w-full py-2 bg-red-600 rounded-b-xl flex items-center justify-center gap-2 text-white">
-                      <WifiOff className="h-4 w-4" />
-                      <span className="text-sm font-medium">{t.system.disconnected}</span>
-                    </div>
-                  )}
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">{t.cards.trend}</CardTitle>
-                    {getTrendIcon()}
-                  </CardHeader>
-                  <CardContent>
-                    <div className={`text-2xl font-bold capitalize ${getTrendColor()}`}>{t.trends[trend]}</div>
-                    <p className="text-xs text-muted-foreground mt-2">{t.cards.trendDescription}</p>
-                    <div className="text-sm font-inter-numbers text-muted-foreground">
-                      {(() => {
-                        const { ratePerHour, timestamp } = getCurrentRate()
-                        return (
-                          <>
-                            Rate: {ratePerHour} {t.trends.ratePerHour}
-                            {timestamp && (
-                              <div className="text-xs mt-1">
-                                {timestamp.toLocaleTimeString("en-US", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hourCycle: "h23",
-                                })}
-                              </div>
-                            )}
-                          </>
-                        )
-                      })()}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card
-                  className={
-                    currentLevel >= dangerLevel ? "bg-red-600 border-red-700 text-white" : undefined
-                  }
-                >
-                  <CardHeader>
-                    <CardTitle className={`text-sm font-medium ${currentLevel >= dangerLevel ? "text-white" : ""}`}>
-                      {currentLevel >= dangerLevel
-                        ? t.cards.criticalReached
-                        : currentLevel >= warningLevel
-                          ? t.cards.timeToDanger
-                          : t.cards.timeToWarning}
-                    </CardTitle>
-                    <AlertTriangle className={`h-4 w-4 ${currentLevel >= dangerLevel ? "text-white" : "text-yellow-600"}`} />
-                  </CardHeader>
-                  <CardContent>
-                    <div className={`text-2xl font-bold ${currentLevel >= dangerLevel ? "text-white" : ""}`}>
-                      {currentLevel >= dangerLevel ? t.status.danger : formatTimeToWarning()}
-                    </div>
-                    <p
-                      className={`text-xs mt-2 ${currentLevel >= dangerLevel ? "text-red-100" : "text-muted-foreground"}`}
-                    >
-                      {t.cards.timeToWarningDescription}
-                    </p>
-                  </CardContent>
-                </Card>
-
-
-              </div>
+              <CurrentStatusDashboard
+                currentLevel={currentLevel}
+                warningLevel={warningLevel}
+                dangerLevel={dangerLevel}
+                trend={trend}
+                timeToWarningData={timeToWarningData}
+                isConnected={isConnected}
+                latestReadingTime={getLatestReadingTime()}
+                currentRate={getCurrentRate().ratePerHour}
+                currentRateTimestamp={getCurrentRate().timestamp}
+              />
 
               <AffectedAreas />
 
