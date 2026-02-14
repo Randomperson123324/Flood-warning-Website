@@ -10,11 +10,13 @@ import { LanguageToggle } from "./language-toggle"
 interface StickyHeaderProps {
   activeTab: string
   onTabChange: (tab: string) => void
+  onSettingsClick?: () => void
 }
 
 export function StickyHeader({
   activeTab,
   onTabChange,
+  onSettingsClick
 }: StickyHeaderProps) {
   const { t } = useLanguage()
   const [isScrolled, setIsScrolled] = useState(false)

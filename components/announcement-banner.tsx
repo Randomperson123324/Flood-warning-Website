@@ -132,14 +132,14 @@ export function AnnouncementBanner() {
           // Only handle INSERT events (new announcements)
           if (payload.eventType === "INSERT" && payload.new) {
             const latestAnnouncement = payload.new as Announcement
-            
+
             // Only show if active and not dismissed
             if (latestAnnouncement.is_active) {
               // Check if dismissed before showing
               if (!isAnnouncementDismissed(latestAnnouncement.id)) {
                 setAnnouncement(latestAnnouncement)
                 setLastAnnouncementId(latestAnnouncement.id)
-                
+
                 if (latestAnnouncement.type === "popup") {
                   setShowPopup(true)
                   setShowBanner(false)
@@ -153,13 +153,13 @@ export function AnnouncementBanner() {
           // Handle UPDATE events (e.g., when announcement is activated/deactivated)
           else if (payload.eventType === "UPDATE" && payload.new) {
             const updatedAnnouncement = payload.new as Announcement
-            
+
             if (updatedAnnouncement.is_active) {
               // Check if dismissed before showing
               if (!isAnnouncementDismissed(updatedAnnouncement.id)) {
                 setAnnouncement(updatedAnnouncement)
                 setLastAnnouncementId(updatedAnnouncement.id)
-                
+
                 if (updatedAnnouncement.type === "popup") {
                   setShowPopup(true)
                   setShowBanner(false)
@@ -200,7 +200,7 @@ export function AnnouncementBanner() {
       // Hide the announcement immediately
       setShowBanner(false)
       setShowPopup(false)
-      
+
       // Keep the announcement data but don't show it
       // This way if a new announcement comes, it will replace this one
     }
@@ -210,7 +210,7 @@ export function AnnouncementBanner() {
     <>
       {/* Banner */}
       {showBanner && announcement && (
-        <div className="fixed top-0 left-0 right-0 z-50 p-4">
+        <div className="fixed top-0 left-0 right-0 z-50 p-4 md:ml-16">
           <Alert className="border-blue-200 bg-blue-50 shadow-lg">
             <Megaphone className="h-4 w-4 text-blue-600" />
             <AlertDescription className="flex items-center justify-between">

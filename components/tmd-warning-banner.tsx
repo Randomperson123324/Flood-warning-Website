@@ -52,7 +52,7 @@ export function TMDWarningBanner() {
         <div className="w-full">
             <Alert
                 className={cn(
-                    "rounded-none border-none py-2 px-4 shadow-sm transition-colors duration-500",
+                    "rounded-none border-none py-2 px-4 shadow-sm transition-all duration-500 md:ml-16",
                     hasWarning
                         ? "bg-red-600 text-white animate-pulse"
                         : isError
@@ -60,7 +60,7 @@ export function TMDWarningBanner() {
                             : "bg-green-600 text-white"
                 )}
             >
-                <div className="container mx-auto flex items-center justify-between gap-4">
+                <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         {hasWarning || isError ? (
                             <AlertTriangle className={cn("h-5 w-5", isError ? "text-black" : "text-red-100")} />

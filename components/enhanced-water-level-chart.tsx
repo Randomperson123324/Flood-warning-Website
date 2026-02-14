@@ -17,6 +17,10 @@ import { Badge } from "@/components/ui/badge"
 import { ZoomIn, ZoomOut, RotateCcw, RefreshCw } from "lucide-react"
 import { useLanguage } from "../hooks/language-context"
 
+import { cn } from "@/lib/utils"
+
+// ... (props interface update)
+
 interface EnhancedWaterLevelChartProps {
   data?: Array<{
     timestamp: string
@@ -30,6 +34,7 @@ interface EnhancedWaterLevelChartProps {
   onRefresh?: () => void
   isRefreshing?: boolean
   showLast24Hours?: boolean
+  className?: string
 }
 
 export function EnhancedWaterLevelChart({
@@ -41,7 +46,9 @@ export function EnhancedWaterLevelChart({
   isRefreshing = false,
   showLast24Hours = false,
   dateRangeLabel,
+  className,
 }: EnhancedWaterLevelChartProps & { dateRangeLabel?: string }) {
+  // ... (existing state and logic)
   const { t } = useLanguage()
   const [zoomDomain, setZoomDomain] = useState<[number, number] | null>(null)
 
@@ -59,7 +66,8 @@ export function EnhancedWaterLevelChart({
       })
       : (data || []))
 
-  // For comparison, we need to normalize timestamps to just time of day
+  // ... (rest of logic up to return)
+
   const normalizedMultiData = isComparison ? Object.entries(multiData!).map(([label, readings]) => {
     return {
       label,
@@ -152,7 +160,7 @@ export function EnhancedWaterLevelChart({
       </div>
 
       {/* Chart */}
-      <div className="h-[400px] w-full">
+      <div className={cn("h-[400px] w-full", className)}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart>
             <CartesianGrid strokeDasharray="3 3" />
