@@ -52,7 +52,7 @@ export function TMDWarningBanner() {
         <div className="w-full">
             <Alert
                 className={cn(
-                    "rounded-none border-none py-2 px-4 shadow-sm transition-all duration-500 md:ml-16",
+                    "rounded-none border-none py-2 px-4 shadow-sm transition-all duration-500 md:ml-1",
                     hasWarning
                         ? "bg-red-600 text-white animate-pulse"
                         : isError
