@@ -85,7 +85,7 @@ export default function Dashboard() {
   const [showLineQR, setShowLineQR] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [isFirstLoad, setIsFirstLoad] = useState(true)
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true)
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false)
   const router = useRouter()
 
   // Effect for multi-date comparison
@@ -321,7 +321,8 @@ export default function Dashboard() {
       </div>
 
       <div className={cn(
-        "flex-1 flex flex-col min-w-0 transition-all duration-300 md:ml-16"
+        "flex-1 flex flex-col min-w-0 transition-all duration-300",
+        isSidebarExpanded ? "md:pl-64" : "md:pl-16"
       )}>
         {/* Announcement Banner */}
         <AnnouncementBanner />
