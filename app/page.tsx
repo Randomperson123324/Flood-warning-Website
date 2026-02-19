@@ -43,7 +43,7 @@ import { useWeatherData } from "@/hooks/use-weather-data"
 import { Footer } from "../components/footer"
 import { LoadingOverlay } from "../components/loading-overlay"
 import { CurrentStatusDashboard } from "../components/current-status-dashboard"
-import { WarningScreen, WaterLevelWarningBanner } from "../components/warning-screen"
+import { WarningScreen } from "../components/warning-screen"
 import { Sidebar } from "../components/sidebar"
 import { cn } from "@/lib/utils"
 import type { JSX } from "react/jsx-runtime"
@@ -86,7 +86,6 @@ export default function Dashboard() {
   const [isOpen, setIsOpen] = useState(false)
   const [isFirstLoad, setIsFirstLoad] = useState(true)
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false)
-  const [warningBannerHeight, setWarningBannerHeight] = useState(0)
   const router = useRouter()
 
   // Effect for multi-date comparison
@@ -304,21 +303,12 @@ export default function Dashboard() {
         currentRateTimestamp={getCurrentRate().timestamp}
       />
 
-      {/* Water Level Warning Banner */}
-      <WaterLevelWarningBanner
-        currentLevel={currentLevel}
-        warningLevel={warningLevel}
-        dangerLevel={dangerLevel}
-        onHeightChange={setWarningBannerHeight}
-      />
-
       {/* Sidebar for Desktop */}
       <Sidebar
         activeTab={activeTab}
         onTabChange={setActiveTab}
         isExpanded={isSidebarExpanded}
         onToggle={() => setIsSidebarExpanded(!isSidebarExpanded)}
-        topOffset={warningBannerHeight}
       />
 
       {/* Sticky Header for Mobile */}
@@ -332,9 +322,7 @@ export default function Dashboard() {
 
       <div className={cn(
         "flex-1 flex flex-col min-w-0 transition-all duration-300 md:ml-16"
-      )}
-        style={{ paddingTop: warningBannerHeight > 0 ? `${warningBannerHeight}px` : undefined }}
-      >
+      )}>
         {/* Announcement Banner */}
         <AnnouncementBanner />
 
