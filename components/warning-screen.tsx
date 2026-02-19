@@ -1,12 +1,13 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef, useCallback } from "react"
 import { useLanguage } from "@/hooks/language-context"
 import { CurrentStatusDashboard } from "./current-status-dashboard"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "./ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertTriangle, ShieldAlert } from "lucide-react"
+import { AlertTriangle, ShieldAlert, ChevronDown, ChevronUp, X } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface WarningScreenProps {
   currentLevel: number
@@ -181,6 +182,147 @@ export function WarningScreen({
           </div>
         </CardContent>
       </Card>
+    </div>
+  )
+}
+
+// --- Water Level Warning Banner (persistent, shows when water is unsafe) ---
+
+interface WaterLevelWarningBannerProps {
+  currentLevel: number
+  warningLevel: number
+  dangerLevel: number
+  onHeightChange?: (height: number) => void
+}
+
+export function WaterLevelWarningBanner({
+  currentLevel,
+  warningLevel,
+  dangerLevel,
+  onHeightChange,
+}: WaterLevelWarningBannerProps) {
+  const { t } = useLanguage()
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [isDismissed, setIsDismissed] = useState(false)
+  const [dismissedTier, setDismissedTier] = useState<"warning" | "danger" | null>(null)
+  const bannerRef = useRef<HTMLDivElement>(null)
+
+  const isDanger = currentLevel >= dangerLevel
+  const isWarning = currentLevel >= warningLevel && currentLevel < dangerLevel
+  const isUnsafe = isDanger || isWarning
+  const currentTier = isDanger ? "danger" : isWarning ? "warning" : null
+
+  // Reset dismissed state if tier changes
+  useEffect(() => {
+    if (currentTier && currentTier !== dismissedTier) {
+      setIsDismissed(false)
+      setDismissedTier(null)
+    }
+  }, [currentTier, dismissedTier])
+
+  // Report height to parent for sidebar offset
+  useEffect(() => {
+    if (!onHeightChange) return
+    if (!isUnsafe || isDismissed) {
+      onHeightChange(0)
+      return
+    }
+    const el = bannerRef.current
+    if (!el) return
+    const observer = new ResizeObserver(() => {
+      onHeightChange(el.getBoundingClientRect().height)
+    })
+    observer.observe(el)
+    onHeightChange(el.getBoundingClientRect().height)
+    return () => observer.disconnect()
+  }, [isUnsafe, isDismissed, isExpanded, onHeightChange])
+
+  if (!isUnsafe || isDismissed) return null
+
+  const instructions = isDanger
+    ? t.warningScreen.instructions.danger
+    : t.warningScreen.instructions.warning
+
+  const tierLabel = isDanger
+    ? t.warningScreen.dangerLevel
+    : t.warningScreen.warningLevel
+
+  const statusText = isDanger ? t.status.danger : t.status.warning
+
+  return (
+    <div
+      ref={bannerRef}
+      className={cn(
+        "fixed top-0 left-0 z-[70] w-full shadow-lg transition-all duration-300",
+        isDanger
+          ? "bg-red-600 text-white"
+          : "bg-amber-500 text-black"
+      )}
+    >
+      {/* Compact bar */}
+      <div className="flex items-center justify-between px-4 py-2.5 md:pl-20">
+        <div className="flex items-center gap-3 min-w-0">
+          {isDanger ? (
+            <ShieldAlert className="h-5 w-5 flex-shrink-0" />
+          ) : (
+            <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+          )}
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <span className="font-bold text-sm sm:text-base">{tierLabel}:</span>
+            <span className="text-sm sm:text-base opacity-90">{statusText}</span>
+            <span className="text-xs sm:text-sm opacity-75">
+              ({currentLevel.toFixed(1)} cm)
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className={cn(
+              "p-1.5 rounded-full transition-colors",
+              isDanger ? "hover:bg-white/15" : "hover:bg-black/10"
+            )}
+            title={isExpanded ? "Collapse" : "Show instructions"}
+          >
+            {isExpanded ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </button>
+          <button
+            onClick={() => {
+              setIsDismissed(true)
+              setDismissedTier(currentTier)
+            }}
+            className={cn(
+              "p-1.5 rounded-full transition-colors",
+              isDanger ? "hover:bg-white/15" : "hover:bg-black/10"
+            )}
+            title="Dismiss"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Expandable instructions */}
+      {isExpanded && (
+        <div
+          className={cn(
+            "px-4 pb-3 md:pl-20 animate-in slide-in-from-top-2 duration-200",
+            isDanger ? "border-t border-red-500/40" : "border-t border-amber-400/40"
+          )}
+        >
+          <ul className="list-disc pl-5 space-y-1.5 pt-2">
+            {instructions.map((instruction: string, index: number) => (
+              <li key={index} className="text-sm opacity-90">
+                {instruction}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   )
 }
