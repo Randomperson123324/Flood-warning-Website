@@ -1,12 +1,12 @@
 "use client"
 
-import React, { useState, useEffect, useRef, useCallback } from "react"
+import React, { useState, useEffect } from "react"
 import { useLanguage } from "@/hooks/language-context"
 import { CurrentStatusDashboard } from "./current-status-dashboard"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "./ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertTriangle, ShieldAlert, ChevronDown, ChevronUp, X } from "lucide-react"
+import { AlertTriangle, ShieldAlert } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface WarningScreenProps {
@@ -41,24 +41,60 @@ export function WarningScreen({
   const [isVisible, setIsVisible] = useState(false)
   const [isChecked, setIsChecked] = useState(false)
   const [canClose, setCanClose] = useState(false)
+  const [isFirstVisit, setIsFirstVisit] = useState(false)
+  const [dismissedTier, setDismissedTier] = useState<"warning" | "danger" | null>(null)
 
+  const isDanger = currentLevel >= dangerLevel
+  const isWarning = currentLevel >= warningLevel && currentLevel < dangerLevel
+  const isUnsafe = isDanger || isWarning
+  const currentTier = isDanger ? "danger" : isWarning ? "warning" : null
+
+  // First visit check
   useEffect(() => {
-    // Check localStorage on mount
     const hasAcknowledged = localStorage.getItem("hasAcknowledgedWarning")
     if (!hasAcknowledged) {
+      setIsFirstVisit(true)
       setIsVisible(true)
-      // Prevent scrolling when modal is open
       document.body.style.overflow = "hidden"
     }
   }, [])
 
+  // Water level trigger: show popup when unsafe and not already dismissed for this tier
+  useEffect(() => {
+    if (isFirstVisit) return // first-visit modal takes priority
+    if (isUnsafe && currentTier !== dismissedTier) {
+      setIsVisible(true)
+      setIsChecked(false)
+      setCanClose(false)
+      document.body.style.overflow = "hidden"
+    } else if (!isUnsafe) {
+      // Water went back to safe — reset dismissed tier
+      setDismissedTier(null)
+      if (!isFirstVisit) {
+        setIsVisible(false)
+        document.body.style.overflow = "unset"
+      }
+    }
+  }, [currentTier, isUnsafe, isFirstVisit, dismissedTier])
+
   const handleClose = () => {
-    localStorage.setItem("hasAcknowledgedWarning", "true")
+    if (isFirstVisit) {
+      localStorage.setItem("hasAcknowledgedWarning", "true")
+      setIsFirstVisit(false)
+    }
+    if (currentTier) {
+      setDismissedTier(currentTier)
+    }
     setIsVisible(false)
     document.body.style.overflow = "unset"
   }
 
   if (!isVisible) return null
+
+  // Determine which instructions to show
+  const showBothTiers = isFirstVisit && !isUnsafe // first visit with safe level: show both
+  const showWarningOnly = isWarning && !isFirstVisit
+  const showDangerOnly = isDanger && !isFirstVisit
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
@@ -110,40 +146,44 @@ export function WarningScreen({
           </section>
 
           {/* Instructions Section */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Warning Level */}
-            <div className="rounded-xl border border-yellow-200 bg-yellow-50 dark:bg-yellow-900/10 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <ShieldAlert className="h-6 w-6 text-yellow-600" />
-                <h3 className="text-xl font-bold text-yellow-800 dark:text-yellow-500">
-                  {t.warningScreen.warningLevel}
-                </h3>
+          <div className={cn("grid gap-6", showBothTiers ? "md:grid-cols-2" : "md:grid-cols-1")}>
+            {/* Warning Level - show if both tiers, or warning only, or first visit while at warning */}
+            {(showBothTiers || showWarningOnly || (isFirstVisit && isWarning)) && (
+              <div className="rounded-xl border border-yellow-200 bg-yellow-50 dark:bg-yellow-900/10 p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <ShieldAlert className="h-6 w-6 text-yellow-600" />
+                  <h3 className="text-xl font-bold text-yellow-800 dark:text-yellow-500">
+                    {t.warningScreen.warningLevel}
+                  </h3>
+                </div>
+                <ul className="list-decimal pl-5 space-y-3 text-yellow-900 dark:text-yellow-200/80">
+                  {t.warningScreen.instructions.warning.map((instruction: string, index: number) => (
+                    <li key={index} className="pl-2">
+                      {instruction}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="list-decimal pl-5 space-y-3 text-yellow-900 dark:text-yellow-200/80">
-                {t.warningScreen.instructions.warning.map((instruction: string, index: number) => (
-                  <li key={index} className="pl-2">
-                    {instruction}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            )}
 
-            {/* Dangerous Level */}
-            <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/10 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <ShieldAlert className="h-6 w-6 text-red-600" />
-                <h3 className="text-xl font-bold text-red-800 dark:text-red-500">
-                  {t.warningScreen.dangerLevel}
-                </h3>
+            {/* Dangerous Level - show if both tiers, or danger only, or first visit while at danger */}
+            {(showBothTiers || showDangerOnly || (isFirstVisit && isDanger)) && (
+              <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/10 p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <ShieldAlert className="h-6 w-6 text-red-600" />
+                  <h3 className="text-xl font-bold text-red-800 dark:text-red-500">
+                    {t.warningScreen.dangerLevel}
+                  </h3>
+                </div>
+                <ul className="list-decimal pl-5 space-y-3 text-red-900 dark:text-red-200/80">
+                  {t.warningScreen.instructions.danger.map((instruction: string, index: number) => (
+                    <li key={index} className="pl-2">
+                      {instruction}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="list-decimal pl-5 space-y-3 text-red-900 dark:text-red-200/80">
-                {t.warningScreen.instructions.danger.map((instruction: string, index: number) => (
-                  <li key={index} className="pl-2">
-                    {instruction}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            )}
           </div>
 
           {/* Agreement Section */}
@@ -182,147 +222,6 @@ export function WarningScreen({
           </div>
         </CardContent>
       </Card>
-    </div>
-  )
-}
-
-// --- Water Level Warning Banner (persistent, shows when water is unsafe) ---
-
-interface WaterLevelWarningBannerProps {
-  currentLevel: number
-  warningLevel: number
-  dangerLevel: number
-  onHeightChange?: (height: number) => void
-}
-
-export function WaterLevelWarningBanner({
-  currentLevel,
-  warningLevel,
-  dangerLevel,
-  onHeightChange,
-}: WaterLevelWarningBannerProps) {
-  const { t } = useLanguage()
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [isDismissed, setIsDismissed] = useState(false)
-  const [dismissedTier, setDismissedTier] = useState<"warning" | "danger" | null>(null)
-  const bannerRef = useRef<HTMLDivElement>(null)
-
-  const isDanger = currentLevel >= dangerLevel
-  const isWarning = currentLevel >= warningLevel && currentLevel < dangerLevel
-  const isUnsafe = isDanger || isWarning
-  const currentTier = isDanger ? "danger" : isWarning ? "warning" : null
-
-  // Reset dismissed state if tier changes
-  useEffect(() => {
-    if (currentTier && currentTier !== dismissedTier) {
-      setIsDismissed(false)
-      setDismissedTier(null)
-    }
-  }, [currentTier, dismissedTier])
-
-  // Report height to parent for sidebar offset
-  useEffect(() => {
-    if (!onHeightChange) return
-    if (!isUnsafe || isDismissed) {
-      onHeightChange(0)
-      return
-    }
-    const el = bannerRef.current
-    if (!el) return
-    const observer = new ResizeObserver(() => {
-      onHeightChange(el.getBoundingClientRect().height)
-    })
-    observer.observe(el)
-    onHeightChange(el.getBoundingClientRect().height)
-    return () => observer.disconnect()
-  }, [isUnsafe, isDismissed, isExpanded, onHeightChange])
-
-  if (!isUnsafe || isDismissed) return null
-
-  const instructions = isDanger
-    ? t.warningScreen.instructions.danger
-    : t.warningScreen.instructions.warning
-
-  const tierLabel = isDanger
-    ? t.warningScreen.dangerLevel
-    : t.warningScreen.warningLevel
-
-  const statusText = isDanger ? t.status.danger : t.status.warning
-
-  return (
-    <div
-      ref={bannerRef}
-      className={cn(
-        "fixed top-0 left-0 z-[70] w-full shadow-lg transition-all duration-300",
-        isDanger
-          ? "bg-red-600 text-white"
-          : "bg-amber-500 text-black"
-      )}
-    >
-      {/* Compact bar */}
-      <div className="flex items-center justify-between px-4 py-2.5 md:pl-20">
-        <div className="flex items-center gap-3 min-w-0">
-          {isDanger ? (
-            <ShieldAlert className="h-5 w-5 flex-shrink-0" />
-          ) : (
-            <AlertTriangle className="h-5 w-5 flex-shrink-0" />
-          )}
-          <div className="flex items-center gap-2 flex-wrap min-w-0">
-            <span className="font-bold text-sm sm:text-base">{tierLabel}:</span>
-            <span className="text-sm sm:text-base opacity-90">{statusText}</span>
-            <span className="text-xs sm:text-sm opacity-75">
-              ({currentLevel.toFixed(1)} cm)
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className={cn(
-              "p-1.5 rounded-full transition-colors",
-              isDanger ? "hover:bg-white/15" : "hover:bg-black/10"
-            )}
-            title={isExpanded ? "Collapse" : "Show instructions"}
-          >
-            {isExpanded ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </button>
-          <button
-            onClick={() => {
-              setIsDismissed(true)
-              setDismissedTier(currentTier)
-            }}
-            className={cn(
-              "p-1.5 rounded-full transition-colors",
-              isDanger ? "hover:bg-white/15" : "hover:bg-black/10"
-            )}
-            title="Dismiss"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Expandable instructions */}
-      {isExpanded && (
-        <div
-          className={cn(
-            "px-4 pb-3 md:pl-20 animate-in slide-in-from-top-2 duration-200",
-            isDanger ? "border-t border-red-500/40" : "border-t border-amber-400/40"
-          )}
-        >
-          <ul className="list-disc pl-5 space-y-1.5 pt-2">
-            {instructions.map((instruction: string, index: number) => (
-              <li key={index} className="text-sm opacity-90">
-                {instruction}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   )
 }
