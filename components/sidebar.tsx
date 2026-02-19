@@ -12,7 +12,6 @@ interface SidebarProps {
   onTabChange: (tab: string) => void
   isExpanded: boolean
   onToggle: () => void
-  topOffset?: number
 }
 
 export function Sidebar({
@@ -20,7 +19,6 @@ export function Sidebar({
   onTabChange,
   isExpanded,
   onToggle,
-  topOffset = 0,
 }: SidebarProps) {
   const { t } = useLanguage()
 
@@ -57,13 +55,9 @@ export function Sidebar({
   return (
     <div
       className={cn(
-        "hidden md:flex flex-col border-r border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl fixed left-0 transition-all duration-300 ease-in-out z-[60]",
+        "hidden md:flex flex-col border-r border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl h-screen fixed left-0 top-0 transition-all duration-300 ease-in-out z-[60]",
         isExpanded ? "w-64" : "w-16"
       )}
-      style={{
-        top: `${topOffset}px`,
-        height: `calc(100vh - ${topOffset}px)`,
-      }}
     >
       <div className="flex items-center justify-between p-4 h-16 border-b border-gray-200 dark:border-gray-700">
         {isExpanded && <span className="font-bold text-xl truncate">Project StreeFlood</span>}
