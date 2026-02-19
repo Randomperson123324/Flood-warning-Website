@@ -212,7 +212,7 @@ export function WarningScreen({
                 onClick={handleClose}
                 disabled={!canClose}
                 className={`w-full sm:w-auto font-bold text-lg transition-all ${canClose
-                  ? "bg-red-600 hover:bg-red-700 shadow-lg shadow-red-500/20"
+                  ? "bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20"
                   : "opacity-50 cursor-not-allowed"
                   }`}
               >
