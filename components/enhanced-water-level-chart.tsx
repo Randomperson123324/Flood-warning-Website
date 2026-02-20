@@ -241,14 +241,6 @@ export function EnhancedWaterLevelChart({
           <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
           <span>{t.cards.website}</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-          <span>{t.cards.community}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
-          <span>{t.cards.combined}</span>
-        </div>
       </div>
     </div>
   )
