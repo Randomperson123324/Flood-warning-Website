@@ -10,14 +10,17 @@ interface WarningData {
     hasWarning: boolean
     titleThai: string
     descriptionThai: string
+    headlineThai: string
     titleEnglish: string
     descriptionEnglish: string
+    headlineEnglish: string
 }
 
 export function TMDWarningBanner() {
     const [data, setData] = useState<WarningData | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [isError, setIsError] = useState(false)
+    const [showHeadline, setShowHeadline] = useState(false)
     const { language } = useLanguage()
 
     const fetchWarning = async () => {
@@ -83,6 +86,23 @@ export function TMDWarningBanner() {
                             {hasWarning && (
                                 <div className="text-xs sm:text-sm opacity-90 mt-1 whitespace-pre-wrap">
                                     {language === "th" ? data?.descriptionThai : data?.descriptionEnglish}
+                                </div>
+                            )}
+                            {hasWarning && (language === "th" ? data?.headlineThai : data?.headlineEnglish) && (
+                                <div className="mt-2">
+                                    <button
+                                        onClick={() => setShowHeadline(!showHeadline)}
+                                        className="text-xs font-bold underline hover:opacity-80 transition-opacity"
+                                    >
+                                        {showHeadline
+                                            ? (language === "th" ? "แสดงน้อยลง" : "Show less")
+                                            : (language === "th" ? "ดูเพิ่มเติม" : "See more")}
+                                    </button>
+                                    {showHeadline && (
+                                        <div className="mt-2 text-xs sm:text-sm bg-white/10 p-3 rounded border border-white/20 whitespace-pre-wrap">
+                                            {language === "th" ? data?.headlineThai : data?.headlineEnglish}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
