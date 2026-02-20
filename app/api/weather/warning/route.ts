@@ -35,7 +35,16 @@ export async function GET(request: NextRequest) {
             descriptionEnglish = descEnglishMatch ? descEnglishMatch[1].trim() : ""
 
             // Clean up XML entities
-            const clean = (text: string) => text.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+            const clean = (text: string) => {
+                return text
+                    .replace(/&lt;/g, '<')
+                    .replace(/&gt;/g, '>')
+                    .replace(/&amp;/g, '&')
+                    .replace(/&quot;/g, '"')
+                    .replace(/&apos;/g, "'")
+                    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+                    .replace(/&#([0-9]+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
+            }
 
             titleThai = clean(titleThai)
             descriptionThai = clean(descriptionThai)
