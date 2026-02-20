@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertTriangle, CheckCircle, RefreshCw } from "lucide-react"
+import { AlertTriangle, CheckCircle } from "lucide-react"
 import { useLanguage } from "@/hooks/language-context"
 import { cn } from "@/lib/utils"
 
@@ -114,13 +114,7 @@ export function TMDWarningBanner() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => fetchWarning()}
-                            className="p-1 hover:bg-white/10 rounded-full transition-colors"
-                            title="Refresh Warning Status"
-                        >
-                            <RefreshCw className={cn("h-4 w-4", isError ? "text-black/80" : "text-white/80", isLoading && "animate-spin")} />
-                        </button>
+
                         {hasWarning && (
                             <a
                                 href="https://www.tmd.go.th/"
