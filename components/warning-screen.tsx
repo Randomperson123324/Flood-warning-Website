@@ -41,7 +41,6 @@ export function WarningScreen({
   const [isVisible, setIsVisible] = useState(false)
   const [isChecked, setIsChecked] = useState(false)
   const [canClose, setCanClose] = useState(false)
-  const [isFirstVisit, setIsFirstVisit] = useState(false)
   const [dismissedTier, setDismissedTier] = useState<"warning" | "danger" | null>(null)
 
   const isDanger = currentLevel >= dangerLevel
@@ -49,19 +48,8 @@ export function WarningScreen({
   const isUnsafe = isDanger || isWarning
   const currentTier = isDanger ? "danger" : isWarning ? "warning" : null
 
-  // First visit check
-  useEffect(() => {
-    const hasAcknowledged = localStorage.getItem("hasAcknowledgedWarning")
-    if (!hasAcknowledged) {
-      setIsFirstVisit(true)
-      setIsVisible(true)
-      document.body.style.overflow = "hidden"
-    }
-  }, [])
-
   // Water level trigger: show popup when unsafe and not already dismissed for this tier
   useEffect(() => {
-    if (isFirstVisit) return // first-visit modal takes priority
     if (isUnsafe && currentTier !== dismissedTier) {
       setIsVisible(true)
       setIsChecked(false)
@@ -70,18 +58,12 @@ export function WarningScreen({
     } else if (!isUnsafe) {
       // Water went back to safe — reset dismissed tier
       setDismissedTier(null)
-      if (!isFirstVisit) {
-        setIsVisible(false)
-        document.body.style.overflow = "unset"
-      }
+      setIsVisible(false)
+      document.body.style.overflow = "unset"
     }
-  }, [currentTier, isUnsafe, isFirstVisit, dismissedTier])
+  }, [currentTier, isUnsafe, dismissedTier])
 
   const handleClose = () => {
-    if (isFirstVisit) {
-      localStorage.setItem("hasAcknowledgedWarning", "true")
-      setIsFirstVisit(false)
-    }
     if (currentTier) {
       setDismissedTier(currentTier)
     }
@@ -92,9 +74,8 @@ export function WarningScreen({
   if (!isVisible) return null
 
   // Determine which instructions to show
-  const showBothTiers = isFirstVisit && !isUnsafe // first visit with safe level: show both
-  const showWarningOnly = isWarning && !isFirstVisit
-  const showDangerOnly = isDanger && !isFirstVisit
+  const showWarning = isWarning
+  const showDanger = isDanger
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
@@ -146,9 +127,9 @@ export function WarningScreen({
           </section>
 
           {/* Instructions Section */}
-          <div className={cn("grid gap-6", showBothTiers ? "md:grid-cols-2" : "md:grid-cols-1")}>
-            {/* Warning Level - show if both tiers, or warning only, or first visit while at warning */}
-            {(showBothTiers || showWarningOnly || (isFirstVisit && isWarning)) && (
+          <div className="grid gap-6 md:grid-cols-1">
+            {/* Warning Level */}
+            {showWarning && (
               <div className="rounded-xl border border-yellow-200 bg-yellow-50 dark:bg-yellow-900/10 p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <ShieldAlert className="h-6 w-6 text-yellow-600" />
@@ -166,8 +147,8 @@ export function WarningScreen({
               </div>
             )}
 
-            {/* Dangerous Level - show if both tiers, or danger only, or first visit while at danger */}
-            {(showBothTiers || showDangerOnly || (isFirstVisit && isDanger)) && (
+            {/* Dangerous Level */}
+            {showDanger && (
               <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/10 p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <ShieldAlert className="h-6 w-6 text-red-600" />
