@@ -8,8 +8,10 @@ import { cn } from "@/lib/utils"
 
 interface WarningData {
     hasWarning: boolean
-    title: string
-    description: string
+    titleThai: string
+    descriptionThai: string
+    titleEnglish: string
+    descriptionEnglish: string
 }
 
 export function TMDWarningBanner() {
@@ -54,7 +56,7 @@ export function TMDWarningBanner() {
                 className={cn(
                     "rounded-none border-none py-2 px-4 shadow-sm transition-all duration-500 md:pl-16",
                     hasWarning
-                        ? "bg-red-600 text-white animate-pulse"
+                        ? "bg-red-600 text-white"
                         : isError
                             ? "bg-yellow-500 text-black"
                             : "bg-green-600 text-white"
@@ -68,19 +70,19 @@ export function TMDWarningBanner() {
                             <CheckCircle className="h-5 w-5 text-green-100" />
                         )}
                         <div>
-                            <div className="font-bold text-sm sm:text-base flex items-center gap-2">
+                            <div className="font-bold text-sm sm:text-base flex flex-wrap items-center gap-2">
                                 <span>{language === "th" ? "เตือนภัยสภาพอากาศ (กรมอุตุนิยมวิทยา):" : "Weather Warning (TMD):"}</span>
                                 <span className="opacity-90">
                                     {hasWarning
-                                        ? (language === "th" ? "มีคำเตือนภัยสภาพอากาศ" : "ACTIVE WARNING")
+                                        ? (language === "th" ? data?.titleThai : data?.titleEnglish)
                                         : isError
                                             ? (language === "th" ? "ไม่สามารถดึงข้อมูลได้" : "CAN'T FETCH DATA")
                                             : (language === "th" ? "ไม่มีเตือนภัย" : "NO WARNING")}
                                 </span>
                             </div>
-                            {hasWarning && data?.description && (
-                                <div className="text-xs sm:text-sm line-clamp-1 opacity-90">
-                                    {data.description}
+                            {hasWarning && (
+                                <div className="text-xs sm:text-sm opacity-90 mt-1 whitespace-pre-wrap">
+                                    {language === "th" ? data?.descriptionThai : data?.descriptionEnglish}
                                 </div>
                             )}
                         </div>
