@@ -30,6 +30,9 @@ export function LoadingOverlay({ isLoading, message = "Retrieving data from data
                                         <p className="text-xs font-medium text-blue-600 dark:text-blue-400 animate-pulse text-center">
                                             {message}
                                         </p>
+                                        <p className="text-[10px] text-muted-foreground mt-1 text-center">
+                                            {"รอแป็ป เว็บนี้งบน้อย"}
+                                        </p>
                                     </div>
                                 </div>
                             )}

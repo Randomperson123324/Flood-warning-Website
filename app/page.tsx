@@ -282,7 +282,10 @@ export default function Dashboard() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-gray-800">
         <div className="container mx-auto p-6">
           <div className="flex justify-center items-center min-h-[50vh]">
-            <div className="animate-pulse text-lg">{t.common.loading}</div>
+            <div className="text-center">
+              <div className="animate-pulse text-lg">{t.common.loading}</div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{"รอแป็ป เว็บนี้งบน้อย"}</p>
+            </div>
           </div>
         </div>
       </div>
