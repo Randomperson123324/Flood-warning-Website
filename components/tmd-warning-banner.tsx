@@ -84,11 +84,6 @@ export function TMDWarningBanner() {
                                 </span>
                             </div>
                             {hasWarning && (
-                                <div className="text-xs sm:text-sm opacity-90 mt-1 whitespace-pre-wrap">
-                                    {language === "th" ? data?.descriptionThai : data?.descriptionEnglish}
-                                </div>
-                            )}
-                            {hasWarning && (language === "th" ? data?.headlineThai : data?.headlineEnglish) && (
                                 <div className="mt-2">
                                     <button
                                         onClick={() => setShowHeadline(!showHeadline)}
@@ -99,8 +94,18 @@ export function TMDWarningBanner() {
                                             : (language === "th" ? "ดูเพิ่มเติม" : "See more")}
                                     </button>
                                     {showHeadline && (
-                                        <div className="mt-2 text-xs sm:text-sm bg-white/10 p-3 rounded border border-white/20 whitespace-pre-wrap">
-                                            {language === "th" ? data?.headlineThai : data?.headlineEnglish}
+                                        <div className="mt-2 space-y-3">
+                                            {/* Description */}
+                                            <div className="text-xs sm:text-sm opacity-90 whitespace-pre-wrap">
+                                                {language === "th" ? data?.descriptionThai : data?.descriptionEnglish}
+                                            </div>
+
+                                            {/* Headline/Detailed info */}
+                                            {(language === "th" ? data?.headlineThai : data?.headlineEnglish) && (
+                                                <div className="text-xs sm:text-sm bg-white/10 p-3 rounded border border-white/20 whitespace-pre-wrap italic">
+                                                    {language === "th" ? data?.headlineThai : data?.headlineEnglish}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
