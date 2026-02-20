@@ -95,17 +95,17 @@ export function TMDWarningBanner() {
                                     </button>
                                     {showHeadline && (
                                         <div className="mt-2 space-y-3">
-                                            {/* Description */}
-                                            <div className="text-xs sm:text-sm opacity-90 whitespace-pre-wrap">
-                                                {language === "th" ? data?.descriptionThai : data?.descriptionEnglish}
-                                            </div>
-
                                             {/* Headline/Detailed info */}
                                             {(language === "th" ? data?.headlineThai : data?.headlineEnglish) && (
                                                 <div className="text-xs sm:text-sm bg-white/10 p-3 rounded border border-white/20 whitespace-pre-wrap italic">
                                                     {language === "th" ? data?.headlineThai : data?.headlineEnglish}
                                                 </div>
                                             )}
+
+                                            {/* Description */}
+                                            <div className="text-xs sm:text-sm opacity-90 whitespace-pre-wrap">
+                                                {language === "th" ? data?.descriptionThai : data?.descriptionEnglish}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
