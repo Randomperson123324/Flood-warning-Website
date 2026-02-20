@@ -74,7 +74,7 @@ export function WarningScreen({
   if (!isVisible) return null
 
   // Determine which instructions to show
-  const showWarning = isWarning || isDanger
+  const showWarning = isWarning
   const showDanger = isDanger
 
   return (
@@ -127,7 +127,7 @@ export function WarningScreen({
           </section>
 
           {/* Instructions Section */}
-          <div className={cn("grid gap-6", showWarning && showDanger ? "md:grid-cols-2" : "md:grid-cols-1")}>
+          <div className="grid gap-6 md:grid-cols-1">
             {/* Warning Level */}
             {showWarning && (
               <div className="rounded-xl border border-yellow-200 bg-yellow-50 dark:bg-yellow-900/10 p-6">
