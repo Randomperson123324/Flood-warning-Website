@@ -122,7 +122,7 @@ export function TMDWarningBanner() {
                                 rel="noopener noreferrer"
                                 className="text-xs underline font-medium hover:text-white/80"
                             >
-                                {language === "th" ? "ดูรายละเอียด" : "Details"}
+                                {language === "th" ? "ไปที่กรมอุตุฯ" : "Go to TMD"}
                             </a>
                         )}
                     </div>
