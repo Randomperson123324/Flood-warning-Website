@@ -234,7 +234,7 @@ export function AnnouncementBanner() {
       {/* Popup */}
       {showPopup && announcement && (
         <Dialog open={true} onOpenChange={() => handleDismiss()}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Megaphone className="h-5 w-5 text-blue-600" />
