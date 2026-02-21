@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertTriangle, CheckCircle } from "lucide-react"
+import { AlertTriangle, CheckCircle, ExternalLink } from "lucide-react"
 import { useLanguage } from "@/hooks/language-context"
 import { cn } from "@/lib/utils"
 
@@ -52,13 +52,13 @@ export function TMDWarningBanner() {
     if (isLoading && !data && !isError) {
         return (
             <div className="w-full">
-                <Alert className="rounded-none border-none py-2 px-4 shadow-sm md:pl-16 bg-gray-200 dark:bg-gray-800 animate-pulse">
+                <Alert
+                    className="rounded-none border-none py-2 px-4 shadow-sm transition-all duration-500 md:pl-16 bg-muted/50 dark:bg-muted/20"
+                >
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3 w-full">
-                            <div className="h-5 w-5 rounded-full bg-gray-300 dark:bg-gray-700"></div>
-                            <div className="flex-1 space-y-2">
-                                <div className="h-4 w-3/4 sm:w-1/2 bg-gray-300 dark:bg-gray-700 rounded"></div>
-                            </div>
+                            <div className="h-5 w-5 rounded-full bg-foreground/10 animate-pulse" />
+                            <div className="h-4 w-48 sm:w-64 rounded bg-foreground/10 animate-pulse" />
                         </div>
                     </div>
                 </Alert>
@@ -100,16 +100,8 @@ export function TMDWarningBanner() {
                             </div>
                             {hasWarning && (
                                 <div className="mt-2">
-                                    <button
-                                        onClick={() => setShowHeadline(!showHeadline)}
-                                        className="text-xs font-bold underline hover:opacity-80 transition-opacity"
-                                    >
-                                        {showHeadline
-                                            ? (language === "th" ? "แสดงน้อยลง" : "Show less")
-                                            : (language === "th" ? "ดูเพิ่มเติม" : "See more")}
-                                    </button>
                                     {showHeadline && (
-                                        <div className="mt-2 space-y-3">
+                                        <div className="mb-3 space-y-3">
                                             {/* Headline/Detailed info */}
                                             {(language === "th" ? data?.headlineThai : data?.headlineEnglish) && (
                                                 <div className="text-xs sm:text-sm bg-white/10 p-3 rounded border border-white/20 whitespace-pre-wrap italic">
@@ -123,23 +115,28 @@ export function TMDWarningBanner() {
                                             </div>
                                         </div>
                                     )}
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setShowHeadline(!showHeadline)}
+                                            className="text-xs font-semibold px-3 py-1 rounded bg-white/20 hover:bg-white/30 transition-colors border border-white/30"
+                                        >
+                                            {showHeadline
+                                                ? (language === "th" ? "แสดงน้อยลง" : "Show less")
+                                                : (language === "th" ? "ดูเพิ่มเติม" : "See more")}
+                                        </button>
+                                        <a
+                                            href="https://www.tmd.go.th/"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded bg-white/20 hover:bg-white/30 transition-colors border border-white/30"
+                                        >
+                                            <ExternalLink className="h-3 w-3" />
+                                            {language === "th" ? "ไปที่กรมอุตุฯ" : "Go to TMD"}
+                                        </a>
+                                    </div>
                                 </div>
                             )}
                         </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-
-                        {hasWarning && (
-                            <a
-                                href="https://www.tmd.go.th/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs underline font-medium hover:text-white/80"
-                            >
-                                {language === "th" ? "ดูรายละเอียด" : "Details"}
-                            </a>
-                        )}
                     </div>
                 </div>
             </Alert>

@@ -60,7 +60,7 @@ export function Sidebar({
       )}
     >
       <div className="flex items-center justify-between p-4 h-16 border-b border-gray-200 dark:border-gray-700">
-        {isExpanded && <span className="font-bold text-xl truncate">Project StreeFlood</span>}
+        {isExpanded && <span className="font-bold text-xl truncate">StreeFlood Project</span>}
         <Button
           variant="ghost"
           size="icon"

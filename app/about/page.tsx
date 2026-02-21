@@ -43,11 +43,10 @@ export default function AboutPage() {
                 <Card className="shadow-xl border-t-0">
                     <CardContent className="space-y-6 pt-6 text-gray-700 dark:text-gray-300 leading-relaxed font-noto-sans-thai">
                         <section>
-                            <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Project StreeFlood</h3>
+                            <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">StreeFlood Project</h3>
                             <p>
-                                ระบบติดตามระดับน้ำเฝ้าระวังและเตือนหากระดับน้ำอันตราย
-                                พัฒนาโดยนักเรียนโรงเรียนสตรีประเสริฐศิลป์ 3 คน
-                                โครงงานคาบครูพิเชด กลุ่มหมูแดดเดียว
+                                โครงงานระบบติดตามระดับน้ำเฝ้าระวังและเตือนหากระดับน้ำอันตราย
+                                พัฒนาโดยนักเรียนโรงเรียนสตรีประเสริฐศิลป์ 3 คน ม.2/2 SMTE โครงงาน กลุ่มหมูแดดเดียว
                             </p>
                         </section>
 
@@ -65,14 +64,14 @@ export default function AboutPage() {
                             <ul className="list-disc list-inside space-y-1 ml-2">
                                 <li>รูปภาพในหน้านี้นำมากจาก แนวหน้า</li>
                             </ul>
-                        </section>                        
+                        </section>
 
                         <section>
                             <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Contact Us</h3>
                             <p>
-                            <a href="https://forms.gle/1Te39d2yoXZYDfNr5">Click here</a> (โปรดใช้อีเมลโรงเรียนในการติดต่อ) 
+                                <a href="https://forms.gle/1Te39d2yoXZYDfNr5">Click here</a> (โปรดใช้อีเมลโรงเรียนในการติดต่อ)
                             </p>
-                        </section>                 
+                        </section>
 
                         <div className="pt-4 text-center">
                             <p className="text-sm text-gray-500">
