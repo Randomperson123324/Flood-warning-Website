@@ -124,35 +124,35 @@ export function StatusSummary({ currentLevel, warningLevel, dangerLevel }: Statu
   }
 
   return (
-    <div className="relative mb-6">
-      {/* Splash Screen Overlay */}
+    <div className="relative mb-6 min-h-[40px]">
+      {/* Splash Screen */}
       {showSplash && (
         <div
-          className={`absolute top-0 left-0 w-full flex flex-col items-center justify-center p-6 bg-white/40 dark:bg-gray-800/40 rounded-2xl backdrop-blur-md border border-white/20 shadow-sm transition-opacity duration-700 z-10 ${isFadingOut ? "opacity-0" : "opacity-100"
+          className={`absolute inset-0 flex items-center transition-opacity duration-700 z-10 ${isFadingOut ? "opacity-0" : "opacity-100"
             }`}
         >
-          <div className="flex items-center gap-8 mb-4">
-            <img
-              src="/images/streelogo.png"
-              alt="Stree Logo"
-              className="w-14 h-14 object-contain drop-shadow-sm filter dark:brightness-110"
-            />
-            <img
-              src="/images/floodlogo.png"
-              alt="Flood Logo"
-              className="w-14 h-14 object-contain drop-shadow-sm filter dark:brightness-110"
-            />
-          </div>
-          <div className="text-center">
-            <p className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <img
+                src="/images/streelogo.png"
+                alt="Stree Logo"
+                className="w-8 h-8 object-contain drop-shadow-sm filter dark:brightness-110"
+              />
+              <img
+                src="/images/floodlogo.png"
+                alt="Flood Logo"
+                className="w-8 h-8 object-contain drop-shadow-sm filter dark:brightness-110"
+              />
+            </div>
+            <div className={`text-xl font-semibold ${getTimeBasedGradient()}`}>
               {t.status.createdBy}
-            </p>
+            </div>
           </div>
         </div>
       )}
 
       {/* Main Status Content */}
-      <div className={`transition-opacity duration-700 ${showSplash ? "opacity-0" : "opacity-100"}`}>
+      <div className={`transition-opacity duration-700 ${showSplash ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
         <div className="flex items-center justify-between">
           <div className={`text-2xl font-semibold ${getTimeBasedGradient()}`}>{getStatusText()}</div>
           <div className="flex items-center gap-2 ml-4">
