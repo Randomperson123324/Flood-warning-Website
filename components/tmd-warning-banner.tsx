@@ -49,7 +49,22 @@ export function TMDWarningBanner() {
         return () => clearInterval(interval)
     }, [])
 
-    if (isLoading && !data && !isError) return null
+    if (isLoading && !data && !isError) {
+        return (
+            <div className="w-full">
+                <Alert
+                    className="rounded-none border-none py-2 px-4 shadow-sm transition-all duration-500 md:pl-16 bg-muted/50 dark:bg-muted/20"
+                >
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 w-full">
+                            <div className="h-5 w-5 rounded-full bg-foreground/10 animate-pulse" />
+                            <div className="h-4 w-48 sm:w-64 rounded bg-foreground/10 animate-pulse" />
+                        </div>
+                    </div>
+                </Alert>
+            </div>
+        )
+    }
 
     const hasWarning = data?.hasWarning || false
 
