@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertTriangle, CheckCircle } from "lucide-react"
+import { AlertTriangle, CheckCircle, ExternalLink } from "lucide-react"
 import { useLanguage } from "@/hooks/language-context"
 import { cn } from "@/lib/utils"
 
@@ -112,9 +112,10 @@ export function TMDWarningBanner() {
                                         href="https://www.tmd.go.th/"
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="inline-block mt-2 text-xs underline font-medium hover:text-white/80 transition-opacity"
+                                        className="inline-flex items-center gap-1 mt-3 text-xs font-semibold px-3 py-1 rounded bg-white/20 hover:bg-white/30 transition-colors border border-white/30"
                                     >
                                         {language === "th" ? "ไปที่กรมอุตุฯ" : "Go to TMD"}
+                                        <ExternalLink className="h-3 w-3" />
                                     </a>
                                 </div>
                             )}
