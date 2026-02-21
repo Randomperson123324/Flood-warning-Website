@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Info, Activity } from "lucide-react"
+import { Info, Activity, MessageCircle } from "lucide-react"
 
 export function Footer() {
     return (
@@ -17,6 +17,15 @@ export function Footer() {
                 >
                     <Activity className="h-4 w-4" />
                     Status
+                </a>
+                <a
+                    href="YOUR_GOOGLE_FORM_LINK_HERE"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 hover:text-blue-600 transition-colors"
+                >
+                    <MessageCircle className="h-4 w-4" />
+                    Contact Us
                 </a>
             </div>
 
