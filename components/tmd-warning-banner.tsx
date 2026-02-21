@@ -108,23 +108,17 @@ export function TMDWarningBanner() {
                                             </div>
                                         </div>
                                     )}
+                                    <a
+                                        href="https://www.tmd.go.th/"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-block mt-2 text-xs underline font-medium hover:text-white/80 transition-opacity"
+                                    >
+                                        {language === "th" ? "ไปที่กรมอุตุฯ" : "Go to TMD"}
+                                    </a>
                                 </div>
                             )}
                         </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-
-                        {hasWarning && (
-                            <a
-                                href="https://www.tmd.go.th/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs underline font-medium hover:text-white/80"
-                            >
-                                {language === "th" ? "ไปที่กรมอุตุฯ" : "Go to TMD"}
-                            </a>
-                        )}
                     </div>
                 </div>
             </Alert>
