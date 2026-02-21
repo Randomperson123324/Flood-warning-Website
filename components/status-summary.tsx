@@ -123,40 +123,42 @@ export function StatusSummary({ currentLevel, warningLevel, dangerLevel }: Statu
     return isRaining ? <CloudRain className="w-5 h-5 text-blue-500" /> : <Cloud className="w-5 h-5 text-gray-500" />
   }
 
-  if (showSplash) {
-    return (
-      <div
-        className={`mb-6 flex flex-col items-center justify-center p-6 bg-white/40 dark:bg-gray-800/40 rounded-2xl backdrop-blur-md border border-white/20 shadow-sm transition-all duration-700 ${isFadingOut ? "opacity-0 scale-95" : "opacity-100 scale-100 animate-in fade-in duration-700"
-          }`}
-      >
-        <div className="flex items-center gap-8 mb-4">
-          <img
-            src="/images/streelogo.png"
-            alt="Stree Logo"
-            className="w-14 h-14 object-contain drop-shadow-sm filter dark:brightness-110"
-          />
-          <img
-            src="/images/floodlogo.png"
-            alt="Flood Logo"
-            className="w-14 h-14 object-contain drop-shadow-sm filter dark:brightness-110"
-          />
-        </div>
-        <div className="text-center">
-          <p className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent">
-            {t.status.createdBy}
-          </p>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="mb-6 animate-in fade-in slide-in-from-bottom-2 duration-700">
-      <div className="flex items-center justify-between">
-        <div className={`text-2xl font-semibold ${getTimeBasedGradient()}`}>{getStatusText()}</div>
-        <div className="flex items-center gap-2 ml-4">
-          <Droplets className={`w-6 h-6 ${getWaterStatusColor()}`} />
-          {getWeatherIcon()}
+    <div className="relative mb-6">
+      {/* Splash Screen Overlay */}
+      {showSplash && (
+        <div
+          className={`absolute top-0 left-0 w-full flex flex-col items-center justify-center p-6 bg-white/40 dark:bg-gray-800/40 rounded-2xl backdrop-blur-md border border-white/20 shadow-sm transition-opacity duration-700 z-10 ${isFadingOut ? "opacity-0" : "opacity-100"
+            }`}
+        >
+          <div className="flex items-center gap-8 mb-4">
+            <img
+              src="/images/streelogo.png"
+              alt="Stree Logo"
+              className="w-14 h-14 object-contain drop-shadow-sm filter dark:brightness-110"
+            />
+            <img
+              src="/images/floodlogo.png"
+              alt="Flood Logo"
+              className="w-14 h-14 object-contain drop-shadow-sm filter dark:brightness-110"
+            />
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent">
+              {t.status.createdBy}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Main Status Content */}
+      <div className={`transition-opacity duration-700 ${showSplash ? "opacity-0" : "opacity-100"}`}>
+        <div className="flex items-center justify-between">
+          <div className={`text-2xl font-semibold ${getTimeBasedGradient()}`}>{getStatusText()}</div>
+          <div className="flex items-center gap-2 ml-4">
+            <Droplets className={`w-6 h-6 ${getWaterStatusColor()}`} />
+            {getWeatherIcon()}
+          </div>
         </div>
       </div>
     </div>
