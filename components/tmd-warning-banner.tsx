@@ -87,7 +87,7 @@ export function TMDWarningBanner() {
                                 <div className="mt-2">
                                     <button
                                         onClick={() => setShowHeadline(!showHeadline)}
-                                        className="text-xs font-bold underline hover:opacity-80 transition-opacity"
+                                        className="text-xs font-semibold px-3 py-1 rounded bg-white/20 hover:bg-white/30 transition-colors border border-white/30"
                                     >
                                         {showHeadline
                                             ? (language === "th" ? "แสดงน้อยลง" : "Show less")
