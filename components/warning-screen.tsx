@@ -78,8 +78,8 @@ export function WarningScreen({
   const showDanger = isDanger
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 border-none shadow-2xl">
+    <div className="fixed inset-0 z-[100] flex flex-col items-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+      <Card className="w-full max-w-4xl m-auto flex-shrink-0 bg-white dark:bg-gray-900 border-none shadow-2xl relative">
         <CardHeader className="flex flex-row items-center justify-between border-b pb-4 sticky top-0 bg-white dark:bg-gray-900 z-10">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-8 w-8 text-red-600" />
@@ -193,7 +193,7 @@ export function WarningScreen({
                 onClick={handleClose}
                 disabled={!canClose}
                 className={`w-full sm:w-auto font-bold text-lg transition-all ${canClose
-                  ? "bg-red-600 hover:bg-red-700 shadow-lg shadow-red-500/20"
+                  ? "bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20"
                   : "opacity-50 cursor-not-allowed"
                   }`}
               >
