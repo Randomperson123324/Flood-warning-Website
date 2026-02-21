@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Info, Activity } from "lucide-react"
+import { Info, Activity, MessageCircle } from "lucide-react"
 
 export function Footer() {
     return (
@@ -18,11 +18,23 @@ export function Footer() {
                     <Activity className="h-4 w-4" />
                     Status
                 </a>
+                <a
+                    href="https://forms.gle/1Te39d2yoXZYDfNr5"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 hover:text-blue-600 transition-colors"
+                >
+                    <MessageCircle className="h-4 w-4" />
+                    Contact Us
+                </a>
             </div>
 
             <div className="pt-4 border-t border-gray-200 dark:border-gray-800 w-full max-w-md mx-auto">
                 <p className="text-xs text-gray-500 font-medium">
                     Vibecoding Project
+                </p>
+                <p className="text-xs text-gray-500 font-medium">
+                    Version 2.1.0
                 </p>
             </div>
         </footer>
