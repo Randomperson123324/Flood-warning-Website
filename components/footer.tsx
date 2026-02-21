@@ -19,7 +19,7 @@ export function Footer() {
                     Status
                 </a>
                 <a
-                    href="YOUR_GOOGLE_FORM_LINK_HERE"
+                    href="https://forms.gle/1Te39d2yoXZYDfNr5"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 hover:text-blue-600 transition-colors"
