@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertTriangle, CheckCircle } from "lucide-react"
+import { AlertTriangle, CheckCircle, ExternalLink } from "lucide-react"
 import { useLanguage } from "@/hooks/language-context"
 import { cn } from "@/lib/utils"
 
@@ -85,16 +85,8 @@ export function TMDWarningBanner() {
                             </div>
                             {hasWarning && (
                                 <div className="mt-2">
-                                    <button
-                                        onClick={() => setShowHeadline(!showHeadline)}
-                                        className="text-xs font-bold underline hover:opacity-80 transition-opacity"
-                                    >
-                                        {showHeadline
-                                            ? (language === "th" ? "แสดงน้อยลง" : "Show less")
-                                            : (language === "th" ? "ดูเพิ่มเติม" : "See more")}
-                                    </button>
                                     {showHeadline && (
-                                        <div className="mt-2 space-y-3">
+                                        <div className="mb-3 space-y-3">
                                             {/* Headline/Detailed info */}
                                             {(language === "th" ? data?.headlineThai : data?.headlineEnglish) && (
                                                 <div className="text-xs sm:text-sm bg-white/10 p-3 rounded border border-white/20 whitespace-pre-wrap italic">
@@ -108,23 +100,28 @@ export function TMDWarningBanner() {
                                             </div>
                                         </div>
                                     )}
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setShowHeadline(!showHeadline)}
+                                            className="text-xs font-semibold px-3 py-1 rounded bg-white/20 hover:bg-white/30 transition-colors border border-white/30"
+                                        >
+                                            {showHeadline
+                                                ? (language === "th" ? "แสดงน้อยลง" : "Show less")
+                                                : (language === "th" ? "ดูเพิ่มเติม" : "See more")}
+                                        </button>
+                                        <a
+                                            href="https://www.tmd.go.th/"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded bg-white/20 hover:bg-white/30 transition-colors border border-white/30"
+                                        >
+                                            <ExternalLink className="h-3 w-3" />
+                                            {language === "th" ? "ไปที่กรมอุตุฯ" : "Go to TMD"}
+                                        </a>
+                                    </div>
                                 </div>
                             )}
                         </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-
-                        {hasWarning && (
-                            <a
-                                href="https://www.tmd.go.th/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs underline font-medium hover:text-white/80"
-                            >
-                                {language === "th" ? "ไปที่กรมอุตุฯ" : "Go to TMD"}
-                            </a>
-                        )}
                     </div>
                 </div>
             </Alert>
