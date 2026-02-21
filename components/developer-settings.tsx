@@ -39,12 +39,10 @@ export function DeveloperSettings({ open, onOpenChange }: { open: boolean; onOpe
   // Settings state
   const [settings, setSettings] = useState({
     announcements: [] as Array<{
-      id: string
-      title: string
+      id: number
       message: string
-      type: "info" | "warning" | "error"
-      active: boolean
-      expiresAt?: string
+      type: "banner" | "popup"
+      is_active: boolean
     }>,
     affectedAreas: [] as Array<{
       id: string
@@ -54,10 +52,8 @@ export function DeveloperSettings({ open, onOpenChange }: { open: boolean; onOpe
   })
 
   const [newAnnouncement, setNewAnnouncement] = useState({
-    title: "",
     message: "",
-    type: "info" as "info" | "warning" | "error",
-    expiresAt: "",
+    type: "banner" as "banner" | "popup",
   })
 
   const [newArea, setNewArea] = useState({
@@ -124,7 +120,7 @@ export function DeveloperSettings({ open, onOpenChange }: { open: boolean; onOpe
     try {
       const { error } = await supabase.from("announcements").insert({
         message: newAnnouncement.message,
-        type: newAnnouncement.type === "info" ? "banner" : "popup",
+        type: newAnnouncement.type,
         is_active: true,
       })
 
@@ -135,7 +131,7 @@ export function DeveloperSettings({ open, onOpenChange }: { open: boolean; onOpe
       const { data } = await supabase.from("announcements").select("*").order("created_at", { ascending: false })
       setSettings((prev) => ({ ...prev, announcements: data || [] }))
 
-      setNewAnnouncement({ title: "", message: "", type: "info", expiresAt: "" })
+      setNewAnnouncement({ message: "", type: "banner" })
     } catch (err) {
       console.error("❌ Failed to add announcement:", err)
     }
@@ -416,16 +412,6 @@ export function DeveloperSettings({ open, onOpenChange }: { open: boolean; onOpe
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="title">Title</Label>
-                    <Input
-                      id="title"
-                      value={newAnnouncement.title}
-                      onChange={(e) => setNewAnnouncement((prev: any) => ({ ...prev, title: e.target.value }))}
-                      placeholder="Announcement title"
-                    />
-                  </div>
-
-                  <div>
                     <Label htmlFor="message">Message</Label>
                     <Textarea
                       id="message"
@@ -436,35 +422,22 @@ export function DeveloperSettings({ open, onOpenChange }: { open: boolean; onOpe
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Type</Label>
-                      <Select
-                        value={newAnnouncement.type}
-                        onValueChange={(value: "info" | "warning" | "error") =>
-                          setNewAnnouncement((prev: any) => ({ ...prev, type: value }))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="info">Info</SelectItem>
-                          <SelectItem value="warning">Warning</SelectItem>
-                          <SelectItem value="error">Error</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="expires">Expires At</Label>
-                      <Input
-                        id="expires"
-                        type="datetime-local"
-                        value={newAnnouncement.expiresAt}
-                        onChange={(e) => setNewAnnouncement((prev: any) => ({ ...prev, expiresAt: e.target.value }))}
-                      />
-                    </div>
+                  <div>
+                    <Label>Type</Label>
+                    <Select
+                      value={newAnnouncement.type}
+                      onValueChange={(value: "banner" | "popup") =>
+                        setNewAnnouncement((prev: any) => ({ ...prev, type: value }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="banner">Banner</SelectItem>
+                        <SelectItem value="popup">Popup</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <Button onClick={handleAddAnnouncement} className="w-full">
@@ -478,36 +451,29 @@ export function DeveloperSettings({ open, onOpenChange }: { open: boolean; onOpe
                       {settings.announcements.map((announcement) => (
                         <div
                           key={announcement.id}
-                          className={`p-3 rounded-lg border ${announcement.active ? "bg-background" : "bg-gray-100"}`}
+                          className={`p-3 rounded-lg border ${announcement.is_active ? "bg-background" : "bg-gray-100"}`}
                         >
                           <div className="flex items-start justify-between mb-2">
                             <div>
                               <Badge
                                 variant={
-                                  announcement.type === "error"
+                                  announcement.type === "popup"
                                     ? "destructive"
-                                    : announcement.type === "warning"
-                                      ? "secondary"
-                                      : "default"
+                                    : "default"
                                 }
                               >
                                 {announcement.type}
                               </Badge>
-                              <p className="font-medium mt-1">{announcement.title}</p>
                             </div>
                             <Button variant="ghost" size="sm" onClick={() => handleDeleteAnnouncement(announcement.id)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">{announcement.message}</p>
-                          <div className="flex items-center justify-between">
-                            <p className="text-xs text-muted-foreground">
-                              {announcement.expiresAt &&
-                                `Expires: ${new Date(announcement.expiresAt).toLocaleString()}`}
-                            </p>
+                          <div className="flex items-center justify-end">
                             <Switch
-                              checked={announcement.active}
-                              onCheckedChange={() => handleToggleAnnouncement(announcement.id)}
+                              checked={announcement.is_active}
+                              onCheckedChange={() => handleToggleAnnouncement(announcement.id, announcement.is_active)}
                             />
                           </div>
                         </div>
