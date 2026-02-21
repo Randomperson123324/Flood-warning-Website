@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertTriangle, CheckCircle } from "lucide-react"
+import { AlertTriangle, CheckCircle, Loader2 } from "lucide-react"
 import { useLanguage } from "@/hooks/language-context"
 import { cn } from "@/lib/utils"
 
@@ -52,13 +52,13 @@ export function TMDWarningBanner() {
     if (isLoading && !data && !isError) {
         return (
             <div className="w-full">
-                <Alert className="rounded-none border-none py-2 px-4 shadow-sm md:pl-16 bg-gray-200 dark:bg-gray-800 animate-pulse">
-                    <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3 w-full">
-                            <div className="h-5 w-5 rounded-full bg-gray-300 dark:bg-gray-700"></div>
-                            <div className="flex-1 space-y-2">
-                                <div className="h-4 w-3/4 sm:w-1/2 bg-gray-300 dark:bg-gray-700 rounded"></div>
-                            </div>
+                <Alert className="rounded-none border-none py-2 px-4 shadow-sm md:pl-16 bg-white/50 dark:bg-gray-900/50 backdrop-blur-[1px] relative overflow-hidden">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-2 z-10">
+                        <div className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+                            <p className="text-xs font-medium text-blue-600 dark:text-blue-400 animate-pulse">
+                                Retrieving data from database...
+                            </p>
                         </div>
                     </div>
                 </Alert>
