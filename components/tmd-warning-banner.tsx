@@ -85,17 +85,8 @@ export function TMDWarningBanner() {
                             </div>
                             {hasWarning && (
                                 <div className="mt-2">
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={() => setShowHeadline(!showHeadline)}
-                                            className="text-xs font-semibold px-3 py-1 rounded bg-white/20 hover:bg-white/30 transition-colors border border-white/30"
-                                        >
-                                            {showHeadline
-                                                ? (language === "th" ? "แสดงน้อยลง" : "Show less")
-                                                : (language === "th" ? "ดูเพิ่มเติม" : "See more")}
-                                        </button>
                                     {showHeadline && (
-                                        <div className="mt-2 space-y-3">
+                                        <div className="mb-3 space-y-3">
                                             {/* Headline/Detailed info */}
                                             {(language === "th" ? data?.headlineThai : data?.headlineEnglish) && (
                                                 <div className="text-xs sm:text-sm bg-white/10 p-3 rounded border border-white/20 whitespace-pre-wrap italic">
@@ -109,6 +100,15 @@ export function TMDWarningBanner() {
                                             </div>
                                         </div>
                                     )}
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setShowHeadline(!showHeadline)}
+                                            className="text-xs font-semibold px-3 py-1 rounded bg-white/20 hover:bg-white/30 transition-colors border border-white/30"
+                                        >
+                                            {showHeadline
+                                                ? (language === "th" ? "แสดงน้อยลง" : "Show less")
+                                                : (language === "th" ? "ดูเพิ่มเติม" : "See more")}
+                                        </button>
                                         <a
                                             href="https://www.tmd.go.th/"
                                             target="_blank"
