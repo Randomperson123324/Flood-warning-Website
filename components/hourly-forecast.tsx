@@ -68,7 +68,7 @@ export function HourlyForecast({ data }: HourlyForecastProps) {
             Hourly
           </Badge>
         </CardTitle>
-        <CardDescription>Detailed weather conditions for the next {showAll ? "24" : "5"} hours</CardDescription>
+        <CardDescription>Detailed weather conditions for the next few hours</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
