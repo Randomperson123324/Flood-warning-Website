@@ -21,6 +21,8 @@ export async function GET(request: NextRequest) {
         let titleEnglish = ""
         let descriptionEnglish = ""
         let headlineEnglish = ""
+        let webUrlThai = ""
+        let webUrlEnglish = ""
 
         if (hasWarning) {
             // Try to extract Thai fields
@@ -33,12 +35,18 @@ export async function GET(request: NextRequest) {
             const descEnglishMatch = xmlText.match(/<DescriptionEnglish>([\s\S]*?)<\/DescriptionEnglish>/i)
             const headlineEnglishMatch = xmlText.match(/<HeadlineEnglish>([\s\S]*?)<\/HeadlineEnglish>/i)
 
+            // Try to extract Web URL fields
+            const webUrlThaiMatch = xmlText.match(/<WebUrlThai>([\s\S]*?)<\/WebUrlThai>/i)
+            const webUrlEnglishMatch = xmlText.match(/<WebUrlEnglish>([\s\S]*?)<\/WebUrlEnglish>/i)
+
             titleThai = titleThaiMatch ? titleThaiMatch[1].trim() : ""
             descriptionThai = descThaiMatch ? descThaiMatch[1].trim() : ""
             headlineThai = headlineThaiMatch ? headlineThaiMatch[1].trim() : ""
             titleEnglish = titleEnglishMatch ? titleEnglishMatch[1].trim() : ""
             descriptionEnglish = descEnglishMatch ? descEnglishMatch[1].trim() : ""
             headlineEnglish = headlineEnglishMatch ? headlineEnglishMatch[1].trim() : ""
+            webUrlThai = webUrlThaiMatch ? webUrlThaiMatch[1].trim() : ""
+            webUrlEnglish = webUrlEnglishMatch ? webUrlEnglishMatch[1].trim() : ""
 
             // Clean up XML entities
             const clean = (text: string) => {
@@ -58,6 +66,8 @@ export async function GET(request: NextRequest) {
             titleEnglish = clean(titleEnglish)
             descriptionEnglish = clean(descriptionEnglish)
             headlineEnglish = clean(headlineEnglish)
+            webUrlThai = clean(webUrlThai)
+            webUrlEnglish = clean(webUrlEnglish)
         }
 
         return NextResponse.json({
@@ -68,6 +78,8 @@ export async function GET(request: NextRequest) {
             titleEnglish,
             descriptionEnglish,
             headlineEnglish,
+            webUrlThai,
+            webUrlEnglish,
             timestamp: new Date().toISOString(),
         })
     } catch (error) {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertTriangle, CheckCircle, ExternalLink } from "lucide-react"
+import { AlertTriangle, CheckCircle, ExternalLink, FileText } from "lucide-react"
 import { useLanguage } from "@/hooks/language-context"
 import { cn } from "@/lib/utils"
 
@@ -14,6 +14,8 @@ interface WarningData {
     titleEnglish: string
     descriptionEnglish: string
     headlineEnglish: string
+    webUrlThai: string
+    webUrlEnglish: string
 }
 
 export function TMDWarningBanner() {
@@ -124,6 +126,17 @@ export function TMDWarningBanner() {
                                                 ? (language === "th" ? "แสดงน้อยลง" : "Show less")
                                                 : (language === "th" ? "ดูเพิ่มเติม" : "See more")}
                                         </button>
+                                        {(language === "th" ? data?.webUrlThai : data?.webUrlEnglish) && (
+                                            <a
+                                                href={language === "th" ? data?.webUrlThai : data?.webUrlEnglish}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded bg-white/20 hover:bg-white/30 transition-colors border border-white/30"
+                                            >
+                                                <FileText className="h-3 w-3" />
+                                                {language === "th" ? "ดูเอกสาร" : "See Document"}
+                                            </a>
+                                        )}
                                         <a
                                             href="https://www.tmd.go.th/"
                                             target="_blank"
