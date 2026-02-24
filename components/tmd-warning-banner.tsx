@@ -92,7 +92,7 @@ export function TMDWarningBanner() {
                         <div>
                             <div className="font-bold text-sm sm:text-base flex flex-wrap items-center gap-2">
                                 <span>{language === "th" ? "เตือนภัยสภาพอากาศ (กรมอุตุนิยมวิทยา)" : "Weather Advisory (Thai Meteorological Department)"}</span>
-                                <span className="opacity-50">
+                                <span className="opacity-80">
                                     {hasWarning
                                         ? (language === "th" ? data?.titleThai : data?.titleEnglish)
                                         : isError
