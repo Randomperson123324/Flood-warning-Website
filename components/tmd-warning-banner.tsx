@@ -134,7 +134,7 @@ export function TMDWarningBanner() {
                                                 className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded bg-white/20 hover:bg-white/30 transition-colors border border-white/30"
                                             >
                                                 <FileText className="h-3 w-3" />
-                                                {language === "th" ? "ดูเอกสาร" : "See Document"}
+                                                {language === "th" ? "ดูเอกสารประกาศ" : "See Advisory Document"}
                                             </a>
                                         )}
                                         <a
