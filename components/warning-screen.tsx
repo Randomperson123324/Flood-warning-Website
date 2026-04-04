@@ -1,13 +1,15 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { useLanguage } from "@/hooks/language-context"
 import { CurrentStatusDashboard } from "./current-status-dashboard"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "./ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertTriangle, ShieldAlert } from "lucide-react"
+import { AlertTriangle, ShieldAlert, X } from "lucide-react"
 import { cn } from "@/lib/utils"
+
+const SESSION_STORAGE_KEY = "warningDismissedTier"
 
 interface WarningScreenProps {
   currentLevel: number
@@ -41,34 +43,114 @@ export function WarningScreen({
   const [isVisible, setIsVisible] = useState(false)
   const [isChecked, setIsChecked] = useState(false)
   const [canClose, setCanClose] = useState(false)
-  const [dismissedTier, setDismissedTier] = useState<"warning" | "danger" | null>(null)
+  const [showNotification, setShowNotification] = useState(false)
 
   const isDanger = currentLevel >= dangerLevel
   const isWarning = currentLevel >= warningLevel && currentLevel < dangerLevel
   const isUnsafe = isDanger || isWarning
   const currentTier = isDanger ? "danger" : isWarning ? "warning" : null
 
+  // Get dismissed tier from sessionStorage
+  const getDismissedTier = useCallback((): "warning" | "danger" | null => {
+    if (typeof window === "undefined") return null
+    const stored = sessionStorage.getItem(SESSION_STORAGE_KEY)
+    if (stored === "warning" || stored === "danger") return stored
+    return null
+  }, [])
+
+  // Set dismissed tier in sessionStorage
+  const setDismissedTier = useCallback((tier: "warning" | "danger" | null) => {
+    if (typeof window === "undefined") return
+    if (tier) {
+      sessionStorage.setItem(SESSION_STORAGE_KEY, tier)
+    } else {
+      sessionStorage.removeItem(SESSION_STORAGE_KEY)
+    }
+  }, [])
+
   // Water level trigger: show popup when unsafe and not already dismissed for this tier
   useEffect(() => {
+    const dismissedTier = getDismissedTier()
+    
     if (isUnsafe && currentTier !== dismissedTier) {
+      // Not dismissed yet for this tier - show full warning
       setIsVisible(true)
+      setShowNotification(false)
       setIsChecked(false)
       setCanClose(false)
       document.body.style.overflow = "hidden"
+    } else if (isUnsafe && currentTier === dismissedTier) {
+      // Already dismissed for this tier - show notification instead
+      setIsVisible(false)
+      setShowNotification(true)
+      document.body.style.overflow = "unset"
     } else if (!isUnsafe) {
       // Water went back to safe — reset dismissed tier
       setDismissedTier(null)
       setIsVisible(false)
+      setShowNotification(false)
       document.body.style.overflow = "unset"
     }
-  }, [currentTier, isUnsafe, dismissedTier])
+  }, [currentTier, isUnsafe, getDismissedTier, setDismissedTier])
 
   const handleClose = () => {
     if (currentTier) {
       setDismissedTier(currentTier)
     }
     setIsVisible(false)
+    setShowNotification(true)
     document.body.style.overflow = "unset"
+  }
+
+  const handleDismissNotification = () => {
+    setShowNotification(false)
+  }
+
+  // Show small notification banner when dismissed but still unsafe
+  if (!isVisible && showNotification && isUnsafe) {
+    return (
+      <div className="fixed bottom-4 right-4 z-[100] max-w-sm animate-in slide-in-from-bottom-4 duration-300">
+        <div className={cn(
+          "flex items-center gap-3 p-4 rounded-lg shadow-lg border",
+          isDanger 
+            ? "bg-red-50 dark:bg-red-900/90 border-red-200 dark:border-red-700" 
+            : "bg-yellow-50 dark:bg-yellow-900/90 border-yellow-200 dark:border-yellow-700"
+        )}>
+          <AlertTriangle className={cn(
+            "h-5 w-5 flex-shrink-0",
+            isDanger ? "text-red-600" : "text-yellow-600"
+          )} />
+          <div className="flex-1 min-w-0">
+            <p className={cn(
+              "text-sm font-semibold",
+              isDanger ? "text-red-800 dark:text-red-200" : "text-yellow-800 dark:text-yellow-200"
+            )}>
+              {isDanger 
+                ? (language === "th" ? "ระดับน้ำอันตราย" : "Danger Level") 
+                : (language === "th" ? "ระดับน้ำเตือนภัย" : "Warning Level")}
+            </p>
+            <p className={cn(
+              "text-xs",
+              isDanger ? "text-red-600 dark:text-red-300" : "text-yellow-600 dark:text-yellow-300"
+            )}>
+              {language === "th" 
+                ? `ระดับน้ำปัจจุบัน: ${currentLevel.toFixed(2)} ซม.` 
+                : `Current level: ${currentLevel.toFixed(2)} cm`}
+            </p>
+          </div>
+          <button
+            onClick={handleDismissNotification}
+            className={cn(
+              "p-1 rounded-full hover:bg-black/10 transition-colors",
+              isDanger ? "text-red-600" : "text-yellow-600"
+            )}
+            aria-label={language === "th" ? "ปิด" : "Close"}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    )
   }
 
   if (!isVisible) return null
