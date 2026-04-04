@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { X, Megaphone } from "lucide-react"
 import { createClient } from "@supabase/supabase-js"
 
@@ -210,7 +209,7 @@ export function AnnouncementBanner() {
     <>
       {/* Banner */}
       {showBanner && announcement && (
-        <div className="fixed top-0 left-0 right-0 z-50 p-4 md:ml-16">
+        <div className="fixed top-0 left-0 right-0 z-[110] p-4 md:ml-16">
           <Alert className="border-blue-200 bg-blue-50 shadow-lg">
             <Megaphone className="h-4 w-4 text-blue-600" />
             <AlertDescription className="flex items-center justify-between">
@@ -233,20 +232,18 @@ export function AnnouncementBanner() {
 
       {/* Popup */}
       {showPopup && announcement && (
-        <Dialog open={true} onOpenChange={() => handleDismiss()}>
-          <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Megaphone className="h-5 w-5 text-blue-600" />
-                Developer Announcement
-              </DialogTitle>
-            </DialogHeader>
-            <DialogDescription className="text-base text-gray-700 py-4">{announcement.message}</DialogDescription>
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-md mx-4 bg-background border rounded-lg shadow-lg p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Megaphone className="h-5 w-5 text-blue-600" />
+              <h2 className="text-lg font-semibold">Developer Announcement</h2>
+            </div>
+            <p className="text-base text-muted-foreground py-4">{announcement.message}</p>
             <div className="flex justify-end">
               <Button onClick={handleDismiss}>OK</Button>
             </div>
-          </DialogContent>
-        </Dialog>
+          </div>
+        </div>
       )}
     </>
   )
