@@ -302,7 +302,7 @@ export function CommunityChat() {
           users!inner(username),
           message_reactions(reaction_type, user_id)
         `)
-        .order("created_at", { ascending: true })
+        .order("created_at", { ascending: false })
         .limit(100)
 
       if (error) {
@@ -351,7 +351,8 @@ export function CommunityChat() {
         }),
       )
 
-      setMessages(processedMessages)
+      // Reverse to show oldest at top, newest at bottom (fetched newest first for latest 100)
+      setMessages(processedMessages.reverse())
       setConnectionError(null)
     } catch (error) {
       console.error("[v0] Error loading messages:", error)
