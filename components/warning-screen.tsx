@@ -1,13 +1,16 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { useLanguage } from "@/hooks/language-context"
 import { CurrentStatusDashboard } from "./current-status-dashboard"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "./ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertTriangle, ShieldAlert } from "lucide-react"
+import { AlertTriangle, ShieldAlert, X, CheckCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
+
+const SESSION_STORAGE_KEY = "warningDismissedTier"
+const SESSION_HAS_CLOSED_KEY = "warningHasBeenClosed"
 
 interface WarningScreenProps {
   currentLevel: number
@@ -41,34 +44,143 @@ export function WarningScreen({
   const [isVisible, setIsVisible] = useState(false)
   const [isChecked, setIsChecked] = useState(false)
   const [canClose, setCanClose] = useState(false)
-  const [dismissedTier, setDismissedTier] = useState<"warning" | "danger" | null>(null)
+  const [showNotification, setShowNotification] = useState(false)
+  const [notificationType, setNotificationType] = useState<"warning" | "danger" | "safe" | null>(null)
+  const [prevWasUnsafe, setPrevWasUnsafe] = useState<boolean | null>(null)
 
   const isDanger = currentLevel >= dangerLevel
   const isWarning = currentLevel >= warningLevel && currentLevel < dangerLevel
   const isUnsafe = isDanger || isWarning
   const currentTier = isDanger ? "danger" : isWarning ? "warning" : null
 
-  // Water level trigger: show popup when unsafe and not already dismissed for this tier
+  // Check if user has ever closed the warning in this session
+  const hasUserClosedWarning = useCallback((): boolean => {
+    if (typeof window === "undefined") return false
+    return sessionStorage.getItem(SESSION_HAS_CLOSED_KEY) === "true"
+  }, [])
+
+  // Mark that user has closed the warning in this session
+  const markWarningClosed = useCallback(() => {
+    if (typeof window === "undefined") return
+    sessionStorage.setItem(SESSION_HAS_CLOSED_KEY, "true")
+  }, [])
+
+  // Water level trigger logic
   useEffect(() => {
-    if (isUnsafe && currentTier !== dismissedTier) {
-      setIsVisible(true)
-      setIsChecked(false)
-      setCanClose(false)
-      document.body.style.overflow = "hidden"
-    } else if (!isUnsafe) {
-      // Water went back to safe — reset dismissed tier
-      setDismissedTier(null)
+    const userHasClosed = hasUserClosedWarning()
+    
+    // Detect transition from unsafe to safe
+    if (prevWasUnsafe === true && !isUnsafe) {
+      // Water went back to safe - show "back to normal" notification
       setIsVisible(false)
+      setShowNotification(true)
+      setNotificationType("safe")
       document.body.style.overflow = "unset"
+    } 
+    // Detect transition from safe to unsafe (or initial unsafe state)
+    else if (isUnsafe) {
+      if (userHasClosed) {
+        // User already closed once in this session - just show notification
+        setIsVisible(false)
+        setShowNotification(true)
+        setNotificationType(currentTier)
+        document.body.style.overflow = "unset"
+      } else {
+        // First time in session - show full warning screen
+        setIsVisible(true)
+        setShowNotification(false)
+        setIsChecked(false)
+        setCanClose(false)
+        document.body.style.overflow = "hidden"
+      }
+    } 
+    // Safe and was safe before (or initial safe state)
+    else if (!isUnsafe && prevWasUnsafe === false) {
+      // No change needed, stay as is
     }
-  }, [currentTier, isUnsafe, dismissedTier])
+    
+    // Track previous state
+    setPrevWasUnsafe(isUnsafe)
+  }, [currentTier, isUnsafe, hasUserClosedWarning, prevWasUnsafe])
 
   const handleClose = () => {
-    if (currentTier) {
-      setDismissedTier(currentTier)
-    }
+    markWarningClosed()
     setIsVisible(false)
+    setShowNotification(true)
+    setNotificationType(currentTier)
     document.body.style.overflow = "unset"
+  }
+
+  const handleDismissNotification = () => {
+    setShowNotification(false)
+    setNotificationType(null)
+  }
+
+  // Show small notification banner
+  if (!isVisible && showNotification && notificationType) {
+    const isSafe = notificationType === "safe"
+    const isDangerNotif = notificationType === "danger"
+    const isWarningNotif = notificationType === "warning"
+    
+    return (
+      <div className="fixed bottom-4 right-4 z-[100] max-w-sm animate-in slide-in-from-bottom-4 duration-300">
+        <div className={cn(
+          "flex items-center gap-3 p-4 rounded-lg shadow-lg border",
+          isSafe 
+            ? "bg-green-50 dark:bg-green-900/90 border-green-200 dark:border-green-700"
+            : isDangerNotif 
+              ? "bg-red-50 dark:bg-red-900/90 border-red-200 dark:border-red-700" 
+              : "bg-yellow-50 dark:bg-yellow-900/90 border-yellow-200 dark:border-yellow-700"
+        )}>
+          {isSafe ? (
+            <CheckCircle className="h-5 w-5 flex-shrink-0 text-green-600" />
+          ) : (
+            <AlertTriangle className={cn(
+              "h-5 w-5 flex-shrink-0",
+              isDangerNotif ? "text-red-600" : "text-yellow-600"
+            )} />
+          )}
+          <div className="flex-1 min-w-0">
+            <p className={cn(
+              "text-sm font-semibold",
+              isSafe 
+                ? "text-green-800 dark:text-green-200"
+                : isDangerNotif 
+                  ? "text-red-800 dark:text-red-200" 
+                  : "text-yellow-800 dark:text-yellow-200"
+            )}>
+              {isSafe 
+                ? (language === "th" ? "ระดับน้ำกลับสู่ปกติ" : "Water Level Back to Normal")
+                : isDangerNotif 
+                  ? (language === "th" ? "ระดับน้ำอันตราย" : "Danger Level") 
+                  : (language === "th" ? "ระดับน้ำเตือนภัย" : "Warning Level")}
+            </p>
+            <p className={cn(
+              "text-xs",
+              isSafe 
+                ? "text-green-600 dark:text-green-300"
+                : isDangerNotif 
+                  ? "text-red-600 dark:text-red-300" 
+                  : "text-yellow-600 dark:text-yellow-300"
+            )}>
+              {language === "th" 
+                ? `ระดับน้ำปัจจุบัน: ${currentLevel.toFixed(2)} ซม.` 
+                : `Current level: ${currentLevel.toFixed(2)} cm`}
+            </p>
+          </div>
+          <button
+            onClick={handleDismissNotification}
+            className={cn(
+              "p-1 rounded-full hover:bg-black/10 transition-colors",
+              isSafe ? "text-green-600" : isDangerNotif ? "text-red-600" : "text-yellow-600"
+            )}
+            aria-label={language === "th" ? "ปิด" : "Close"}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    )
   }
 
   if (!isVisible) return null
