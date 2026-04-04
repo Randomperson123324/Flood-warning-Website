@@ -67,6 +67,8 @@ export function CommunityChat() {
   const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null)
   const [showProfileSheet, setShowProfileSheet] = useState(false)
   const [isAtBottom, setIsAtBottom] = useState(true)
+  const [lastMessageTime, setLastMessageTime] = useState<number>(0)
+  const [rateLimitError, setRateLimitError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
@@ -621,6 +623,18 @@ export function CommunityChat() {
   const handleSendMessage = async () => {
     if (!supabase || !currentUser || !newMessage.trim()) return
 
+    // Rate limit: 1 message per second
+    const now = Date.now()
+    const timeSinceLastMessage = now - lastMessageTime
+    const rateLimitMs = 1000 // 1 second
+
+    if (timeSinceLastMessage < rateLimitMs) {
+      const waitTime = Math.ceil((rateLimitMs - timeSinceLastMessage) / 1000)
+      setRateLimitError(t?.community?.rateLimitError || `Please wait ${waitTime} second(s) before sending another message`)
+      setTimeout(() => setRateLimitError(null), 2000)
+      return
+    }
+
     try {
       await supabase.from("messages").insert({
         user_id: currentUser.id,
@@ -628,8 +642,10 @@ export function CommunityChat() {
         reply_to: replyTo,
       })
 
+      setLastMessageTime(now)
       setNewMessage("")
       setReplyTo(null)
+      setRateLimitError(null)
     } catch (error) {
       console.error("Error sending message:", error)
     }
@@ -1013,6 +1029,12 @@ export function CommunityChat() {
               <Button variant="ghost" size="sm" onClick={() => setReplyTo(null)}>
                 ×
               </Button>
+            </div>
+          )}
+
+          {rateLimitError && (
+            <div className="text-sm text-red-500 mb-2">
+              {rateLimitError}
             </div>
           )}
 
