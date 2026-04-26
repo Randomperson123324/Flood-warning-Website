@@ -53,14 +53,14 @@ export function TMDWarningBanner() {
     if (isLoading && !data && !isError) {
         return (
             <div className="w-full pl-2 pr-2 sm:pl-4 sm:pr-4 md:pl-0 pt-2 pb-2">
-                <div className="inline-grid grid-cols-[auto_1fr] max-w-full rounded-full shadow-sm bg-muted/50 dark:bg-muted/20 p-1 animate-in fade-in slide-in-from-top-2 duration-500">
+                <div className="inline-grid grid-cols-[auto_1fr] max-w-full rounded-2xl sm:rounded-full shadow-sm bg-muted/50 dark:bg-muted/20 p-1 animate-in fade-in slide-in-from-top-2 duration-500">
                     {/* Icon Area Skeleton */}
-                    <div className="flex items-center justify-center bg-foreground/10 rounded-full rounded-br-none w-12 sm:w-14 aspect-square shrink-0 self-center animate-pulse">
-                        <div className="h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-foreground/10" />
+                    <div className="flex items-center justify-center bg-foreground/10 rounded-tl-full rounded-tr-full rounded-bl-full w-10 sm:w-11 aspect-square shrink-0 self-start animate-pulse">
+                        <div className="h-3.5 w-3.5 sm:h-4 sm:w-4 rounded-full bg-foreground/10" />
                     </div>
                     {/* Text Area Skeleton */}
-                    <div className="flex items-center pl-3 pr-4 sm:pr-5 py-1 sm:py-1.5 min-w-0">
-                        <div className="h-4 w-48 sm:w-64 rounded bg-foreground/10 animate-pulse" />
+                    <div className="flex items-center pl-2 pr-4 sm:pr-5 py-1 sm:py-1.5 min-w-0">
+                        <div className="h-3.5 w-48 sm:w-64 rounded bg-foreground/10 animate-pulse" />
                     </div>
                 </div>
             </div>
@@ -99,28 +99,30 @@ export function TMDWarningBanner() {
     return (
         <div className="w-full pl-2 pr-2 sm:pl-4 sm:pr-4 md:pl-0 pt-2 pb-2">
             <div className={cn(
-                "inline-grid grid-cols-[auto_1fr] max-w-full rounded-full shadow-sm p-1 animate-in fade-in slide-in-from-top-2 duration-500",
+                "inline-grid grid-cols-[auto_1fr] max-w-full shadow-sm p-1 animate-in fade-in slide-in-from-top-2 duration-500",
                 bannerBgColor,
-                // When expanded with warning details, use rounded corners instead of pill shape
-                hasWarning && showHeadline && "rounded-2xl"
+                // Use rounded-2xl on mobile/expanded, pill shape on desktop when not expanded
+                (hasWarning && showHeadline) ? "rounded-2xl" : "rounded-2xl sm:rounded-full"
             )}>
 
                 {/* Icon Area */}
                 <div className={cn(
-                    "flex items-center justify-center rounded-full rounded-br-none w-12 sm:w-14 aspect-square shrink-0 self-center",
+                    "flex items-center justify-center w-10 sm:w-11 aspect-square shrink-0 self-start",
                     iconBgColor,
-                    // Adjust rounding when expanded
-                    hasWarning && showHeadline && "rounded-2xl rounded-br-none rounded-tr-none"
+                    // Use rounded-2xl ONLY when explicitly expanded with headline
+                    (hasWarning && showHeadline)
+                        ? "rounded-2xl rounded-br-none"
+                        : "rounded-tl-full rounded-tr-full rounded-bl-full"
                 )}>
                     {hasWarning || isError ? (
-                        <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     ) : (
-                        <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     )}
                 </div>
 
                 {/* Text Area */}
-                <div className="flex flex-col justify-center pl-3 pr-4 sm:pr-5 py-1 sm:py-1.5 min-w-0">
+                <div className="flex flex-col justify-center pl-2 pr-4 sm:pr-5 py-1 sm:py-1.5 min-w-0">
                     <p className={cn("font-medium text-sm sm:text-base break-words", textColor)}>
                         <span className="font-bold">{language === "th" ? "เตือนภัยสภาพอากาศ (กรมอุตุฯ)" : "Weather Advisory (TMD)"}</span>
                         {" "}
