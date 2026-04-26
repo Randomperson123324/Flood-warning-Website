@@ -414,15 +414,15 @@ export default function Dashboard() {
                 if (diffInMinutes > 7) {
                   return (
                     // 👇 Swapped rounded-2xl sm:rounded-full back to just rounded-full
-                    <div className="inline-grid grid-cols-[auto_1fr] max-w-full bg-yellow-100 rounded-full shadow-sm mb-6 animate-in fade-in slide-in-from-top-2 duration-500">
+                    <div className="inline-grid grid-cols-[auto_1fr] max-w-full bg-yellow-100 rounded-full shadow-sm mb-6 p-1 animate-in fade-in slide-in-from-top-2 duration-500">
 
                       {/* Logo Area */}
-                      <div className="flex items-center justify-center bg-yellow-500 text-yellow-50 rounded-full rounded-br-none h-full aspect-square">
+                      <div className="flex items-center justify-center bg-yellow-500 text-yellow-50 rounded-full rounded-br-none w-12 sm:w-14 aspect-square shrink-0 self-center">
                         <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />
                       </div>
 
                       {/* Text Area (Maintains min-w-0 for mobile wrapping) */}
-                      <div className="flex items-center pl-3 pr-4 sm:pr-5 py-2 sm:py-2.5 min-w-0">
+                      <div className="flex items-center pl-3 pr-4 sm:pr-5 py-1 sm:py-1.5 min-w-0">
                         <p className="font-medium text-sm sm:text-base text-yellow-800 break-words">
                           {t.alerts.sensorStale.replace("{minutes}", diffInMinutes.toString())}
                         </p>
