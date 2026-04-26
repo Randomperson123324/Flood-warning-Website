@@ -33,6 +33,7 @@ import { AffectedAreas } from "../components/affected-areas"
 import { DeveloperSettings } from "../components/developer-settings"
 import { SystemStatus } from "../components/system-status"
 import { AnnouncementBanner } from "../components/announcement-banner"
+import { TMDWarningBanner } from "../components/tmd-warning-banner"
 import { WeatherVoteResults } from "../components/weather-vote-results"
 import { StatusSummary } from "../components/status-summary"
 import { StickyHeader } from "../components/sticky-header"
@@ -330,7 +331,10 @@ export default function Dashboard() {
         {/* Announcement Banner */}
         <AnnouncementBanner isSidebarExpanded={isSidebarExpanded} />
 
-        <div className="p-4 sm:p-6 pt-8 w-full">
+        {/* TMD Warning Banner */}
+        <TMDWarningBanner />
+
+        <div className="p-4 sm:p-6 w-full">
           {/* Status Summary */}
           <StatusSummary currentLevel={currentLevel} warningLevel={warningLevel} dangerLevel={dangerLevel} />
 

@@ -53,7 +53,7 @@ export function TMDWarningBanner() {
 
     if (isLoading && !data && !isError) {
         return (
-            <div className="w-full px-2 sm:px-4 pt-2">
+            <div className="w-full pr-2 sm:pr-4 pb-2">
                 <Alert
                     className="rounded-tl-none rounded-tr-2xl rounded-br-2xl rounded-bl-2xl border border-border/50 py-3 px-4 shadow-lg transition-all duration-500 bg-muted/50 dark:bg-muted/20"
                 >
@@ -71,7 +71,7 @@ export function TMDWarningBanner() {
     const hasWarning = data?.hasWarning || false
 
     return (
-        <div className="w-full px-2 sm:px-4 pt-2">
+        <div className="w-full pr-2 sm:pr-4 pb-2">
             <Alert
                 className={cn(
                     "rounded-tl-none rounded-tr-2xl rounded-br-2xl rounded-bl-2xl border-none py-3 px-4 shadow-lg transition-all duration-500",
