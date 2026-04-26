@@ -33,6 +33,7 @@ import { AffectedAreas } from "../components/affected-areas"
 import { DeveloperSettings } from "../components/developer-settings"
 import { SystemStatus } from "../components/system-status"
 import { AnnouncementBanner } from "../components/announcement-banner"
+import { TMDWarningBanner } from "../components/tmd-warning-banner"
 import { WeatherVoteResults } from "../components/weather-vote-results"
 import { StatusSummary } from "../components/status-summary"
 import { StickyHeader } from "../components/sticky-header"
@@ -85,7 +86,7 @@ export default function Dashboard() {
   const [showLineQR, setShowLineQR] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [isFirstLoad, setIsFirstLoad] = useState(true)
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false)
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true)
   const router = useRouter()
 
   // Effect for multi-date comparison
@@ -324,12 +325,16 @@ export default function Dashboard() {
       </div>
 
       <div className={cn(
-        "flex-1 flex flex-col min-w-0 transition-all duration-300 md:ml-16"
+        "flex-1 flex flex-col min-w-0 transition-all duration-300",
+        isSidebarExpanded ? "md:ml-[17rem]" : "md:ml-[5rem]"
       )}>
         {/* Announcement Banner */}
-        <AnnouncementBanner />
+        <AnnouncementBanner isSidebarExpanded={isSidebarExpanded} />
 
-        <div className="p-4 sm:p-6 pt-8 w-full">
+        {/* TMD Warning Banner */}
+        <TMDWarningBanner />
+
+        <div className="p-4 sm:p-6 w-full">
           {/* Status Summary */}
           <StatusSummary currentLevel={currentLevel} warningLevel={warningLevel} dangerLevel={dangerLevel} />
 

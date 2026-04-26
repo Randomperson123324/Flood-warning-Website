@@ -53,9 +53,9 @@ export function TMDWarningBanner() {
 
     if (isLoading && !data && !isError) {
         return (
-            <div className="w-full">
+            <div className="w-full pl-2 pr-2 sm:pl-4 sm:pr-4 md:pl-0 pt-2 pb-2">
                 <Alert
-                    className="rounded-none border-none py-2 px-4 shadow-sm transition-all duration-500 md:pl-16 bg-muted/50 dark:bg-muted/20"
+                    className="rounded-tl-full rounded-tr-full rounded-br-full rounded-bl-none border border-border/50 py-2 px-4 shadow-lg transition-all duration-500 bg-muted/50 dark:bg-muted/20"
                 >
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3 w-full">
@@ -71,10 +71,10 @@ export function TMDWarningBanner() {
     const hasWarning = data?.hasWarning || false
 
     return (
-        <div className="w-full">
+        <div className="w-full pl-2 pr-2 sm:pl-4 sm:pr-4 md:pl-0 pt-2 pb-2">
             <Alert
                 className={cn(
-                    "rounded-none border-none py-2 px-4 shadow-sm transition-all duration-500 md:pl-16",
+                    "rounded-tl-full rounded-tr-full rounded-br-full rounded-bl-none border-none py-2 px-4 shadow-lg transition-all duration-500",
                     hasWarning
                         ? "bg-red-600 text-white"
                         : isError

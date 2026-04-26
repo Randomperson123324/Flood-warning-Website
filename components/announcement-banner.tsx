@@ -26,7 +26,11 @@ interface Announcement {
   is_active: boolean
 }
 
-export function AnnouncementBanner() {
+interface AnnouncementBannerProps {
+  isSidebarExpanded?: boolean
+}
+
+export function AnnouncementBanner({ isSidebarExpanded = false }: AnnouncementBannerProps = {}) {
   const [announcement, setAnnouncement] = useState<Announcement | null>(null)
   const [showBanner, setShowBanner] = useState(false)
   const [showPopup, setShowPopup] = useState(false)
@@ -209,7 +213,7 @@ export function AnnouncementBanner() {
     <>
       {/* Banner */}
       {showBanner && announcement && (
-        <div className="fixed top-0 left-0 right-0 z-[110] p-4 md:ml-16">
+        <div className={`fixed top-0 left-0 right-0 z-[110] p-4 transition-all duration-300 ${isSidebarExpanded ? "md:ml-[17rem]" : "md:ml-[5rem]"}`}>
           <Alert className="border-blue-200 bg-blue-50 shadow-lg">
             <Megaphone className="h-4 w-4 text-blue-600" />
             <AlertDescription className="flex items-center justify-between">
