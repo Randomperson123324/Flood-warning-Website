@@ -55,7 +55,7 @@ export function Sidebar({
   return (
     <div
       className={cn(
-        "hidden md:flex flex-col border-r border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl h-screen fixed left-0 top-0 transition-all duration-300 ease-in-out z-[60]",
+        "hidden md:flex flex-col border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl fixed left-2 top-2 bottom-2 transition-all duration-300 ease-in-out z-[60] rounded-2xl shadow-lg overflow-hidden",
         isExpanded ? "w-64" : "w-16"
       )}
     >
