@@ -413,26 +413,25 @@ export default function Dashboard() {
                 const diffInMinutes = Math.floor((new Date().getTime() - lastReading.getTime()) / (1000 * 60))
                 if (diffInMinutes > 7) {
                   return (
-                    // 👇 Swapped rounded-2xl sm:rounded-full back to just rounded-full
-                    <div className="inline-grid grid-cols-[auto_1fr] max-w-full bg-yellow-100 rounded-full shadow-sm mb-6 p-1 animate-in fade-in slide-in-from-top-2 duration-500">
-
+                    <div className="inline-grid grid-cols-[auto_1fr] max-w-full bg-yellow-100 rounded-2xl sm:rounded-full shadow-sm mb-6 p-1 animate-in fade-in slide-in-from-top-2 duration-500">
                       {/* Logo Area */}
-                      <div className="flex items-center justify-center bg-yellow-500 text-yellow-50 rounded-full rounded-br-none w-12 sm:w-14 aspect-square shrink-0 self-center">
-                        <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <div className="flex items-center justify-center bg-yellow-500 text-yellow-50 rounded-full rounded-br-none w-10 sm:w-11 aspect-square shrink-0 self-start">
+                        <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </div>
 
                       {/* Text Area (Maintains min-w-0 for mobile wrapping) */}
-                      <div className="flex items-center pl-3 pr-4 sm:pr-5 py-1 sm:py-1.5 min-w-0">
+                      <div className="flex items-center pl-2 pr-4 sm:pr-5 py-1 sm:py-1.5 min-w-0">
                         <p className="font-medium text-sm sm:text-base text-yellow-800 break-words">
                           {t.alerts.sensorStale.replace("{minutes}", diffInMinutes.toString())}
                         </p>
                       </div>
-
                     </div>
                   )
                 }
                 return null
               })()}
+
+
 
               <TabsContent value="overview" className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
