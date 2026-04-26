@@ -413,7 +413,7 @@ export default function Dashboard() {
                 const diffInMinutes = Math.floor((new Date().getTime() - lastReading.getTime()) / (1000 * 60))
                 if (diffInMinutes > 7) {
                   return (
-                    <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-6 rounded-tl-full rounded-tr-full rounded-bl-none rounded-br-full shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
+                    <div className="bg-yellow-100  p-4 mb-6 rounded-tl-full rounded-tr-full rounded-bl-none rounded-br-full shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
                       <div className="flex items-center gap-3 text-yellow-800">
                         <AlertTriangle className="h-5 w-5 flex-shrink-0" />
                         <p className="font-medium text-sm sm:text-base">
