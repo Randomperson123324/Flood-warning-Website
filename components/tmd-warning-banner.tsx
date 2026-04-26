@@ -55,7 +55,7 @@ export function TMDWarningBanner() {
         return (
             <div className="w-full pr-2 sm:pr-4 pb-2">
                 <Alert
-                    className="rounded-tl-none rounded-tr-2xl rounded-br-2xl rounded-bl-2xl border border-border/50 py-3 px-4 shadow-lg transition-all duration-500 bg-muted/50 dark:bg-muted/20"
+                    className="rounded-tl-2xl rounded-tr-2xl rounded-br-2xl rounded-bl-none border border-border/50 py-3 px-4 shadow-lg transition-all duration-500 bg-muted/50 dark:bg-muted/20"
                 >
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3 w-full">
