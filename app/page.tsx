@@ -413,17 +413,17 @@ export default function Dashboard() {
                 const diffInMinutes = Math.floor((new Date().getTime() - lastReading.getTime()) / (1000 * 60))
                 if (diffInMinutes > 7) {
                   return (
-                    // 👇 Changed to inline-grid. This creates two columns: one that sizes to the circle, and one that fills the rest.
-                    <div className="inline-grid grid-cols-[auto_1fr] bg-yellow-100 rounded-full shadow-sm mb-6 animate-in fade-in slide-in-from-top-2 duration-500">
+                    // 👇 Swapped rounded-2xl sm:rounded-full back to just rounded-full
+                    <div className="inline-grid grid-cols-[auto_1fr] max-w-full bg-yellow-100 rounded-full shadow-sm mb-6 animate-in fade-in slide-in-from-top-2 duration-500">
 
-                      {/* 👇 Added h-full. Grid will now perfectly respect the aspect-square and make a flawless circle! */}
+                      {/* Logo Area */}
                       <div className="flex items-center justify-center bg-yellow-500 text-yellow-50 rounded-full rounded-br-none h-full aspect-square">
                         <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />
                       </div>
 
-                      {/* Text Area */}
-                      <div className="flex items-center pl-3 pr-4 sm:pr-5 py-2 sm:py-2.5">
-                        <p className="font-medium text-sm sm:text-base text-yellow-800">
+                      {/* Text Area (Maintains min-w-0 for mobile wrapping) */}
+                      <div className="flex items-center pl-3 pr-4 sm:pr-5 py-2 sm:py-2.5 min-w-0">
+                        <p className="font-medium text-sm sm:text-base text-yellow-800 break-words">
                           {t.alerts.sensorStale.replace("{minutes}", diffInMinutes.toString())}
                         </p>
                       </div>
