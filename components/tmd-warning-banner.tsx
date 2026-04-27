@@ -109,10 +109,8 @@ export function TMDWarningBanner() {
                 <div className={cn(
                     "flex items-center justify-center w-10 sm:w-11 shrink-0 self-stretch",
                     iconBgColor,
-                    // Use rounded-2xl ONLY when explicitly expanded with headline
-                    (hasWarning && showHeadline)
-                        ? "rounded-2xl rounded-br-none"
-                        : "rounded-tl-full rounded-tr-full rounded-bl-full"
+                    // Always use rounded-full with sharp bottom-right corner
+                    "rounded-full rounded-br-none"
                 )}>
                     {hasWarning || isError ? (
                         <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />

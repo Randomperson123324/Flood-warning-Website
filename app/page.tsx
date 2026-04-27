@@ -415,7 +415,7 @@ export default function Dashboard() {
                   return (
                     <div className="inline-grid grid-cols-[auto_1fr] max-w-full bg-yellow-100 rounded-2xl sm:rounded-full shadow-sm mb-6 p-1 animate-in fade-in slide-in-from-top-2 duration-500">
                       {/* Logo Area */}
-                      <div className="flex items-center justify-center bg-yellow-500 text-yellow-50 rounded-full rounded-br-none w-10 sm:w-11 shrink-0 self-stretch">
+                      <div className="flex items-center justify-center bg-yellow-500 text-yellow-50 rounded-full rounded-br-none w-10 sm:w-11 aspect-square shrink-0 self-center">
                         <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </div>
 
