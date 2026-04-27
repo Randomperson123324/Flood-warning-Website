@@ -55,7 +55,7 @@ export function TMDWarningBanner() {
             <div className="w-full pl-2 pr-2 sm:pl-4 sm:pr-4 md:pl-0 pt-2 pb-2">
                 <div className="inline-grid grid-cols-[auto_1fr] max-w-full rounded-2xl sm:rounded-full shadow-sm bg-muted/50 dark:bg-muted/20 p-1 animate-in fade-in slide-in-from-top-2 duration-500">
                     {/* Icon Area Skeleton */}
-                    <div className="flex items-center justify-center bg-foreground/10 rounded-tl-full rounded-tr-full rounded-bl-full w-10 sm:w-11 aspect-square shrink-0 self-start animate-pulse">
+                    <div className="flex items-center justify-center bg-foreground/10 rounded-l-2xl sm:rounded-l-full w-10 sm:w-11 shrink-0 self-stretch animate-pulse">
                         <div className="h-3.5 w-3.5 sm:h-4 sm:w-4 rounded-full bg-foreground/10" />
                     </div>
                     {/* Text Area Skeleton */}
@@ -107,12 +107,12 @@ export function TMDWarningBanner() {
 
                 {/* Icon Area */}
                 <div className={cn(
-                    "flex items-center justify-center w-10 sm:w-11 aspect-square shrink-0 self-start",
+                    "flex items-center justify-center w-10 sm:w-11 shrink-0 self-stretch",
                     iconBgColor,
-                    // Use rounded-2xl ONLY when explicitly expanded with headline
+                    // Match parent shape on left; right edge is flush against text area
                     (hasWarning && showHeadline)
-                        ? "rounded-2xl rounded-br-none"
-                        : "rounded-tl-full rounded-tr-full rounded-bl-full"
+                        ? "rounded-l-2xl"
+                        : "rounded-l-2xl sm:rounded-l-full"
                 )}>
                     {hasWarning || isError ? (
                         <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
