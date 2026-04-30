@@ -71,11 +71,14 @@ export function WarningScreen({
     
     // Detect transition from unsafe to safe
     if (prevWasUnsafe === true && !isUnsafe) {
-      // Water went back to safe - show "back to normal" notification
-      setIsVisible(false)
-      setShowNotification(true)
-      setNotificationType("safe")
-      document.body.style.overflow = "unset"
+      // Water went back to safe — but if the full warning screen is open, keep it open
+      // Only show notification if warning screen is NOT currently visible
+      if (!isVisible) {
+        setShowNotification(true)
+        setNotificationType("safe")
+      }
+      // If isVisible is true (warning screen is showing), do NOT auto-close it
+      document.body.style.overflow = isVisible ? "hidden" : "unset"
     } 
     // Detect transition from safe to unsafe (or initial unsafe state)
     else if (isUnsafe) {
@@ -101,7 +104,7 @@ export function WarningScreen({
     
     // Track previous state
     setPrevWasUnsafe(isUnsafe)
-  }, [currentTier, isUnsafe, hasUserClosedWarning, prevWasUnsafe])
+  }, [currentTier, isUnsafe, isVisible, hasUserClosedWarning, prevWasUnsafe])
 
   const handleClose = () => {
     markWarningClosed()
