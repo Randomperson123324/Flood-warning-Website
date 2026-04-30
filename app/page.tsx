@@ -1,7 +1,7 @@
 "use client"
 
 
-import React, { useState, useEffect, useMemo } from "react"
+import React, { useState, useEffect, useMemo, useRef } from "react"
 import { DatePickerWithRange } from "../components/date-range-picker"
 import { Calendar } from "@/components/ui/calendar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -89,7 +89,20 @@ export default function Dashboard() {
   const [isFirstLoad, setIsFirstLoad] = useState(true)
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true)
   const [isNotifExpanded, setIsNotifExpanded] = useState(false)
+  const [isSidebarAnimating, setIsSidebarAnimating] = useState(false)
+  const prevSidebarExpanded = useRef(isSidebarExpanded)
   const router = useRouter()
+
+  useEffect(() => {
+    if (prevSidebarExpanded.current !== isSidebarExpanded) {
+      setIsSidebarAnimating(true)
+      const timer = setTimeout(() => {
+        setIsSidebarAnimating(false)
+      }, 300) // Match the 300ms transition duration
+      prevSidebarExpanded.current = isSidebarExpanded
+      return () => clearTimeout(timer)
+    }
+  }, [isSidebarExpanded])
 
   // Effect for multi-date comparison
   useEffect(() => {
@@ -476,12 +489,18 @@ export default function Dashboard() {
                         <CardDescription>{t.chart.description}</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <EnhancedWaterLevelChart
-                          data={todayWaterData}
-                          warningLevel={warningLevel}
-                          dangerLevel={dangerLevel}
-                          className="h-[350px]"
-                        />
+                        {isSidebarAnimating ? (
+                          <div className="h-[350px] w-full flex items-center justify-center bg-muted/20 animate-pulse rounded-md">
+                            <span className="text-muted-foreground">Updating view...</span>
+                          </div>
+                        ) : (
+                          <EnhancedWaterLevelChart
+                            data={todayWaterData}
+                            warningLevel={warningLevel}
+                            dangerLevel={dangerLevel}
+                            className="h-[350px]"
+                          />
+                        )}
                       </CardContent>
                     </Card>
                   </div>
@@ -612,7 +631,11 @@ export default function Dashboard() {
                     )}
                   </CardHeader>
                   <CardContent>
-                    {dataComparison === "compare" ? (
+                    {isSidebarAnimating ? (
+                      <div className="h-[350px] w-full flex items-center justify-center bg-muted/20 animate-pulse rounded-md">
+                        <span className="text-muted-foreground">Updating view...</span>
+                      </div>
+                    ) : dataComparison === "compare" ? (
                       <EnhancedWaterLevelChart
                         multiData={compareData}
                         warningLevel={warningLevel}
