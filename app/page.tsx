@@ -46,6 +46,7 @@ import { LoadingOverlay } from "../components/loading-overlay"
 import { CurrentStatusDashboard } from "../components/current-status-dashboard"
 import { WarningScreen } from "../components/warning-screen"
 import { Sidebar } from "../components/sidebar"
+import { WaterLevelNotification } from "../components/water-level-notification"
 import { cn } from "@/lib/utils"
 import type { JSX } from "react/jsx-runtime"
 
@@ -87,6 +88,7 @@ export default function Dashboard() {
   const [isOpen, setIsOpen] = useState(false)
   const [isFirstLoad, setIsFirstLoad] = useState(true)
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true)
+  const [isNotifExpanded, setIsNotifExpanded] = useState(false)
   const router = useRouter()
 
   // Effect for multi-date comparison
@@ -356,40 +358,53 @@ export default function Dashboard() {
               </p>
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
-              <SystemStatus isConnected={isConnected} lastUpdateTime={lastUpdateTime} onTestConnection={testConnection} />
-              <Popover open={isOpen} onOpenChange={setIsOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="icon" className="bg-transparent" title={t.common.addUsOnLINE}>
-                    <QrCode className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80" align="end">
-                  <div className="text-center">
-                    <div className="w-48 h-48 bg-gray-100 dark:bg-gray-700 rounded-tr-lg rounded-bl-lg flex items-center justify-center mb-2 mx-auto">
-                      <img
-                        src="/images/design-mode/M_917ybsgj_BW.png"
-                        alt="Add us on LINE"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{t.common.addLineContact}</p>
-                    <Button variant="outline" size="sm" onClick={() => setIsOpen(false)}>
-                      {t.common.close}
+              <div className={cn(
+                "flex items-center gap-2 sm:gap-4 transition-opacity duration-300",
+                isNotifExpanded
+                  ? "opacity-0 pointer-events-none"
+                  : "opacity-100"
+              )}>
+                <SystemStatus isConnected={isConnected} lastUpdateTime={lastUpdateTime} onTestConnection={testConnection} />
+                <Popover open={isOpen} onOpenChange={setIsOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="icon" className="bg-transparent" title={t.common.addUsOnLINE}>
+                      <QrCode className="h-4 w-4" />
                     </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-              <div className="flex items-center gap-2">
-                <LanguageToggle showTooltip={true} />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setShowDeveloperSettings(true)}
-                  className="bg-transparent"
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80" align="end">
+                    <div className="text-center">
+                      <div className="w-48 h-48 bg-gray-100 dark:bg-gray-700 rounded-tr-lg rounded-bl-lg flex items-center justify-center mb-2 mx-auto">
+                        <img
+                          src="/images/design-mode/M_917ybsgj_BW.png"
+                          alt="Add us on LINE"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{t.common.addLineContact}</p>
+                      <Button variant="outline" size="sm" onClick={() => setIsOpen(false)}>
+                        {t.common.close}
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <div className="flex items-center gap-2">
+                  <LanguageToggle showTooltip={true} />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowDeveloperSettings(true)}
+                    className="bg-transparent"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
+              <WaterLevelNotification
+                currentLevel={currentLevel}
+                warningLevel={warningLevel}
+                dangerLevel={dangerLevel}
+                onExpandedChange={setIsNotifExpanded}
+              />
             </div>
           </div>
 
