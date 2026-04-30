@@ -349,7 +349,10 @@ export default function Dashboard() {
         {/* TMD Warning Banner */}
         <TMDWarningBanner />
 
-        <div className="p-4 sm:p-6 w-full">
+        <div className={cn(
+          "p-4 sm:p-6 w-full transition-opacity duration-200",
+          isSidebarAnimating ? "opacity-0" : "opacity-100 delay-100"
+        )}>
           {/* Status Summary */}
           <StatusSummary currentLevel={currentLevel} warningLevel={warningLevel} dangerLevel={dangerLevel} />
 
@@ -490,9 +493,7 @@ export default function Dashboard() {
                       </CardHeader>
                       <CardContent>
                         {isSidebarAnimating ? (
-                          <div className="h-[350px] w-full flex items-center justify-center bg-muted/20 animate-pulse rounded-md">
-                            <span className="text-muted-foreground">Updating view...</span>
-                          </div>
+                          <div className="h-[350px] w-full" />
                         ) : (
                           <EnhancedWaterLevelChart
                             data={todayWaterData}
@@ -632,9 +633,7 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     {isSidebarAnimating ? (
-                      <div className="h-[350px] w-full flex items-center justify-center bg-muted/20 animate-pulse rounded-md">
-                        <span className="text-muted-foreground">Updating view...</span>
-                      </div>
+                      <div className="h-[350px] w-full" />
                     ) : dataComparison === "compare" ? (
                       <EnhancedWaterLevelChart
                         multiData={compareData}
