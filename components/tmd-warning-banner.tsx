@@ -111,8 +111,8 @@ export function TMDWarningBanner() {
                     iconBgColor,
                     // Use rounded-2xl ONLY when explicitly expanded with headline
                     hasWarning
-                        ? "rounded-2xl rounded-br-none"
-                        : "rounded-tl-full rounded-tr-full rounded-bl-full"
+                        ? "rounded-full rounded-br-none"
+                        : "rounded-full rounded-br-none"
                 )}>
                     {hasWarning || isError ? (
                         <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
