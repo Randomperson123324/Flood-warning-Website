@@ -34,7 +34,7 @@ export function Footer() {
                     Vibecoding Project
                 </p>
                 <p className="text-xs text-gray-500 font-medium">
-                    Version 2.7.6-visual-improvement
+                    Version 2.11.6-notificaton-page&sidebar-optimization
                 </p>
             </div>
         </footer>
