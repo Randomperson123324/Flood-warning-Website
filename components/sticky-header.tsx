@@ -62,42 +62,65 @@ export function StickyHeader({
 
 
   return (
-    <div className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-white/10 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-700 shadow-sm transform transition-transform duration-300 ease-out ${isScrolled ? "translate-y-0" : "-translate-y-full pointer-events-none"}`}
+    <div
+      className={`fixed top-0 left-0 right-0 z-50 transform transition-transform duration-300 ease-out ${isScrolled ? "translate-y-0" : "-translate-y-full pointer-events-none"}`}
     >
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between">
-          {/* Active tab title and navigation */}
-          <div className="flex items-center gap-4">
+      {/* Backdrop blur layer — mask on same element as backdrop-filter for smooth fade */}
+      <div
+        className="absolute inset-0 backdrop-blur-xl"
+        style={{
+          WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 100%)",
+          maskImage: "linear-gradient(to bottom, black 40%, transparent 100%)",
+        }}
+      />
+
+      {/* Background tint layer — also masked for smooth fade */}
+      <div
+        className="absolute inset-0 bg-white/50 dark:bg-gray-900/70"
+        style={{
+          WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 100%)",
+          maskImage: "linear-gradient(to bottom, black 40%, transparent 100%)",
+        }}
+      />
+
+      {/* Content */}
+      <div className="relative">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            {/* Active tab title and navigation */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                {getTabIcon(activeTab)}
+                <span className="font-medium">{getTabTitle(activeTab)}</span>
+              </div>
+
+              {/* Tab navigation icons */}
+              <div className="flex items-center gap-1">
+                {["overview", "analytics", "weather", "community"].map((tab) => (
+                  <Button
+                    key={tab}
+                    variant={activeTab === tab ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => onTabChange(tab)}
+                    className="p-2"
+                    title={getTabTitle(tab)}
+                  >
+                    {getTabIcon(tab)}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Right side controls */}
             <div className="flex items-center gap-2">
-              {getTabIcon(activeTab)}
-              <span className="font-medium">{getTabTitle(activeTab)}</span>
+              <LanguageToggle showTooltip={false} />
             </div>
-
-            {/* Tab navigation icons */}
-            <div className="flex items-center gap-1">
-              {["overview", "analytics", "weather", "community"].map((tab) => (
-                <Button
-                  key={tab}
-                  variant={activeTab === tab ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => onTabChange(tab)}
-                  className="p-2"
-                  title={getTabTitle(tab)}
-                >
-                  {getTabIcon(tab)}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* Right side controls */}
-          <div className="flex items-center gap-2">
-            <LanguageToggle showTooltip={false} />
           </div>
         </div>
-
-
       </div>
+
+      {/* Spacer — extends the container so the blur has room to fade out */}
+      <div className="h-10 pointer-events-none" />
     </div>
   )
 }
