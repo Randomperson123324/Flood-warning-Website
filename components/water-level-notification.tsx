@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Bell, X } from "lucide-react"
 import { useLanguage } from "@/hooks/language-context"
 import { cn } from "@/lib/utils"
+import { useRouter } from "next/navigation"
 
 type Tier = "safe" | "warning" | "danger"
 
@@ -28,6 +29,7 @@ export function WaterLevelNotification({
   onExpandedChange,
 }: WaterLevelNotificationProps) {
   const { language } = useLanguage()
+  const router = useRouter()
   const [isExpanded, setIsExpanded] = useState(false)
   const [highestTier, setHighestTier] = useState<Tier>("safe")
   const [prevTier, setPrevTier] = useState<Tier | null>(null)
@@ -170,12 +172,13 @@ export function WaterLevelNotification({
   const color = palette[displayTier]
 
   const handleClick = () => {
-    if (showPanel) {
-      closePanel()
-    } else {
-      setShowPanel(true)
-      setIsClosing(false)
-    }
+    // Save current notifications to localStorage before navigating
+    try {
+      localStorage.setItem("waterLevelNotifications", JSON.stringify(
+        notifications.map(n => ({ ...n, timestamp: n.timestamp.toISOString() }))
+      ))
+    } catch { }
+    router.push("/notification")
   }
 
   const tierDotColor = (tier: Tier) => {
