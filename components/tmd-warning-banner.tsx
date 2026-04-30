@@ -101,8 +101,8 @@ export function TMDWarningBanner() {
             <div className={cn(
                 "inline-grid grid-cols-[auto_1fr] max-w-full shadow-sm p-1 animate-in fade-in slide-in-from-top-2 duration-500",
                 bannerBgColor,
-                // Use rounded-2xl on mobile/expanded, pill shape on desktop when not expanded
-                (hasWarning && showHeadline) ? "rounded-2xl" : "rounded-2xl sm:rounded-full"
+                // Use rounded-2xl when there is a warning, pill shape otherwise
+                hasWarning ? "rounded-2xl" : "rounded-2xl sm:rounded-full"
             )}>
 
                 {/* Icon Area */}
@@ -110,7 +110,7 @@ export function TMDWarningBanner() {
                     "flex items-center justify-center w-10 sm:w-11 aspect-square shrink-0 self-start",
                     iconBgColor,
                     // Use rounded-2xl ONLY when explicitly expanded with headline
-                    (hasWarning && showHeadline)
+                    hasWarning
                         ? "rounded-2xl rounded-br-none"
                         : "rounded-tl-full rounded-tr-full rounded-bl-full"
                 )}>
