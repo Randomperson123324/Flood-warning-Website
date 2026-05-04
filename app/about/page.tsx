@@ -298,22 +298,19 @@ export default function AboutPage() {
           <section className="relative py-24 px-6 flex flex-col items-center overflow-hidden">
             <Meteors number={10} />
 
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-96 h-96 bg-red-600/5 rounded-full blur-3xl" />
-            </div>
+    <div className="bg-background relative flex size-full max-w-lg items-center justify-center overflow-hidden rounded-lg border px-40 pt-8 pb-40 md:pb-60">
+      <span className="pointer-events-none bg-linear-to-b from-black to-gray-300/80 bg-clip-text text-center text-8xl leading-none font-semibold whitespace-pre-wrap text-transparent dark:from-white dark:to-slate-900/10">
+        Globe
+      </span>
+      <Globe className="top-28" />
+      <div className="pointer-events-none absolute inset-0 h-full bg-[radial-gradient(circle_at_50%_200%,rgba(0,0,0,0.2),rgba(255,255,255,0))]" />
+    </div>
 
-            {/* MagicUI Globe — real cobe-powered component */}
-            <div className="relative z-10 w-full max-w-sm mx-auto aspect-square">
-              <Globe className="top-0" />
-              <div className="pointer-events-none absolute inset-0 h-full bg-[radial-gradient(circle_at_50%_200%,rgba(0,0,0,0.3),rgba(0,0,0,0))]" />
-            </div>
 
             <div className="z-10 text-center mt-4 space-y-2">
               <p className="text-2xl font-bold text-white">
                 Accessible no matter where you are
               </p>
-              <p className="text-sm text-gray-500 font-noto-sans-thai">เข้าถึงได้จากทุกที่บนโลก</p>
-              <p className="text-sm text-gray-500">随时随地，轻松访问</p>
             </div>
           </section>
 
