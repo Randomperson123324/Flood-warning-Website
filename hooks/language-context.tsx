@@ -68,7 +68,7 @@ const translations = {
       ratePerHour: "cm/hr",
     },
     chart: {
-      title: "Water Level Over Time",
+      title: "Water Level graph",
       description: "Real-time flood level measurements",
       yAxisLabel: "Water Level (cm)",
       waterLevel: "Water Level",
@@ -390,8 +390,8 @@ const translations = {
       ratePerHour: "ซม./ชม.",
     },
     chart: {
-      title: "ระดับน้ำตามเวลา",
-      description: "การวัดระดับน้ำท่วมแบบเรียลไทม์",
+      title: "กราฟระดับน้ำ",
+      description: "กราฟการวัดระดับน้ำท่วมแบบเรียลไทม์",
       yAxisLabel: "ระดับน้ำ (ซม.)",
       waterLevel: "ระดับน้ำ",
       dangerLevel: "ระดับวิกฤติ",
