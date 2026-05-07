@@ -7,7 +7,7 @@ const translations = {
   en: {
     title: "Flood Monitoring System",
     subtitles: {
-      overview: "Monitor current water levels and affected area based on reports.",
+      overview: "Monitor current water levels from our sensor and affected area based on reports.",
       analytics: "View weekly insights and analyze water level history.",
       weather: "Check real-time weather and forecasts. we get data from Thai Meteorological Department (TMD).",
       community: "Help us report flood and affected area or just chat with others.",
@@ -68,7 +68,7 @@ const translations = {
       ratePerHour: "cm/hr",
     },
     chart: {
-      title: "Water Level graph",
+      title: "Water Level line chart",
       description: "Real-time flood level measurements",
       yAxisLabel: "Water Level (cm)",
       waterLevel: "Water Level",
@@ -329,7 +329,7 @@ const translations = {
   th: {
     title: "ระบบตรวจสอบน้ำท่วม",
     subtitles: {
-      overview: "ตรวจสอบระดับน้ำและพื้นที่ได้รับผลกระทบจากการรายงานจากคนอื่นในปัจจุบัน.",
+      overview: "ตรวจสอบระดับน้ำจากเซ็นเซอร์เราและพื้นที่ได้รับผลกระทบจากการรายงานจากคนอื่นในปัจจุบัน.",
       analytics: "ตรวจสอบระดับน้ำรายสัปดาห์และวิเคราห์ระดับน้ำในอดีต",
       weather: "สภาพอากาศปัจจุบันและการพยากรณ์บริการโดย กรมอุตุนิยมวิทยา",
       community: "ช่วยรายงานน้ำท่วมหรือพื้นที่ที่ได้รับผบกระทบและพูดคุยกับคนอื่น",
