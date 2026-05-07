@@ -124,7 +124,7 @@ export default function NotificationPage() {
                 <Bell className="h-5 w-5 text-white" />
               </div>
               <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
-                {language === "th" ? "การแจ้งเตือน" : "Notifications"}
+                {language === "th" ? "ศูนย์การแจ้งเตือน" : "Notifications center"}
               </h1>
             </div>
 
