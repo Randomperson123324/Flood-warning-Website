@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronDown, Database, Monitor, Bell, MessageCircle, Users, AlertTriangle } from "lucide-react"
+import { ChevronLeft, ChevronDown, Database, Monitor, Bell, MessageCircle, Users, AlertTriangle, Droplets, Target, Award, Mail } from "lucide-react"
 import Link from "next/link"
 import { Footer } from "@/components/footer"
 import { useEffect, useState } from "react"
@@ -18,7 +18,7 @@ export default function AboutPage() {
     return (
         <div className="min-h-screen bg-white dark:bg-gray-900 font-sao-chingcha">
             {/* Hero Section - Full Screen */}
-            <section className="relative w-full h-screen flex items-center justify-center overflow-hidden">
+            <section className="relative w-full h-screen flex items-end justify-center overflow-hidden">
                 {/* Background Image */}
                 <img
                     src="/images/about-banner.jpg"
@@ -26,9 +26,9 @@ export default function AboutPage() {
                     className="absolute inset-0 w-full h-full object-cover"
                 />
 
-                {/* Animated Gradient Overlay from Bottom */}
+                {/* Animated Gradient Overlay from Bottom - 30% height */}
                 <div
-                    className={`absolute inset-0 bg-gradient-to-t from-white via-white/80 to-transparent transition-all duration-1000 ease-out ${showGradient ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
+                    className={`absolute bottom-0 left-0 right-0 h-[30%] bg-gradient-to-t from-white via-white to-transparent transition-all duration-1000 ease-out ${showGradient ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
                         }`}
                 />
 
@@ -42,85 +42,120 @@ export default function AboutPage() {
                     </Link>
                 </div>
 
-                {/* Hero Content */}
-                <div className={`relative z-10 text-center transition-all duration-1000 delay-300 ${showGradient ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"}`}>
-                    <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-4 drop-shadow-lg">
+                {/* Hero Content - positioned at bottom within gradient */}
+                <div className={`relative z-10 pb-12 text-center transition-all duration-1000 delay-300 ${showGradient ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"}`}>
+                    <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-2 drop-shadow-lg">
                         About Us
                     </h1>
-                    <p className="text-lg text-gray-700 mb-8">เกี่ยวกับเรา</p>
+                    <p className="text-lg text-gray-700 mb-6">เกี่ยวกับเรา</p>
 
-                    {/* Scroll Down Indicator */}
-                    <div className="flex flex-col items-center gap-2 animate-bounce">
-                        <span className="text-sm text-gray-600">Scroll Down</span>
-                        <ChevronDown className="h-6 w-6 text-gray-600" />
+                    {/* Scroll Down Indicator - Capsule Style */}
+                    <div className="inline-flex items-center gap-2 px-6 py-2 bg-gray-900/80 text-white rounded-full animate-bounce">
+                        <span className="text-sm font-medium">Scroll Down</span>
+                        <ChevronDown className="h-4 w-4" />
                     </div>
                 </div>
             </section>
 
-            {/* Content Section - 4 Parts */}
+            {/* Content Section - 4 Parts with Folder Tab Design */}
             <section className="bg-white dark:bg-gray-900 py-16 px-4">
                 <div className="container mx-auto max-w-6xl">
                     <div className="flex flex-col lg:flex-row gap-12">
                         {/* Left Side - 70% Content */}
-                        <div className="lg:w-[70%] space-y-12 font-noto-sans-thai">
-                            {/* StreetFlood Project */}
-                            <div className="space-y-4">
-                                <h2 className="text-3xl font-bold text-gray-900 dark:text-white border-l-4 border-blue-500 pl-4">
-                                    StreetFlood Project
-                                </h2>
-                                <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-lg">
-                                    โครงงานระบบติดตามระดับน้ำเฝ้าระวังและเตือนหากระดับน้ำอันตราย
-                                    พัฒนาโดยนักเรียนโรงเรียนสตรีประเสริฐศิลป์ 3 คน ม.2/2 SMTE โครงงาน กลุ่มหมูแดดเดียว
-                                </p>
-                            </div>
+                        <div className="lg:w-[70%] font-noto-sans-thai">
+                            {/* 2x2 Grid of Folder Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* StreetFlood Project Card */}
+                                <div className="relative bg-blue-500 rounded-3xl overflow-hidden min-h-[280px]">
+                                    {/* Folder Tab */}
+                                    <div className="absolute top-0 left-0 bg-blue-600 w-40 h-12 rounded-br-3xl" />
+                                    {/* Content */}
+                                    <div className="pt-16 px-6 pb-6">
+                                        <h3 className="text-2xl font-bold text-white mb-3">StreetFlood Project</h3>
+                                        <p className="text-blue-100 text-sm leading-relaxed mb-4">
+                                            โครงงานระบบติดตามระดับน้ำเฝ้าระวังและเตือนหากระดับน้ำอันตราย
+                                            พัฒนาโดยนักเรียน ม.2/2 SMTE กลุ่มหมูแดดเดียว
+                                        </p>
+                                    </div>
+                                    {/* Icon */}
+                                    <div className="absolute bottom-4 right-4">
+                                        <Droplets className="w-16 h-16 text-blue-700/50" />
+                                    </div>
+                                </div>
 
-                            {/* Our Mission */}
-                            <div className="space-y-4">
-                                <h2 className="text-3xl font-bold text-gray-900 dark:text-white border-l-4 border-green-500 pl-4">
-                                    Our Mission
-                                </h2>
-                                <ul className="space-y-3 text-gray-700 dark:text-gray-300 text-lg">
-                                    <li className="flex items-start gap-3">
-                                        <span className="w-2 h-2 bg-green-500 rounded-full mt-2.5 shrink-0" />
-                                        พัฒนาระบบแจ้งเตือนภัยที่มีความแม่นยำและรวดเร็ว
-                                    </li>
-                                    <li className="flex items-start gap-3">
-                                        <span className="w-2 h-2 bg-green-500 rounded-full mt-2.5 shrink-0" />
-                                        จัดเก็บประวัติระดับน้ำได้อย่างมีประสิทธิภาพ
-                                    </li>
-                                    <li className="flex items-start gap-3">
-                                        <span className="w-2 h-2 bg-green-500 rounded-full mt-2.5 shrink-0" />
-                                        สามารถใช้งานได้จริง ไม่ล่มบ่อย ไม่เอ๋อ(ซึ่งตอนนี้ยังเอ๋ออยู่)
-                                    </li>
-                                </ul>
-                            </div>
+                                {/* Our Mission Card */}
+                                <div className="relative bg-green-500 rounded-3xl overflow-hidden min-h-[280px]">
+                                    {/* Folder Tab */}
+                                    <div className="absolute top-0 left-0 bg-green-600 w-40 h-12 rounded-br-3xl" />
+                                    {/* Content */}
+                                    <div className="pt-16 px-6 pb-6">
+                                        <h3 className="text-2xl font-bold text-white mb-3">Our Mission</h3>
+                                        <ul className="text-green-100 text-sm space-y-2">
+                                            <li className="flex items-start gap-2">
+                                                <span className="w-1.5 h-1.5 bg-white rounded-full mt-1.5 shrink-0" />
+                                                พัฒนาระบบแจ้งเตือนภัยที่แม่นยำและรวดเร็ว
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="w-1.5 h-1.5 bg-white rounded-full mt-1.5 shrink-0" />
+                                                จัดเก็บประวัติระดับน้ำได้อย่างมีประสิทธิภาพ
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="w-1.5 h-1.5 bg-white rounded-full mt-1.5 shrink-0" />
+                                                สามารถใช้งานได้จริง ไม่ล่มบ่อย
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    {/* Icon */}
+                                    <div className="absolute bottom-4 right-4">
+                                        <Target className="w-16 h-16 text-green-700/50" />
+                                    </div>
+                                </div>
 
-                            {/* Credits */}
-                            <div className="space-y-4">
-                                <h2 className="text-3xl font-bold text-gray-900 dark:text-white border-l-4 border-yellow-500 pl-4">
-                                    Credits
-                                </h2>
-                                <p className="text-gray-700 dark:text-gray-300 text-lg">
-                                    รูปภาพในหน้านี้นำมากจาก แนวหน้า
-                                </p>
-                            </div>
+                                {/* Credits Card */}
+                                <div className="relative bg-yellow-500 rounded-3xl overflow-hidden min-h-[280px]">
+                                    {/* Folder Tab */}
+                                    <div className="absolute top-0 left-0 bg-yellow-600 w-40 h-12 rounded-br-3xl" />
+                                    {/* Content */}
+                                    <div className="pt-16 px-6 pb-6">
+                                        <h3 className="text-2xl font-bold text-white mb-3">Credits</h3>
+                                        <p className="text-yellow-100 text-sm leading-relaxed mb-4">
+                                            รูปภาพในหน้านี้นำมากจาก แนวหน้า
+                                        </p>
+                                        <p className="text-yellow-100 text-sm leading-relaxed">
+                                            ขอบคุณทุกท่านที่สนับสนุนโครงการนี้
+                                        </p>
+                                    </div>
+                                    {/* Icon */}
+                                    <div className="absolute bottom-4 right-4">
+                                        <Award className="w-16 h-16 text-yellow-700/50" />
+                                    </div>
+                                </div>
 
-                            {/* Contact Us */}
-                            <div className="space-y-4">
-                                <h2 className="text-3xl font-bold text-gray-900 dark:text-white border-l-4 border-purple-500 pl-4">
-                                    Contact Us
-                                </h2>
-                                <p className="text-gray-700 dark:text-gray-300 text-lg">
-                                    <a
-                                        href="https://forms.gle/1Te39d2yoXZYDfNr5"
-                                        className="text-blue-600 hover:text-blue-800 underline"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                    >
-                                        Click here
-                                    </a>{" "}
-                                    (โปรดใช้อีเมลโรงเรียนในการติดต่อ)
-                                </p>
+                                {/* Contact Us Card */}
+                                <div className="relative bg-purple-500 rounded-3xl overflow-hidden min-h-[280px]">
+                                    {/* Folder Tab */}
+                                    <div className="absolute top-0 left-0 bg-purple-600 w-40 h-12 rounded-br-3xl" />
+                                    {/* Content */}
+                                    <div className="pt-16 px-6 pb-6">
+                                        <h3 className="text-2xl font-bold text-white mb-3">Contact Us</h3>
+                                        <p className="text-purple-100 text-sm leading-relaxed mb-4">
+                                            ติดต่อเราได้ผ่านแบบฟอร์ม Google Forms (โปรดใช้อีเมลโรงเรียนในการติดต่อ)
+                                        </p>
+                                        <a
+                                            href="https://forms.gle/1Te39d2yoXZYDfNr5"
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-sm font-medium rounded-lg transition-colors"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            ติดต่อเรา
+                                            <ChevronDown className="w-4 h-4 rotate-[-90deg]" />
+                                        </a>
+                                    </div>
+                                    {/* Icon */}
+                                    <div className="absolute bottom-4 right-4">
+                                        <Mail className="w-16 h-16 text-purple-700/50" />
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
