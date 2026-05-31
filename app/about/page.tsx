@@ -1,7 +1,6 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronDown, Database, Monitor, Bell, MessageCircle, Users, AlertTriangle, Droplets, Target, Award, Mail } from "lucide-react"
+import { ChevronDown, Database, Monitor, Bell, MessageCircle, Users, AlertTriangle, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import { Footer } from "@/components/footer"
 import { useEffect, useState } from "react"
@@ -32,14 +31,26 @@ export default function AboutPage() {
                         }`}
                 />
 
-                {/* Back Button */}
-                <div className="absolute top-4 left-4 z-20">
-                    <Link href="/">
-                        <Button variant="ghost" className="text-white hover:text-blue-100 hover:bg-white/20 backdrop-blur-sm">
-                            <ChevronLeft className="h-4 w-4 mr-2" />
-                            ย้อนกลับ (Back)
-                        </Button>
-                    </Link>
+                {/* Blur Header with Navigation */}
+                <div className="absolute top-0 left-0 right-0 z-20 p-4">
+                    <div className="flex justify-end gap-3">
+                        <Link href="/">
+                            <button className="group flex items-center gap-2 px-5 py-2.5 bg-white/20 backdrop-blur-md text-white rounded-full border border-white/30 font-medium text-sm transition-all duration-300 hover:bg-white hover:text-gray-900 hover:scale-105 hover:shadow-lg">
+                                <span>ไปที่เว็บไซต์</span>
+                                <ExternalLink className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                            </button>
+                        </Link>
+                        <a
+                            href="https://forms.gle/1Te39d2yoXZYDfNr5"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <button className="group flex items-center gap-2 px-5 py-2.5 bg-white/20 backdrop-blur-md text-white rounded-full border border-white/30 font-medium text-sm transition-all duration-300 hover:bg-white hover:text-gray-900 hover:scale-105 hover:shadow-lg">
+                                <span>ติดต่อเรา</span>
+                                <ExternalLink className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                            </button>
+                        </a>
+                    </div>
                 </div>
 
                 {/* Hero Content - positioned at bottom within gradient */}
@@ -78,10 +89,6 @@ export default function AboutPage() {
                                             พัฒนาโดยนักเรียน ม.2/2 SMTE กลุ่มหมูแดดเดียว
                                         </p>
                                     </div>
-                                    {/* Icon */}
-                                    <div className="absolute bottom-4 right-4">
-                                        <Droplets className="w-16 h-16 text-blue-600/50" />
-                                    </div>
                                 </div>
 
                                 {/* Our Mission Card */}
@@ -107,10 +114,6 @@ export default function AboutPage() {
                                             </li>
                                         </ul>
                                     </div>
-                                    {/* Icon */}
-                                    <div className="absolute bottom-4 right-4">
-                                        <Target className="w-16 h-16 text-green-600/50" />
-                                    </div>
                                 </div>
 
                                 {/* Credits Card */}
@@ -127,10 +130,6 @@ export default function AboutPage() {
                                         <p className="text-yellow-900 font-medium text-sm leading-relaxed">
                                             ขอบคุณทุกท่านที่สนับสนุนโครงการนี้
                                         </p>
-                                    </div>
-                                    {/* Icon */}
-                                    <div className="absolute bottom-4 right-4">
-                                        <Award className="w-16 h-16 text-yellow-600/50" />
                                     </div>
                                 </div>
 
@@ -154,10 +153,6 @@ export default function AboutPage() {
                                             ติดต่อเรา
                                             <ChevronDown className="w-4 h-4 rotate-[-90deg]" />
                                         </a>
-                                    </div>
-                                    {/* Icon */}
-                                    <div className="absolute bottom-4 right-4">
-                                        <Mail className="w-16 h-16 text-purple-600/50" />
                                     </div>
                                 </div>
                             </div>
