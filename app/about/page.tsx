@@ -70,12 +70,10 @@ export default function AboutPage() {
 
             {/* Content Section - 4 Parts with Folder Tab Design */}
             <section className="bg-white dark:bg-gray-900 py-16 px-4">
-                <div className="container mx-auto max-w-6xl">
-                    <div className="flex flex-col lg:flex-row gap-12">
-                        {/* Left Side - 70% Content */}
-                        <div className="lg:w-[70%] font-noto-sans-thai">
-                            {/* 2x2 Grid of Folder Cards */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="container mx-auto max-w-5xl">
+                    <div className="font-noto-sans-thai">
+                        {/* 2x2 Grid of Folder Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* StreetFlood Project Card */}
                                 <div className="relative bg-blue-400 rounded-3xl overflow-hidden min-h-[280px]">
                                     {/* Folder Tab with Title */}
