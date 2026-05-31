@@ -3,19 +3,76 @@
 import { ChevronDown, Database, Monitor, Bell, MessageCircle, Users, AlertTriangle, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import { Footer } from "@/components/footer"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import Image from "next/image"
 
 export default function AboutPage() {
     const [showGradient, setShowGradient] = useState(false)
+    const [videoLoaded, setVideoLoaded] = useState(false)
+    const [pageReady, setPageReady] = useState(false)
+    const videoRef = useRef<HTMLVideoElement>(null)
 
     useEffect(() => {
         const timer = setTimeout(() => setShowGradient(true), 500)
         return () => clearTimeout(timer)
     }, [])
 
+    // Handle video load and page readiness
+    useEffect(() => {
+        const video = videoRef.current
+        if (!video) {
+            // If video element doesn't exist (e.g., file missing), skip loading
+            setVideoLoaded(true)
+            setPageReady(true)
+            return
+        }
+
+        const handleCanPlay = () => {
+            setVideoLoaded(true)
+            setTimeout(() => setPageReady(true), 300)
+        }
+
+        // If video is already loaded (cached)
+        if (video.readyState >= 3) {
+            handleCanPlay()
+        } else {
+            video.addEventListener('canplaythrough', handleCanPlay)
+        }
+
+        // Fallback: show page after 5s even if video hasn't loaded
+        const fallback = setTimeout(() => {
+            setVideoLoaded(true)
+            setPageReady(true)
+        }, 5000)
+
+        return () => {
+            video.removeEventListener('canplaythrough', handleCanPlay)
+            clearTimeout(fallback)
+        }
+    }, [])
+
     return (
         <div className="min-h-screen bg-white dark:bg-gray-900 font-sao-chingcha">
+            {/* Loading Screen */}
+            <div className={`fixed inset-0 z-[100] bg-gray-900 flex flex-col items-center justify-center transition-all duration-700 ${pageReady ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                }`}>
+                <div className="relative mb-6">
+                    <div className="w-16 h-16 border-4 border-blue-500/30 rounded-full" />
+                    <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-blue-500 rounded-full animate-spin" />
+                </div>
+                <p className="text-white text-lg font-medium animate-pulse">กำลังโหลด...</p>
+                <p className="text-gray-400 text-sm mt-2">Loading video content</p>
+            </div>
+
+            {/* Hidden video preloader */}
+            <video
+                ref={videoRef}
+                src="/videos/rain.mp4"
+                muted
+                playsInline
+                preload="auto"
+                className="hidden"
+            />
             {/* Hero Section - Full Screen */}
             <section className="relative w-full h-screen flex items-end justify-center overflow-hidden">
                 {/* Background Image */}
@@ -73,31 +130,36 @@ export default function AboutPage() {
                 <div className="container mx-auto max-w-5xl">
                     <div className="font-noto-sans-thai">
                         {/* 2x2 Grid of Folder Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* StreetFlood Project Card */}
-                                <div className="relative bg-blue-400 rounded-3xl overflow-hidden min-h-[280px]">
-                                    {/* Folder Tab with Title */}
-                                    <div className="absolute top-0 left-0 bg-blue-500 px-6 py-3 rounded-br-3xl">
-                                        <h3 className="text-xl font-bold text-white">StreetFlood Project</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-12">
+                            {/* StreetFlood Project Card */}
+                            <div className="relative mt-7">
+                                {/* Protruding Tab - same color as card, overlaps into card */}
+                                <div className="absolute -top-6 left-6 z-10">
+                                    <div className="bg-blue-400 px-7 py-3 rounded-t-2xl">
+                                        <h3 className="text-base font-bold text-white whitespace-nowrap">StreetFlood Project</h3>
                                     </div>
-                                    {/* Content */}
-                                    <div className="pt-16 px-6 pb-6">
-                                        <p className="text-blue-900 font-medium text-sm leading-relaxed mb-4">
+                                </div>
+                                {/* Card Body */}
+                                <div className="bg-blue-400 rounded-3xl min-h-[240px]">
+                                    <div className="pt-12 px-6 pb-6">
+                                        <p className="text-blue-950 font-medium text-sm leading-relaxed mb-4">
                                             โครงงานระบบติดตามระดับน้ำเฝ้าระวังและเตือนหากระดับน้ำอันตราย
                                             พัฒนาโดยนักเรียน ม.2/2 SMTE กลุ่มหมูแดดเดียว
                                         </p>
                                     </div>
                                 </div>
+                            </div>
 
-                                {/* Our Mission Card */}
-                                <div className="relative bg-green-400 rounded-3xl overflow-hidden min-h-[280px]">
-                                    {/* Folder Tab with Title */}
-                                    <div className="absolute top-0 left-0 bg-green-500 px-6 py-3 rounded-br-3xl">
-                                        <h3 className="text-xl font-bold text-white">Our Mission</h3>
+                            {/* Our Mission Card */}
+                            <div className="relative mt-7">
+                                <div className="absolute -top-6 left-6 z-10">
+                                    <div className="bg-green-400 px-7 py-3 rounded-t-2xl">
+                                        <h3 className="text-base font-bold text-white whitespace-nowrap">Our Mission</h3>
                                     </div>
-                                    {/* Content */}
-                                    <div className="pt-16 px-6 pb-6">
-                                        <ul className="text-green-900 font-medium text-sm space-y-2">
+                                </div>
+                                <div className="bg-green-400 rounded-3xl min-h-[240px]">
+                                    <div className="pt-12 px-6 pb-6">
+                                        <ul className="text-green-950 font-medium text-sm space-y-2">
                                             <li className="flex items-start gap-2">
                                                 <span className="w-1.5 h-1.5 bg-green-700 rounded-full mt-1.5 shrink-0" />
                                                 พัฒนาระบบแจ้งเตือนภัยที่แม่นยำและรวดเร็ว
@@ -113,38 +175,42 @@ export default function AboutPage() {
                                         </ul>
                                     </div>
                                 </div>
+                            </div>
 
-                                {/* Credits Card */}
-                                <div className="relative bg-yellow-400 rounded-3xl overflow-hidden min-h-[280px]">
-                                    {/* Folder Tab with Title */}
-                                    <div className="absolute top-0 left-0 bg-yellow-500 px-6 py-3 rounded-br-3xl">
-                                        <h3 className="text-xl font-bold text-white">Credits</h3>
+                            {/* Credits Card */}
+                            <div className="relative mt-7">
+                                <div className="absolute -top-6 left-6 z-10">
+                                    <div className="bg-yellow-400 px-7 py-3 rounded-t-2xl">
+                                        <h3 className="text-base font-bold text-white whitespace-nowrap">Credits</h3>
                                     </div>
-                                    {/* Content */}
-                                    <div className="pt-16 px-6 pb-6">
-                                        <p className="text-yellow-900 font-medium text-sm leading-relaxed mb-4">
+                                </div>
+                                <div className="bg-yellow-400 rounded-3xl min-h-[240px]">
+                                    <div className="pt-12 px-6 pb-6">
+                                        <p className="text-yellow-950 font-medium text-sm leading-relaxed mb-4">
                                             รูปภาพในหน้านี้นำมากจาก แนวหน้า
                                         </p>
-                                        <p className="text-yellow-900 font-medium text-sm leading-relaxed">
+                                        <p className="text-yellow-950 font-medium text-sm leading-relaxed">
                                             ขอบคุณทุกท่านที่สนับสนุนโครงการนี้
                                         </p>
                                     </div>
                                 </div>
+                            </div>
 
-                                {/* Contact Us Card */}
-                                <div className="relative bg-purple-400 rounded-3xl overflow-hidden min-h-[280px]">
-                                    {/* Folder Tab with Title */}
-                                    <div className="absolute top-0 left-0 bg-purple-500 px-6 py-3 rounded-br-3xl">
-                                        <h3 className="text-xl font-bold text-white">Contact Us</h3>
+                            {/* Contact Us Card */}
+                            <div className="relative mt-7">
+                                <div className="absolute -top-6 left-6 z-10">
+                                    <div className="bg-purple-400 px-7 py-3 rounded-t-2xl">
+                                        <h3 className="text-base font-bold text-white whitespace-nowrap">Contact Us</h3>
                                     </div>
-                                    {/* Content */}
-                                    <div className="pt-16 px-6 pb-6">
-                                        <p className="text-purple-900 font-medium text-sm leading-relaxed mb-4">
+                                </div>
+                                <div className="bg-purple-400 rounded-3xl min-h-[240px]">
+                                    <div className="pt-12 px-6 pb-6">
+                                        <p className="text-purple-950 font-medium text-sm leading-relaxed mb-4">
                                             ติดต่อเราได้ผ่านแบบฟอร์ม Google Forms (โปรดใช้อีเมลโรงเรียนในการติดต่อ)
                                         </p>
                                         <a
                                             href="https://forms.gle/1Te39d2yoXZYDfNr5"
-                                            className="inline-flex items-center gap-2 px-4 py-2 border-2 border-purple-700 text-purple-900 text-sm font-medium rounded-lg hover:bg-purple-500 hover:text-white transition-colors"
+                                            className="inline-flex items-center gap-2 px-4 py-2 border-2 border-purple-700 text-purple-950 text-sm font-medium rounded-lg hover:bg-purple-500 hover:text-white transition-colors"
                                             target="_blank"
                                             rel="noopener noreferrer"
                                         >
@@ -155,6 +221,7 @@ export default function AboutPage() {
                                 </div>
                             </div>
                         </div>
+
 
                         {/* Right Side - 30% Logo */}
                         <div className="lg:w-[30%] flex items-start justify-center lg:sticky lg:top-8 lg:self-start">
@@ -171,12 +238,40 @@ export default function AboutPage() {
                 </div>
             </section>
 
-            {/* Technology & Features Section */}
-            <section className="bg-gray-50 dark:bg-gray-800 py-20 px-4">
-                <div className="container mx-auto max-w-6xl">
-                    <h2 className="text-4xl font-bold text-center text-gray-900 dark:text-white mb-16">
+            {/* Technology & Features - Full Screen Hero with Video */}
+            <section className="relative w-full h-screen flex items-center justify-center overflow-hidden">
+                {/* Video Background */}
+                <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-cover"
+                >
+                    <source src="/videos/rain.mp4" type="video/mp4" />
+                </video>
+
+                {/* Dark Overlay */}
+                <div className="absolute inset-0 bg-black/60" />
+
+                {/* Hero Content */}
+                <div className="relative z-10 text-center">
+                    <h2 className="text-5xl md:text-7xl font-bold text-white mb-2 drop-shadow-lg">
                         Technology & Features
                     </h2>
+                    <p className="text-lg text-gray-300 mb-8">เทคโนโลยีและฟีเจอร์</p>
+
+                    {/* Scroll Down Indicator */}
+                    <div className="inline-flex items-center gap-2 px-6 py-2 bg-white/20 backdrop-blur-md text-white rounded-full animate-bounce border border-white/30">
+                        <span className="text-sm font-medium">Scroll Down</span>
+                        <ChevronDown className="h-4 w-4" />
+                    </div>
+                </div>
+            </section>
+
+            {/* Technology & Features Content */}
+            <section className="bg-gray-50 dark:bg-gray-800 py-20 px-4">
+                <div className="container mx-auto max-w-6xl">
 
                     {/* WebSocket Section */}
                     <div className="mb-20">
