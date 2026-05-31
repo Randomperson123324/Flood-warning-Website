@@ -66,84 +66,88 @@ export default function AboutPage() {
                             {/* 2x2 Grid of Folder Cards */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* StreetFlood Project Card */}
-                                <div className="relative bg-blue-500 rounded-3xl overflow-hidden min-h-[280px]">
-                                    {/* Folder Tab */}
-                                    <div className="absolute top-0 left-0 bg-blue-600 w-40 h-12 rounded-br-3xl" />
+                                <div className="relative bg-blue-400 rounded-3xl overflow-hidden min-h-[280px]">
+                                    {/* Folder Tab with Title */}
+                                    <div className="absolute top-0 left-0 bg-blue-500 px-6 py-3 rounded-br-3xl">
+                                        <h3 className="text-xl font-bold text-white">StreetFlood Project</h3>
+                                    </div>
                                     {/* Content */}
                                     <div className="pt-16 px-6 pb-6">
-                                        <h3 className="text-2xl font-bold text-white mb-3">StreetFlood Project</h3>
-                                        <p className="text-blue-100 text-sm leading-relaxed mb-4">
+                                        <p className="text-blue-900 font-medium text-sm leading-relaxed mb-4">
                                             โครงงานระบบติดตามระดับน้ำเฝ้าระวังและเตือนหากระดับน้ำอันตราย
                                             พัฒนาโดยนักเรียน ม.2/2 SMTE กลุ่มหมูแดดเดียว
                                         </p>
                                     </div>
                                     {/* Icon */}
                                     <div className="absolute bottom-4 right-4">
-                                        <Droplets className="w-16 h-16 text-blue-700/50" />
+                                        <Droplets className="w-16 h-16 text-blue-600/50" />
                                     </div>
                                 </div>
 
                                 {/* Our Mission Card */}
-                                <div className="relative bg-green-500 rounded-3xl overflow-hidden min-h-[280px]">
-                                    {/* Folder Tab */}
-                                    <div className="absolute top-0 left-0 bg-green-600 w-40 h-12 rounded-br-3xl" />
+                                <div className="relative bg-green-400 rounded-3xl overflow-hidden min-h-[280px]">
+                                    {/* Folder Tab with Title */}
+                                    <div className="absolute top-0 left-0 bg-green-500 px-6 py-3 rounded-br-3xl">
+                                        <h3 className="text-xl font-bold text-white">Our Mission</h3>
+                                    </div>
                                     {/* Content */}
                                     <div className="pt-16 px-6 pb-6">
-                                        <h3 className="text-2xl font-bold text-white mb-3">Our Mission</h3>
-                                        <ul className="text-green-100 text-sm space-y-2">
+                                        <ul className="text-green-900 font-medium text-sm space-y-2">
                                             <li className="flex items-start gap-2">
-                                                <span className="w-1.5 h-1.5 bg-white rounded-full mt-1.5 shrink-0" />
+                                                <span className="w-1.5 h-1.5 bg-green-700 rounded-full mt-1.5 shrink-0" />
                                                 พัฒนาระบบแจ้งเตือนภัยที่แม่นยำและรวดเร็ว
                                             </li>
                                             <li className="flex items-start gap-2">
-                                                <span className="w-1.5 h-1.5 bg-white rounded-full mt-1.5 shrink-0" />
+                                                <span className="w-1.5 h-1.5 bg-green-700 rounded-full mt-1.5 shrink-0" />
                                                 จัดเก็บประวัติระดับน้ำได้อย่างมีประสิทธิภาพ
                                             </li>
                                             <li className="flex items-start gap-2">
-                                                <span className="w-1.5 h-1.5 bg-white rounded-full mt-1.5 shrink-0" />
+                                                <span className="w-1.5 h-1.5 bg-green-700 rounded-full mt-1.5 shrink-0" />
                                                 สามารถใช้งานได้จริง ไม่ล่มบ่อย
                                             </li>
                                         </ul>
                                     </div>
                                     {/* Icon */}
                                     <div className="absolute bottom-4 right-4">
-                                        <Target className="w-16 h-16 text-green-700/50" />
+                                        <Target className="w-16 h-16 text-green-600/50" />
                                     </div>
                                 </div>
 
                                 {/* Credits Card */}
-                                <div className="relative bg-yellow-500 rounded-3xl overflow-hidden min-h-[280px]">
-                                    {/* Folder Tab */}
-                                    <div className="absolute top-0 left-0 bg-yellow-600 w-40 h-12 rounded-br-3xl" />
+                                <div className="relative bg-yellow-400 rounded-3xl overflow-hidden min-h-[280px]">
+                                    {/* Folder Tab with Title */}
+                                    <div className="absolute top-0 left-0 bg-yellow-500 px-6 py-3 rounded-br-3xl">
+                                        <h3 className="text-xl font-bold text-white">Credits</h3>
+                                    </div>
                                     {/* Content */}
                                     <div className="pt-16 px-6 pb-6">
-                                        <h3 className="text-2xl font-bold text-white mb-3">Credits</h3>
-                                        <p className="text-yellow-100 text-sm leading-relaxed mb-4">
+                                        <p className="text-yellow-900 font-medium text-sm leading-relaxed mb-4">
                                             รูปภาพในหน้านี้นำมากจาก แนวหน้า
                                         </p>
-                                        <p className="text-yellow-100 text-sm leading-relaxed">
+                                        <p className="text-yellow-900 font-medium text-sm leading-relaxed">
                                             ขอบคุณทุกท่านที่สนับสนุนโครงการนี้
                                         </p>
                                     </div>
                                     {/* Icon */}
                                     <div className="absolute bottom-4 right-4">
-                                        <Award className="w-16 h-16 text-yellow-700/50" />
+                                        <Award className="w-16 h-16 text-yellow-600/50" />
                                     </div>
                                 </div>
 
                                 {/* Contact Us Card */}
-                                <div className="relative bg-purple-500 rounded-3xl overflow-hidden min-h-[280px]">
-                                    {/* Folder Tab */}
-                                    <div className="absolute top-0 left-0 bg-purple-600 w-40 h-12 rounded-br-3xl" />
+                                <div className="relative bg-purple-400 rounded-3xl overflow-hidden min-h-[280px]">
+                                    {/* Folder Tab with Title */}
+                                    <div className="absolute top-0 left-0 bg-purple-500 px-6 py-3 rounded-br-3xl">
+                                        <h3 className="text-xl font-bold text-white">Contact Us</h3>
+                                    </div>
                                     {/* Content */}
                                     <div className="pt-16 px-6 pb-6">
-                                        <h3 className="text-2xl font-bold text-white mb-3">Contact Us</h3>
-                                        <p className="text-purple-100 text-sm leading-relaxed mb-4">
+                                        <p className="text-purple-900 font-medium text-sm leading-relaxed mb-4">
                                             ติดต่อเราได้ผ่านแบบฟอร์ม Google Forms (โปรดใช้อีเมลโรงเรียนในการติดต่อ)
                                         </p>
                                         <a
                                             href="https://forms.gle/1Te39d2yoXZYDfNr5"
-                                            className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-sm font-medium rounded-lg transition-colors"
+                                            className="inline-flex items-center gap-2 px-4 py-2 border-2 border-purple-700 text-purple-900 text-sm font-medium rounded-lg hover:bg-purple-500 hover:text-white transition-colors"
                                             target="_blank"
                                             rel="noopener noreferrer"
                                         >
@@ -153,7 +157,7 @@ export default function AboutPage() {
                                     </div>
                                     {/* Icon */}
                                     <div className="absolute bottom-4 right-4">
-                                        <Mail className="w-16 h-16 text-purple-700/50" />
+                                        <Mail className="w-16 h-16 text-purple-600/50" />
                                     </div>
                                 </div>
                             </div>
