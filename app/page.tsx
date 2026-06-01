@@ -1,734 +1,514 @@
 "use client"
 
+import { ChevronDown, Database, Monitor, Bell, MessageCircle, Users, AlertTriangle, ExternalLink, MoveUpRight } from "lucide-react"
+import Link from "next/link"
+import { Footer } from "@/components/footer"
+import { useEffect, useState, useRef } from "react"
+import Image from "next/image"
+import { playfair } from "@/lib/fonts"
 
-import React, { useState, useEffect, useMemo, useRef } from "react"
-import { DatePickerWithRange } from "../components/date-range-picker"
-import { Calendar } from "@/components/ui/calendar"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import {
-  AlertTriangle,
-  Droplets,
-  TrendingUp,
-  TrendingDown,
-  Settings,
-  RefreshCw,
-  QrCode,
-  WifiOff,
-} from "lucide-react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@supabase/supabase-js"
-import { EnhancedWaterLevelChart } from "../components/enhanced-water-level-chart"
-import { WeatherCard } from "../components/weather-card"
-import { WeatherMap } from "../components/weather-map"
-import { HourlyForecast } from "../components/hourly-forecast"
-import { RainDashboard } from "../components/rain-dashboard"
-import { CommunityChat } from "../components/community-chat"
-import { FloodReport } from "../components/flood-report"
-import { AffectedAreas } from "../components/affected-areas"
-import { DeveloperSettings } from "../components/developer-settings"
-import { SystemStatus } from "../components/system-status"
-import { AnnouncementBanner } from "../components/announcement-banner"
-import { TMDWarningBanner } from "../components/tmd-warning-banner"
-import { WeatherVoteResults } from "../components/weather-vote-results"
-import { StatusSummary } from "../components/status-summary"
-import { StickyHeader } from "../components/sticky-header"
-import { useLanguage } from "@/hooks/language-context"
-import { LanguageToggle } from "../components/language-toggle"
-import { useWaterData } from "@/hooks/use-water-data"
-import { useWeatherData } from "@/hooks/use-weather-data"
-import { Footer } from "../components/footer"
-import { LoadingOverlay } from "../components/loading-overlay"
-import { CurrentStatusDashboard } from "../components/current-status-dashboard"
-import { WarningScreen } from "../components/warning-screen"
-import { Sidebar } from "../components/sidebar"
-import { WaterLevelNotification } from "../components/water-level-notification"
-import { cn } from "@/lib/utils"
-import type { JSX } from "react/jsx-runtime"
-
-export default function Dashboard() {
-  const { t, language } = useLanguage()
-  const {
-    waterData,
-    currentLevel,
-    trend,
-    timeToWarningData,
-    analytics,
-    isLoading,
-    isConnected,
-    lastUpdateTime,
-    testConnection,
-    getCurrentRate,
-    getLatestReadingTime, // Get the latest reading timestamp function
-    historicalData,
-    fetchHistoricalData,
-    isFetchingHistorical,
-    historicalAnalytics,
-    fetchMultiDateData,
-    fetchSampledData,
-    fetchWaterData,
-  } = useWaterData()
-  const { weatherData, isLoading: weatherLoading, error: weatherError, refetch: refetchWeather } = useWeatherData()
-  const [showDeveloperSettings, setShowDeveloperSettings] = useState(false)
-  const [warningLevels, setWarningLevels] = useState({ warningLevel: 5, dangerLevel: 10 })
-  const [mounted, setMounted] = useState(false)
-  const [activeTab, setActiveTab] = useState("overview")
-  const [isDarkMode, setIsDarkMode] = useState(false)
-  const [isRefreshing, setIsRefreshing] = useState(false)
-  const [dataComparison, setDataComparison] = useState<"today" | "last7Days" | "pastData" | "compare">("today")
-  const [date, setDate] = useState<Date | undefined>()
-  const [compareDates, setCompareDates] = useState<Date[]>([])
-  const [compareData, setCompareData] = useState<{ [key: string]: any[] }>({})
-  const [sampledData, setSampledData] = useState<any[]>([])
-  const [showLineQR, setShowLineQR] = useState(false)
-  const [isOpen, setIsOpen] = useState(false)
-  const [isFirstLoad, setIsFirstLoad] = useState(true)
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true)
-  const [isNotifExpanded, setIsNotifExpanded] = useState(false)
-  const [isSidebarAnimating, setIsSidebarAnimating] = useState(false)
-  const [tabHeight, setTabHeight] = useState<number | undefined>(undefined)
-  const tabContentRef = useRef<HTMLDivElement>(null)
-  const prevSidebarExpanded = useRef(isSidebarExpanded)
-  const router = useRouter()
+export default function AboutPage() {
+  const [showGradient, setShowGradient] = useState(false)
+  const [videoLoaded, setVideoLoaded] = useState(false)
+  const [pageReady, setPageReady] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
-    if (prevSidebarExpanded.current !== isSidebarExpanded) {
-      if (tabContentRef.current) {
-        setTabHeight(tabContentRef.current.offsetHeight)
-      }
-      setIsSidebarAnimating(true)
-      const timer = setTimeout(() => {
-        setIsSidebarAnimating(false)
-        setTabHeight(undefined)
-      }, 300) // Match the 300ms transition duration
-      prevSidebarExpanded.current = isSidebarExpanded
-      return () => clearTimeout(timer)
-    }
-  }, [isSidebarExpanded])
+    const timer = setTimeout(() => setShowGradient(true), 500)
+    return () => clearTimeout(timer)
+  }, [])
 
-  // Effect for multi-date comparison
+  // Handle video load and page readiness
   useEffect(() => {
-    if (dataComparison === "compare" && compareDates.length > 0) {
-      const fetchData = async () => {
-        const results = await fetchMultiDateData(compareDates)
-        if (results) {
-          setCompareData(results)
-        }
-      }
-      fetchData()
-    } else if (dataComparison === "last7Days") {
-      const fetchSampled = async () => {
-        const results = await fetchSampledData()
-        setSampledData(results)
-      }
-      fetchSampled()
-    }
-  }, [dataComparison, compareDates])
-
-  // Get warning levels from localStorage or use defaults
-  useEffect(() => {
-    setMounted(true)
-
-    const getWarningLevels = () => {
-      try {
-        const saved = localStorage.getItem("waterLevelSettings")
-        if (saved) {
-          const settings = JSON.parse(saved)
-          return {
-            warningLevel: Number.parseFloat(settings.warningLevel) || 5,
-            dangerLevel: Number.parseFloat(settings.dangerLevel) || 10,
-          }
-        }
-      } catch (error) {
-        console.error("Error reading localStorage:", error)
-      }
-      return { warningLevel: 5, dangerLevel: 10 }
+    const video = videoRef.current
+    if (!video) {
+      // If video element doesn't exist (e.g., file missing), skip loading
+      setVideoLoaded(true)
+      setPageReady(true)
+      return
     }
 
-    setWarningLevels(getWarningLevels())
-
-    // Check for dark mode preference
-    const darkMode = localStorage.getItem("darkMode") === "true"
-    setIsDarkMode(darkMode)
-    if (darkMode) {
-      document.documentElement.classList.add("dark")
+    const handleCanPlay = () => {
+      setVideoLoaded(true)
+      setTimeout(() => setPageReady(true), 300)
     }
 
-    // Listen for settings changes
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "waterLevelSettings") {
-        setWarningLevels(getWarningLevels())
-      }
+    // If video is already loaded (cached)
+    if (video.readyState >= 3) {
+      handleCanPlay()
+    } else {
+      video.addEventListener('canplaythrough', handleCanPlay)
     }
-    window.addEventListener("storage", handleStorageChange)
+
+    // Fallback: show page after 5s even if video hasn't loaded
+    const fallback = setTimeout(() => {
+      setVideoLoaded(true)
+      setPageReady(true)
+    }, 5000)
 
     return () => {
-      window.removeEventListener("storage", handleStorageChange)
+      video.removeEventListener('canplaythrough', handleCanPlay)
+      clearTimeout(fallback)
     }
   }, [])
 
-  // Chronological data for charts (Supabase returns descending)
-  const sortedWaterData = useMemo(() => {
-    return [...waterData].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-  }, [waterData])
+  return (
+    <div className="min-h-screen bg-white dark:bg-gray-900">
+      {/* Loading Screen */}
+      <div className={`fixed inset-0 z-[100] bg-gray-900 flex flex-col items-center justify-center transition-all duration-700 ${pageReady ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        } font-sao-chingcha`}>
+        <div className="relative mb-6">
+          <div className="w-16 h-16 border-4 border-blue-500/30 rounded-full" />
+          <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-blue-500 rounded-full animate-spin" />
+        </div>
+        <p className="text-white text-lg font-medium animate-pulse">กำลังโหลด...</p>
+        <p className="text-gray-400 text-sm mt-2">Loading video content</p>
+      </div>
 
-  // Only today's data for the "Now" section
-  const todayWaterData = useMemo(() => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    return sortedWaterData.filter((reading: any) => new Date(reading.timestamp) >= today)
-  }, [sortedWaterData])
+      {/* Hidden video preloader */}
+      <video
+        ref={videoRef}
+        src="/video/rain.mp4"
+        muted
+        playsInline
+        preload="auto"
+        className="hidden"
+      />
+      {/* Hero Section - Full Screen */}
+      <section className="relative w-full h-screen flex items-end justify-center overflow-hidden font-sao-chingcha">
+        {/* Background Image */}
+        <img
+          src="/images/about-banner.jpg"
+          alt="About Hero"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
 
-  // Fetch historical data when date changes
-  useEffect(() => {
-    if (dataComparison === "pastData" && date) {
-      fetchHistoricalData(date, date)
-    }
-  }, [dataComparison, date])
+        {/* Animated Blur Gradient Overlay from Bottom - Fixed 40vh coverage */}
+        <div
+          className={`absolute bottom-0 left-0 right-0 h-[40vh] bg-white/5 backdrop-blur-2xl transition-all duration-1000 ease-out ${showGradient ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"}`}
+          style={{
+            maskImage: 'linear-gradient(to top, black 70%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to top, black 70%, transparent 100%)'
+          }}
+        />
 
-  useEffect(() => {
-    if (!isLoading && isFirstLoad) {
-      const timer = setTimeout(() => {
-        setIsFirstLoad(false)
-      }, 500)
-      return () => clearTimeout(timer)
-    }
-  }, [isLoading, isFirstLoad])
-
-  const { warningLevel, dangerLevel } = warningLevels
-
-  const toggleTheme = () => {
-    const newDarkMode = !isDarkMode
-    setIsDarkMode(newDarkMode)
-    localStorage.setItem("darkMode", newDarkMode.toString())
-
-    if (newDarkMode) {
-      document.documentElement.classList.add("dark")
-    } else {
-      document.documentElement.classList.remove("dark")
-    }
-  }
-
-
-
-  const getStatusColor = (level: number) => {
-    if (level >= dangerLevel) return "destructive"
-    if (level >= warningLevel) return "secondary"
-    return "default"
-  }
-
-  const getStatusText = (level: number) => {
-    if (level >= dangerLevel) return t.status.danger
-    if (level >= warningLevel) return t.status.warning
-    return t.status.normal
-  }
-
-  const getCardBackgroundColor = (level: number) => {
-    if (level >= dangerLevel) return "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
-    if (level >= warningLevel) return "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
-    return "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
-  }
-
-  const getTrendIcon = () => {
-    switch (trend) {
-      case "rising":
-        return <TrendingUp className="h-4 w-4 text-red-600" />
-      case "falling":
-        return <TrendingDown className="h-4 w-4 text-green-600" />
-      default:
-        return <div className="h-4 w-4 rounded-full bg-gray-400" />
-    }
-  }
-
-  const getTrendColor = () => {
-    switch (trend) {
-      case "rising":
-        return "text-red-600"
-      case "falling":
-        return "text-green-600"
-      default:
-        return "text-gray-600"
-    }
-  }
-
-  // Function to format time to warning
-  const formatTimeToWarning = () => {
-    if (timeToWarningData.isStable) {
-      return t.cards.stable
-    }
-
-    const parts: JSX.Element[] = []
-    if (timeToWarningData.days !== null && timeToWarningData.days > 0) {
-      parts.push(
-        <span key="days">
-          <span className="font-inter-numbers">{timeToWarningData.days}</span> {t.timeUnits.days}
-        </span>,
-      )
-    }
-    if (timeToWarningData.hours !== null && (timeToWarningData.hours > 0 || parts.length > 0)) {
-      parts.push(
-        <span key="hours">
-          <span className="font-inter-numbers">{timeToWarningData.hours}</span> {t.timeUnits.hours}
-        </span>,
-      )
-    }
-    if (timeToWarningData.minutes !== null && (timeToWarningData.minutes > 0 || parts.length === 0)) {
-      parts.push(
-        <span key="minutes">
-          <span className="font-inter-numbers">{timeToWarningData.minutes}</span> {t.timeUnits.minutes}
-        </span>,
-      )
-    }
-
-    return parts.length > 0 ? (
-      <>
-        {parts.map((part, index) => (
-          <React.Fragment key={index}>
-            {part}
-            {index < parts.length - 1 && " "}
-          </React.Fragment>
-        ))}
-      </>
-    ) : (
-      t.cards.stable
-    )
-  }
-
-  // Don't render until mounted to avoid hydration issues
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-gray-800">
-        <div className="container mx-auto p-6">
-          <div className="flex justify-center items-center min-h-[50vh]">
-            <div className="text-center">
-              <div className="animate-pulse text-lg">{t.common.loading}</div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{"รอแป็ป เว็บนี้งบน้อย"}</p>
-            </div>
+        {/* Blur Header with Navigation */}
+        <div className="absolute top-0 left-0 right-0 z-20 p-4">
+          <div className="flex justify-end gap-3">
+            <Link href="/">
+              <button className="group flex items-center gap-2 px-5 py-2.5 bg-white/20 backdrop-blur-md text-white rounded-full border border-white/30 font-medium text-sm transition-all duration-300 hover:bg-white hover:text-gray-900 hover:scale-105 hover:shadow-lg">
+                <span>ไปที่เว็บไซต์</span>
+                <div className="overflow-hidden">
+                  <MoveUpRight className="w-4 h-4 animate-move-up-right" />
+                </div>
+              </button>
+            </Link>
+            <a
+              href="https://forms.gle/1Te39d2yoXZYDfNr5"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <button className="group flex items-center gap-2 px-5 py-2.5 bg-white/20 backdrop-blur-md text-white rounded-full border border-white/30 font-medium text-sm transition-all duration-300 hover:bg-white hover:text-gray-900 hover:scale-105 hover:shadow-lg">
+                <span>ติดต่อเรา</span>
+                <div className="overflow-hidden">
+                  <MoveUpRight className="w-4 h-4 animate-move-up-right" />
+                </div>
+              </button>
+            </a>
           </div>
         </div>
-      </div>
-    )
-  }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-blue-50 to-blue-200 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col md:flex-row">
-      <WarningScreen
-        currentLevel={currentLevel}
-        warningLevel={warningLevel}
-        dangerLevel={dangerLevel}
-        trend={trend}
-        timeToWarningData={timeToWarningData}
-        isConnected={isConnected}
-        latestReadingTime={getLatestReadingTime()}
-        currentRate={getCurrentRate().ratePerHour}
-        currentRateTimestamp={getCurrentRate().timestamp}
-      />
+        {/* Hero Content - positioned at bottom within gradient */}
+        <div className={`relative z-10 pb-12 text-center transition-all duration-1000 delay-300 ${showGradient ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"}`}>
+          <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-2 drop-shadow-lg">
+            About Us
+          </h1>
+          <p className="text-lg text-gray-700 mb-6">เกี่ยวกับเรา</p>
 
-      {/* Sidebar for Desktop */}
-      <Sidebar
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        isExpanded={isSidebarExpanded}
-        onToggle={() => setIsSidebarExpanded(!isSidebarExpanded)}
-      />
+          {/* Scroll Down Indicator - Capsule Style */}
+          <div className="inline-flex items-center gap-2 px-6 py-2 bg-gray-900/80 text-white rounded-full animate-bounce">
+            <span className="text-sm font-medium">Scroll Down</span>
+            <ChevronDown className="h-4 w-4" />
+          </div>
+        </div>
+      </section>
 
-      {/* Sticky Header for Mobile */}
-      <div className="md:hidden">
-        <StickyHeader
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          onSettingsClick={() => setShowDeveloperSettings(true)}
-        />
-      </div>
+      {/* Quote Section - Full Screen Video */}
+      <section className="relative w-full h-screen flex items-center justify-center overflow-hidden">
+        {/* Video Background */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        >
+          <source src="/video/rain.mp4" type="video/mp4" />
+        </video>
 
-      <div className={cn(
-        "flex-1 flex flex-col min-w-0 transition-all duration-300",
-        isSidebarExpanded ? "md:ml-[17rem]" : "md:ml-[5rem]"
-      )}>
-        {/* Announcement Banner */}
-        <AnnouncementBanner isSidebarExpanded={isSidebarExpanded} />
+        {/* Dark Overlay */}
+        <div className="absolute inset-0 bg-black/50" />
 
-        {/* TMD Warning Banner */}
-        <TMDWarningBanner />
+        {/* Quote Content */}
+        <div className="relative z-10 text-center px-6 max-w-5xl mx-auto">
+          <h2 className={`text-4xl md:text-6xl lg:text-7xl text-white mb-10 leading-tight drop-shadow-2xl font-normal ${playfair.className}`}>
+            “Nothing is softer or more flexible than water, yet nothing can resist it.”
+          </h2>
+          <p className={`text-xl md:text-3xl text-gray-200 tracking-wide font-normal ${playfair.className}`}>
+            — Lao Tzu (chinese philosopher)
+          </p>
+        </div>
 
-        <div className={cn(
-          "p-4 sm:p-6 w-full transition-opacity duration-200",
-          isSidebarAnimating ? "opacity-0" : "opacity-100 delay-100"
-        )}>
-          {/* Status Summary */}
-          <StatusSummary currentLevel={currentLevel} warningLevel={warningLevel} dangerLevel={dangerLevel} />
+        {/* Scroll Down Indicator */}
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4">
+          <div className="w-px h-16 bg-gradient-to-b from-transparent via-white/50 to-transparent" />
+          <ChevronDown className="h-6 w-6 text-white/70 animate-bounce" />
+        </div>
+      </section>
 
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
-            <div>
-              <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white">
-                {activeTab === "overview" && t.tabstitle.overview}
-                {activeTab === "analytics" && t.tabstitle.analytics}
-                {activeTab === "weather" && t.tabstitle.weather}
-                {activeTab === "community" && t.tabstitle.community}
-              </h1>
+      {/* Content Section - 4 Parts with Folder Tab Design */}
+      <section className="bg-white dark:bg-gray-900 py-16 px-4 font-sao-chingcha">
+        <div className="container mx-auto max-w-5xl">
+          <div className="font-noto-sans-thai">
+            <style dangerouslySetInnerHTML={{
+              __html: `
+                            .tab-mask {
+                                --svg-left: url("data:image/svg+xml,%3Csvg viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21.3995 24.8356L27.0306 9.12812C28.9935 3.6528 34.1835 0 40 0V40H0V39.897C9.59729 39.897 18.1607 33.8699 21.3995 24.8356Z' fill='black'/%3E%3C/svg%3E");
+                                --svg-right: url("data:image/svg+xml,%3Csvg viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M18.6005 24.8356L12.9694 9.12812C11.0065 3.6528 5.81654 0 0 0V40H40V39.897C30.4027 39.897 21.8393 33.8699 18.6005 24.8356Z' fill='black'/%3E%3C/svg%3E");
+                                --svg-center: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='black'/%3E%3C/svg%3E");
+                                
+                                mask-image: var(--svg-left), var(--svg-center), var(--svg-right);
+                                -webkit-mask-image: var(--svg-left), var(--svg-center), var(--svg-right);
+                                
+                                mask-position: left bottom, center bottom, right bottom;
+                                -webkit-mask-position: left bottom, center bottom, right bottom;
+                                
+                                mask-repeat: no-repeat;
+                                -webkit-mask-repeat: no-repeat;
+                            }
+                            
+                            .tab-mask-mobile {
+                                mask-size: 40px 100%, calc(100% - 72px) 100%, 40px 100%;
+                                -webkit-mask-size: 40px 100%, calc(100% - 72px) 100%, 40px 100%;
+                            }
+                            
+                            @media (min-width: 768px) {
+                                .tab-mask-mobile {
+                                    mask-size: 56px 100%, calc(100% - 104px) 100%, 56px 100%;
+                                    -webkit-mask-size: 56px 100%, calc(100% - 104px) 100%, 56px 100%;
+                                }
+                            }
 
-              <p className="text-gray-600 dark:text-gray-300 mt-2 text-sm sm:text-base">
-                {activeTab === "overview" && t.subtitles.overview}
-                {activeTab === "analytics" && t.subtitles.analytics}
-                {activeTab === "weather" && t.subtitles.weather}
-                {activeTab === "community" && t.subtitles.community}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 sm:gap-4">
-              <div className={cn(
-                "flex items-center gap-2 sm:gap-4 transition-opacity duration-300",
-                isNotifExpanded
-                  ? "opacity-0 pointer-events-none"
-                  : "opacity-100"
-              )}>
-                <SystemStatus isConnected={isConnected} lastUpdateTime={lastUpdateTime} onTestConnection={testConnection} />
-                <Popover open={isOpen} onOpenChange={setIsOpen}>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="icon" className="bg-transparent" title={t.common.addUsOnLINE}>
-                      <QrCode className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80" align="end">
-                    <div className="text-center">
-                      <div className="w-48 h-48 bg-gray-100 dark:bg-gray-700 rounded-tr-lg rounded-bl-lg flex items-center justify-center mb-2 mx-auto">
-                        <img
-                          src="/images/design-mode/M_917ybsgj_BW.png"
-                          alt="Add us on LINE"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{t.common.addLineContact}</p>
-                      <Button variant="outline" size="sm" onClick={() => setIsOpen(false)}>
-                        {t.common.close}
-                      </Button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                <div className="flex items-center gap-2">
-                  <LanguageToggle showTooltip={true} />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setShowDeveloperSettings(true)}
-                    className="bg-transparent"
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
+                            @keyframes move-up-right-loop {
+                                0% { transform: translate(0, 0); opacity: 1; }
+                                35% { transform: translate(100%, -100%); opacity: 0; }
+                                36% { transform: translate(-100%, 100%); opacity: 1; }
+                                100% { transform: translate(0, 0); opacity: 1; }
+                            }
+                            
+                            .group:hover .animate-move-up-right {
+                                animation: move-up-right-loop 0.5s ease-in-out forwards;
+                            }
+                        ` }} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-12">
+              {/* StreetFlood Project Card */}
+              <div className="relative mt-12 group">
+                {/* Protruding Tab (Fluid Curves with SVG) */}
+                <div className="absolute bottom-[calc(100%-1px)] left-8 z-20 flex items-center h-[40px] md:h-[48px] tab-mask tab-mask-mobile px-10 md:px-14 overflow-hidden">
+                  <div className="absolute bottom-0 left-0 w-full h-[2px] bg-white/20 dark:bg-black/40 backdrop-blur-md z-0" />
+
+                  <img src="https://images.unsplash.com/photo-1544383835-bda2bc66a55d?q=80&w=800&auto=format&fit=crop" alt="Tab BG" className="absolute top-0 left-0 w-[400px] h-[200px] object-cover blur-xl scale-125 opacity-90 z-0" />
+                  <div className="absolute inset-0 bg-black/10 dark:bg-black/40 z-0" />
+
+                  <h3 className="relative z-10 text-base md:text-lg font-bold text-white whitespace-nowrap">StreetFlood Project</h3>
+                </div>
+
+                <div className="relative rounded-3xl overflow-hidden shadow-xl border border-white/20 dark:border-gray-700/50 min-h-[260px] flex flex-col">
+                  {/* Background Image */}
+                  <img
+                    src="https://images.unsplash.com/photo-1544383835-bda2bc66a55d?q=80&w=800&auto=format&fit=crop"
+                    alt="StreetFlood"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 z-0"
+                  />
+
+                  {/* Gradient Blur Overlay without white color */}
+                  <div
+                    className="absolute inset-0 w-[95%] sm:w-[85%] bg-black/10 dark:bg-black/40 z-0"
+                    style={{
+                      backdropFilter: 'blur(16px)',
+                      WebkitMaskImage: 'linear-gradient(to right, black 65%, transparent 100%)',
+                      maskImage: 'linear-gradient(to right, black 65%, transparent 100%)'
+                    }}
+                  />
+
+                  {/* Content */}
+                  <div className="relative z-10 pt-12 px-8 pb-8 w-[85%] sm:w-[70%] flex-grow flex flex-col justify-center">
+                    <p className="text-white font-medium text-sm leading-relaxed mb-4">
+                      โครงงานระบบติดตามระดับน้ำเฝ้าระวังและเตือนหากระดับน้ำอันตราย
+                      พัฒนาโดยนักเรียน ม.2/2 SMTE กลุ่มหมูแดดเดียว
+                    </p>
+                  </div>
                 </div>
               </div>
-              <WaterLevelNotification
-                currentLevel={currentLevel}
-                warningLevel={warningLevel}
-                dangerLevel={dangerLevel}
-                onExpandedChange={setIsNotifExpanded}
-              />
+
+              {/* Our Mission Card */}
+              <div className="relative mt-12 group">
+                <div className="absolute bottom-[calc(100%-1px)] left-8 z-20 flex items-center h-[40px] md:h-[48px] tab-mask tab-mask-mobile px-10 md:px-14 overflow-hidden">
+                  <div className="absolute bottom-0 left-0 w-full h-[2px] bg-white/20 dark:bg-black/40 backdrop-blur-md z-0" />
+                  <img src="https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?q=80&w=800&auto=format&fit=crop" alt="Tab BG" className="absolute top-0 left-0 w-[400px] h-[200px] object-cover blur-xl scale-125 opacity-90 z-0" />
+                  <div className="absolute inset-0 bg-black/10 dark:bg-black/40 z-0" />
+                  <h3 className="relative z-10 text-base md:text-lg font-bold text-white whitespace-nowrap">Our Mission</h3>
+                </div>
+
+                <div className="relative rounded-3xl overflow-hidden shadow-xl border border-white/20 dark:border-gray-700/50 min-h-[260px] flex flex-col">
+                  <img
+                    src="https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?q=80&w=800&auto=format&fit=crop"
+                    alt="Mission"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 z-0"
+                  />
+                  <div
+                    className="absolute inset-0 w-[95%] sm:w-[85%] bg-black/10 dark:bg-black/40 z-0"
+                    style={{
+                      backdropFilter: 'blur(16px)',
+                      WebkitMaskImage: 'linear-gradient(to right, black 65%, transparent 100%)',
+                      maskImage: 'linear-gradient(to right, black 65%, transparent 100%)'
+                    }}
+                  />
+
+                  <div className="relative z-10 pt-12 px-8 pb-8 w-[85%] sm:w-[70%] flex-grow flex flex-col justify-center">
+                    <ul className="text-white font-medium text-sm space-y-2">
+                      <li className="flex items-start gap-2">
+                        <span className="w-1.5 h-1.5 bg-green-400 rounded-full mt-1.5 shrink-0 shadow-[0_0_8px_rgba(74,222,128,0.6)]" />
+                        พัฒนาระบบแจ้งเตือนภัยที่แม่นยำและรวดเร็ว
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="w-1.5 h-1.5 bg-green-400 rounded-full mt-1.5 shrink-0 shadow-[0_0_8px_rgba(74,222,128,0.6)]" />
+                        จัดเก็บประวัติระดับน้ำได้อย่างมีประสิทธิภาพ
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="w-1.5 h-1.5 bg-green-400 rounded-full mt-1.5 shrink-0 shadow-[0_0_8px_rgba(74,222,128,0.6)]" />
+                        สามารถใช้งานได้จริง ไม่ล่มบ่อย
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Credits Card */}
+              <div className="relative mt-12 group">
+                <div className="absolute bottom-[calc(100%-1px)] left-8 z-20 flex items-center h-[40px] md:h-[48px] tab-mask tab-mask-mobile px-10 md:px-14 overflow-hidden">
+                  <div className="absolute bottom-0 left-0 w-full h-[2px] bg-white/20 dark:bg-black/40 backdrop-blur-md z-0" />
+                  <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=800&auto=format&fit=crop" alt="Tab BG" className="absolute top-0 left-0 w-[400px] h-[200px] object-cover blur-xl scale-125 opacity-90 z-0" />
+                  <div className="absolute inset-0 bg-black/10 dark:bg-black/40 z-0" />
+                  <h3 className="relative z-10 text-base md:text-lg font-bold text-white whitespace-nowrap">Credits</h3>
+                </div>
+
+                <div className="relative rounded-3xl overflow-hidden shadow-xl border border-white/20 dark:border-gray-700/50 min-h-[260px] flex flex-col">
+                  <img
+                    src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=800&auto=format&fit=crop"
+                    alt="Credits"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 z-0"
+                  />
+                  <div
+                    className="absolute inset-0 w-[95%] sm:w-[85%] bg-black/10 dark:bg-black/40 z-0"
+                    style={{
+                      backdropFilter: 'blur(16px)',
+                      WebkitMaskImage: 'linear-gradient(to right, black 65%, transparent 100%)',
+                      maskImage: 'linear-gradient(to right, black 65%, transparent 100%)'
+                    }}
+                  />
+
+                  <div className="relative z-10 pt-12 px-8 pb-8 w-[85%] sm:w-[70%] flex-grow flex flex-col justify-center">
+                    <p className="text-white font-medium text-sm leading-relaxed mb-4">
+                      รูปภาพในหน้านี้นำมากจาก แนวหน้า
+                    </p>
+                    <p className="text-white font-medium text-sm leading-relaxed">
+                      ขอบคุณทุกท่านที่สนับสนุนโครงการนี้
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Us Card */}
+              <div className="relative mt-12 group">
+                <div className="absolute bottom-[calc(100%-1px)] left-8 z-20 flex items-center h-[40px] md:h-[48px] tab-mask tab-mask-mobile px-10 md:px-14 overflow-hidden">
+                  <div className="absolute bottom-0 left-0 w-full h-[2px] bg-white/20 dark:bg-black/40 backdrop-blur-md z-0" />
+                  <img src="https://images.unsplash.com/photo-1516387938699-a93567ec168e?q=80&w=800&auto=format&fit=crop" alt="Tab BG" className="absolute top-0 left-0 w-[400px] h-[200px] object-cover blur-xl scale-125 opacity-90 z-0" />
+                  <div className="absolute inset-0 bg-black/10 dark:bg-black/40 z-0" />
+                  <h3 className="relative z-10 text-base md:text-lg font-bold text-white whitespace-nowrap">Contact Us</h3>
+                </div>
+
+                <div className="relative rounded-3xl overflow-hidden shadow-xl border border-white/20 dark:border-gray-700/50 min-h-[260px] flex flex-col">
+                  <img
+                    src="https://images.unsplash.com/photo-1516387938699-a93567ec168e?q=80&w=800&auto=format&fit=crop"
+                    alt="Contact Us"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 z-0"
+                  />
+                  <div
+                    className="absolute inset-0 w-[95%] sm:w-[85%] bg-black/10 dark:bg-black/40 z-0"
+                    style={{
+                      backdropFilter: 'blur(16px)',
+                      WebkitMaskImage: 'linear-gradient(to right, black 65%, transparent 100%)',
+                      maskImage: 'linear-gradient(to right, black 65%, transparent 100%)'
+                    }}
+                  />
+
+                  <div className="relative z-10 pt-12 px-8 pb-8 w-[85%] sm:w-[70%] flex-grow flex flex-col justify-center">
+                    <p className="text-white font-medium text-sm leading-relaxed mb-4">
+                      ติดต่อเราได้ผ่านแบบฟอร์ม Google Forms (โปรดใช้อีเมลโรงเรียนในการติดต่อ)
+                    </p>
+                    <a
+                      href="https://forms.gle/1Te39d2yoXZYDfNr5"
+                      className="group inline-flex items-center gap-2 px-4 py-2 border-2 border-white/80 text-white text-sm font-medium rounded-lg hover:bg-white hover:text-gray-900 transition-colors w-max shadow-sm"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      ติดต่อเรา
+                      <div className="overflow-hidden">
+                        <MoveUpRight className="w-4 h-4 animate-move-up-right" />
+                      </div>
+                    </a>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-
-          <LoadingOverlay isLoading={isFirstLoad}>
-            <WeatherVoteResults />
-
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-              <div className="md:hidden">
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="overview">{t.tabs.overview}</TabsTrigger>
-                  <TabsTrigger value="analytics">{t.tabs.analytics}</TabsTrigger>
-                  <TabsTrigger value="weather">{t.tabs.weather}</TabsTrigger>
-                  <TabsTrigger value="community">{t.tabs.community}</TabsTrigger>
-                </TabsList>
-              </div>
-
-              {/* Stale Data Warning */}
-              {(() => {
-                const lastReading = getLatestReadingTime()
-                if (!lastReading) return null
-                const diffInMinutes = Math.floor((new Date().getTime() - lastReading.getTime()) / (1000 * 60))
-                if (diffInMinutes > 7) {
-                  return (
-                    <div className="inline-grid grid-cols-[auto_1fr] max-w-full bg-yellow-100 rounded-2xl sm:rounded-full shadow-sm mb-6 p-1 animate-in fade-in slide-in-from-top-2 duration-500">
-                      {/* Logo Area */}
-                      <div className="flex items-center justify-center bg-yellow-500 text-yellow-50 rounded-full rounded-br-none w-10 sm:w-11 aspect-square shrink-0 self-center">
-                        <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                      </div>
-
-                      {/* Text Area (Maintains min-w-0 for mobile wrapping) */}
-                      <div className="flex items-center pl-2 pr-4 sm:pr-5 py-1 sm:py-1.5 min-w-0">
-                        <p className="font-medium text-sm sm:text-base text-yellow-800 break-words">
-                          {t.alerts.sensorStale.replace("{minutes}", diffInMinutes.toString())}
-                        </p>
-                      </div>
-                    </div>
-                  )
-                }
-                return null
-              })()}
-
-
-
-              <div ref={tabContentRef} style={{ minHeight: tabHeight ? `${tabHeight}px` : undefined }}>
-                {!isSidebarAnimating && (
-                  <>
-                    <TabsContent value="overview" className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                        {/* Left Column (Trend & ETA) - Takes up 6 columns on desktop (50%) */}
-                        <div className="col-span-1 md:col-span-12 lg:col-span-6 space-y-6">
-                          <CurrentStatusDashboard
-                            currentLevel={currentLevel}
-                            warningLevel={warningLevel}
-                            dangerLevel={dangerLevel}
-                            trend={trend}
-                            timeToWarningData={timeToWarningData}
-                            isConnected={isConnected}
-                            latestReadingTime={getLatestReadingTime()}
-                            currentRate={getCurrentRate().ratePerHour}
-                            currentRateTimestamp={getCurrentRate().timestamp}
-                            className="grid-cols-1 md:grid-cols-2" // Responsive grid inside left column
-                          />
-
-                        </div>
-
-                        {/* Right Column (Graph) - Takes up 6 columns on desktop (50%) */}
-                        <div className="col-span-1 md:col-span-12 lg:col-span-6">
-                          {/* Enhanced Water Level Chart */}
-                          <Card>
-                            <CardHeader>
-                              <CardTitle>{t.chart.title}</CardTitle>
-                              <CardDescription>{t.chart.description}</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                              <EnhancedWaterLevelChart
-                                data={todayWaterData}
-                                warningLevel={warningLevel}
-                                dangerLevel={dangerLevel}
-                                className="h-[350px]"
-                              />
-                            </CardContent>
-                          </Card>
-                        </div>
-                      </div>
-
-                      {/* Affected Areas - Full Width at Bottom */}
-                      <div className="mt-6">
-                        <AffectedAreas />
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="analytics" className="space-y-6">
-                      {/* Data Comparison Controls */}
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant={dataComparison === "today" ? "default" : "outline"}
-                              onClick={() => setDataComparison("today")}
-                            >
-                              {t.analytics.today}
-                            </Button>
-                            <Button
-                              variant={dataComparison === "last7Days" ? "default" : "outline"}
-                              onClick={() => setDataComparison("last7Days")}
-                            >
-                              {t.analytics.last7Days}
-                            </Button>
-                            <Button
-                              variant={dataComparison === "pastData" ? "default" : "outline"}
-                              onClick={() => setDataComparison("pastData")}
-                            >
-                              {t.analytics.pastData}
-                            </Button>
-                            <Button
-                              variant={dataComparison === "compare" ? "default" : "outline"}
-                              onClick={() => setDataComparison("compare")}
-                            >
-                              {t.analytics.compare}
-                            </Button>
-                          </div>
-                          {dataComparison === "pastData" && (
-                            <div className="animate-in fade-in slide-in-from-left-4 duration-300">
-                              <DatePickerWithRange date={date} setDate={setDate} />
-                            </div>
-                          )}
-                        </div>
-
-                        {dataComparison === "compare" && (
-                          <div className="flex flex-wrap gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                            {compareDates.map((d: Date, i: number) => (
-                              <Badge key={`badge-${i}-${d.getTime()}`} variant="secondary" className="flex items-center gap-1 py-1 pr-1">
-                                {d.toLocaleDateString()}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-4 w-4 rounded-full"
-                                  onClick={() => setCompareDates((prev: Date[]) => prev.filter((_, idx) => idx !== i))}
-                                >
-                                  <span className="sr-only">Remove</span>
-                                  &times;
-                                </Button>
-                              </Badge>
-                            ))}
-                            {compareDates.length < 4 && (
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <Button variant="outline" size="sm">Add Date ({compareDates.length}/4)</Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                  <Calendar
-                                    mode="single"
-                                    onSelect={(newDate: Date | undefined) => {
-                                      if (newDate) {
-                                        setCompareDates((prev: Date[]) => [...prev, newDate])
-                                      }
-                                    }}
-                                    disabled={(d: Date) => d > new Date() || compareDates.some((existing: Date) => existing.toDateString() === d.toDateString())}
-                                  />
-                                </PopoverContent>
-                              </Popover>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {dataComparison !== "compare" && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                          <Card>
-                            <CardHeader>
-                              <CardTitle>{t.analytics.dailyAverage}</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="text-3xl font-bold font-inter-numbers">
-                                {dataComparison === "pastData" ? historicalAnalytics.dailyAverage : analytics.dailyAverage} cm
-                              </div>
-                              <p className="text-sm text-muted-foreground">{t.analytics.dailyAverageDescription}</p>
-                            </CardContent>
-                          </Card>
-
-                          <Card>
-                            <CardHeader>
-                              <CardTitle>{t.analytics.peakLevel}</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="text-3xl font-bold font-inter-numbers">
-                                {dataComparison === "pastData" ? historicalAnalytics.peakLevel : analytics.peakLevel} cm
-                              </div>
-                              <p className="text-sm text-muted-foreground">{t.analytics.peakLevelDescription}</p>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      )}
-
-                      <Card>
-                        <CardHeader>
-                          <CardTitle>
-                            {dataComparison === "compare" ? t.chart.compareData : t.analytics.weeklyTrend}
-                          </CardTitle>
-                          {dataComparison !== "compare" && (
-                            <CardDescription>
-                              {dataComparison === "today"
-                                ? t.chart.last24Hours // We can keep "Last 24 Hours" label or use a new one if available
-                                : dataComparison === "last7Days"
-                                  ? t.chart.lastWeek
-                                  : t.analytics.pastData}
-                            </CardDescription>
-                          )}
-                        </CardHeader>
-                        <CardContent>
-                          {dataComparison === "compare" ? (
-                            <EnhancedWaterLevelChart
-                              multiData={compareData}
-                              warningLevel={warningLevel}
-                              dangerLevel={dangerLevel}
-                            />
-                          ) : (
-                            <EnhancedWaterLevelChart
-                              data={
-                                dataComparison === "pastData"
-                                  ? historicalData
-                                  : dataComparison === "last7Days"
-                                    ? sampledData
-                                    : todayWaterData
-                              }
-                              warningLevel={warningLevel}
-                              dangerLevel={dangerLevel}
-                              dateRangeLabel={
-                                dataComparison === "pastData"
-                                  ? date
-                                    ? date.toLocaleDateString()
-                                    : t.analytics.selectDateRange
-                                  : undefined
-                              }
-                            />
-                          )}
-                        </CardContent>
-                      </Card>
-                    </TabsContent>
-
-                    <TabsContent value="weather" className="space-y-6">
-                      {/* TMD Attribution Header */}
-                      <div className="flex items-center justify-center gap-3 pb-2">
-                        <span className="text-lg font-medium text-gray-700 dark:text-gray-300">Weather data from</span>
-                        <img
-                          src="/images/TMD-logo.png"
-                          alt="Thai Meteorological Department"
-                          className="h-12 object-contain"
-                        />
-                      </div>
-
-                      {/* 1. Current Weather Card */}
-                      <WeatherCard
-                        data={weatherData}
-                        isLoading={weatherLoading}
-                        error={weatherError}
-                        onRetry={refetchWeather}
-                        showCurrent={true}
-                        showForecast={false}
-                      />
-
-                      {/* 2. Current Precipitation Status */}
-                      <RainDashboard weatherData={weatherData} isLoading={weatherLoading} />
-
-                      {/* 3. 3-Hour Forecast */}
-                      <HourlyForecast
-                        data={
-                          weatherData?.hourly || []
-                        }
-
-                      />
-
-                      {/* 4. 5-Day Forecast */}
-                      <WeatherCard
-                        data={weatherData}
-                        isLoading={weatherLoading}
-                        error={weatherError}
-                        onRetry={refetchWeather}
-                        showCurrent={false}
-                        showForecast={true}
-                      />
-
-                      {/* 5. Weather Map */}
-                      <WeatherMap coordinates={weatherData?.coordinates} city={weatherData?.city} />
-                    </TabsContent>
-
-                    <TabsContent value="community" className="space-y-6">
-                      <FloodReport />
-                      <CommunityChat />
-                    </TabsContent>
-                  </>
-                )}
-              </div>
-            </Tabs>
-          </LoadingOverlay>
-
-          {/* Developer Settings Modal */}
-          <DeveloperSettings open={showDeveloperSettings} onOpenChange={setShowDeveloperSettings} />
-
-          <Footer />
         </div>
+      </section>
+
+      {/* Technology & Features - Slide 1 (Header) */}
+      <section className="relative w-full h-screen sticky top-0 overflow-hidden z-[30]">
+        <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
+          <source src="/video/rain.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-y-0 left-0 w-full md:w-1/2 bg-black/20 backdrop-blur-3xl z-10 flex items-center p-8 md:p-16">
+          <div className="text-white max-w-xl">
+            <h2 className="text-5xl md:text-7xl font-bold mb-4 drop-shadow-lg leading-tight">
+              Technology & Features
+            </h2>
+            <p className="text-xl text-gray-300 mb-8 font-medium">เทคโนโลยีและฟีเจอร์</p>
+            <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/10 backdrop-blur-md text-white rounded-full animate-bounce border border-white/20">
+              <span className="text-sm font-medium">Scroll to explore</span>
+              <ChevronDown className="h-4 w-4" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* WebSocket - Slide 2 */}
+      <section className="relative w-full h-screen sticky top-0 overflow-hidden z-[31]">
+        <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
+          <source src="/video/rain.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-y-0 left-0 w-full md:w-1/2 bg-black/30 backdrop-blur-3xl z-10 flex items-center p-8 md:p-16">
+          <div className="text-white w-full max-w-xl">
+            <div className="flex items-center gap-6 mb-12">
+              <div className="flex items-center justify-center w-20 h-20 bg-blue-500/20 rounded-2xl border border-blue-500/30 backdrop-blur-md">
+                <Database className="w-10 h-10 text-blue-400" />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-blue-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
+                <span className="w-3 h-3 bg-blue-500 rounded-full animate-pulse delay-75 shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
+                <span className="w-3 h-3 bg-blue-500 rounded-full animate-pulse delay-150 shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
+              </div>
+              <div className="flex items-center justify-center w-20 h-20 bg-green-500/20 rounded-2xl border border-green-500/30 backdrop-blur-md">
+                <Monitor className="w-10 h-10 text-green-400" />
+              </div>
+            </div>
+            <h3 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
+              WebSocket Real-time Connection
+            </h3>
+            <p className="text-gray-300 text-lg md:text-xl leading-relaxed">
+              WebSocket คือเทคโนโลยีที่ช่วยให้เว็บไซต์สามารถรับข้อมูลแบบ Real-time ได้ทันที
+              โดยไม่ต้องรีเฟรชหน้าเว็บ ทำให้คุณเห็นระดับน้ำล่าสุดได้ทันทีที่เซ็นเซอร์ส่งข้อมูลมา
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Notifications - Slide 3 */}
+      <section className="relative w-full h-screen sticky top-0 overflow-hidden z-[32]">
+        <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
+          <source src="/video/rain.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-y-0 left-0 w-full md:w-1/2 bg-black/30 backdrop-blur-3xl z-10 flex items-center p-8 md:p-16">
+          <div className="text-white w-full max-w-xl">
+            <div className="mb-12">
+              <div className="flex items-center justify-center w-24 h-24 bg-red-500/20 rounded-3xl border border-red-500/30 backdrop-blur-md animate-pulse">
+                <Bell className="w-12 h-12 text-red-400" />
+              </div>
+            </div>
+            <h3 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
+              การแจ้งเตือน (Notifications)
+            </h3>
+            <p className="text-gray-300 text-lg md:text-xl leading-relaxed mb-12">
+              ระบบสามารถแจ้งเตือนผู้ใช้งานผ่านหลายช่องทาง เมื่อระดับน้ำถึงจุดเตือนภัยหรืออันตราย
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="flex items-center gap-5 p-6 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 hover:bg-white/10 transition-all group">
+                <div className="w-14 h-14 bg-green-500 rounded-xl flex items-center justify-center shrink-0 shadow-lg group-hover:scale-110 transition-transform">
+                  <MessageCircle className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <div className="font-bold text-lg">LINE OA</div>
+                  <div className="text-sm text-gray-400">แจ้งเตือนผ่าน LINE</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-5 p-6 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 hover:bg-white/10 transition-all group">
+                <div className="w-14 h-14 bg-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-lg group-hover:scale-110 transition-transform">
+                  <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-bold text-lg">Discord</div>
+                  <div className="text-sm text-gray-400">แจ้งเตือนผ่าน Discord</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Community - Slide 4 */}
+      <section className="relative w-full h-screen sticky top-0 overflow-hidden z-[33]">
+        <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
+          <source src="/video/rain.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-y-0 left-0 w-full md:w-1/2 bg-black/30 backdrop-blur-3xl z-10 flex items-center p-8 md:p-16">
+          <div className="text-white w-full max-w-xl">
+            <div className="flex items-center gap-6 mb-12">
+              <div className="flex items-center justify-center w-20 h-20 bg-purple-500/20 rounded-2xl border border-purple-500/30 backdrop-blur-md">
+                <Users className="w-10 h-10 text-purple-400" />
+              </div>
+              <div className="flex items-center justify-center w-20 h-20 bg-orange-500/20 rounded-2xl border border-orange-500/30 backdrop-blur-md">
+                <AlertTriangle className="w-10 h-10 text-orange-400" />
+              </div>
+            </div>
+            <h3 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
+              ชุมชนและการรายงาน (Community & Reporting)
+            </h3>
+            <p className="text-gray-300 text-lg md:text-xl leading-relaxed">
+              เว็บไซต์นี้เปิดให้ผู้คนสามารถพูดคุย แลกเปลี่ยนข้อมูล และรายงานสถานการณ์น้ำท่วมในพื้นที่ของตนเอง
+              เพื่อช่วยให้ชุมชนสามารถเตรียมพร้อมรับมือกับสถานการณ์ได้อย่างทันท่วงที
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer & Final Notes */}
+      <div className="relative z-[40] bg-white dark:bg-gray-900">
+        <div className="py-12 text-center border-t border-gray-100 dark:border-gray-800">
+          <p className="text-sm text-gray-500 font-medium">
+            Made with ❤️ Team หมูแดดเดียว
+          </p>
+        </div>
+        <Footer />
       </div>
-    </div >
+    </div>
   )
 }
