@@ -1,10 +1,27 @@
 import type React from "react"
 import type { Metadata } from "next"
 import "./globals.css"
-import { ibmPlexSansThai, playfair } from "@/lib/fonts"
+import { IBM_Plex_Sans_Thai, Playfair_Display } from "next/font/google"
 import { LanguageProvider } from "@/hooks/language-context"
 import { WeatherVotePopup } from "@/components/weather-vote-popup"
 import { WeatherVoteResults } from "@/components/weather-vote-results"
+
+// Define IBM Plex Sans Thai font for Thai text
+const ibmPlexSansThai = IBM_Plex_Sans_Thai({
+  subsets: ["thai", "latin"], // Include Thai subset
+  weight: ["100", "200", "300", "400", "500", "700"], // Specify weights to load
+  variable: "--font-ibm-plex-sans-thai", // Define CSS variable for IBM Plex Sans Thai
+  display: "swap",
+})
+
+// Define Playfair Display font for quotes
+const playfair = Playfair_Display({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-playfair-display",
+  display: "swap",
+})
 
 export const metadata: Metadata = {
   title: "Satreepasertsin Weather Center",
