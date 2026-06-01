@@ -5,7 +5,15 @@ import Link from "next/link"
 import { Footer } from "@/components/footer"
 import { useEffect, useState, useRef } from "react"
 import Image from "next/image"
-import { playfair } from "@/lib/fonts"
+import { Playfair_Display } from "next/font/google"
+
+const playfair = Playfair_Display({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-playfair-display",
+  display: "swap",
+})
 
 export default function AboutPage() {
   const [showGradient, setShowGradient] = useState(false)
