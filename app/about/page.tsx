@@ -70,7 +70,6 @@ export default function AboutPage() {
                     <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-blue-500 rounded-full animate-spin" />
                 </div>
                 <p className="text-white text-lg font-medium animate-pulse">กำลังโหลด...</p>
-                <p className="text-gray-400 text-sm mt-2">Loading video content</p>
             </div>
 
             {/* Hidden video preloader */}
