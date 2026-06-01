@@ -63,9 +63,8 @@ export default function AboutPage() {
     return (
         <div className="min-h-screen bg-white dark:bg-gray-900">
             {/* Loading Screen */}
-            <div className={`fixed inset-0 z-[100] bg-gray-900 flex flex-col items-center justify-center transition-all duration-700 ${
-                pageReady ? 'opacity-0 pointer-events-none' : 'opacity-100'
-            } font-sao-chingcha`}>
+            <div className={`fixed inset-0 z-[100] bg-gray-900 flex flex-col items-center justify-center transition-all duration-700 ${pageReady ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                } font-sao-chingcha`}>
                 <div className="relative mb-6">
                     <div className="w-16 h-16 border-4 border-blue-500/30 rounded-full" />
                     <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-blue-500 rounded-full animate-spin" />
@@ -107,9 +106,9 @@ export default function AboutPage() {
                         <Link href="/">
                             <button className="group flex items-center gap-2 px-5 py-2.5 bg-white/20 backdrop-blur-md text-white rounded-full border border-white/30 font-medium text-sm transition-all duration-300 hover:bg-white hover:text-gray-900 hover:scale-105 hover:shadow-lg">
                                 <span>ไปที่เว็บไซต์</span>
-                                                 <div className="overflow-hidden">
-                         <MoveUpRight className="w-4 h-4 animate-move-up-right" />
-                        </div>
+                                <div className="overflow-hidden">
+                                    <MoveUpRight className="w-4 h-4 animate-move-up-right" />
+                                </div>
                             </button>
                         </Link>
                         <a
@@ -119,9 +118,9 @@ export default function AboutPage() {
                         >
                             <button className="group flex items-center gap-2 px-5 py-2.5 bg-white/20 backdrop-blur-md text-white rounded-full border border-white/30 font-medium text-sm transition-all duration-300 hover:bg-white hover:text-gray-900 hover:scale-105 hover:shadow-lg">
                                 <span>ติดต่อเรา</span>
-                                                 <div className="overflow-hidden">
-                         <MoveUpRight className="w-4 h-4 animate-move-up-right" />
-                        </div>
+                                <div className="overflow-hidden">
+                                    <MoveUpRight className="w-4 h-4 animate-move-up-right" />
+                                </div>
                             </button>
                         </a>
                     </div>
@@ -167,7 +166,7 @@ export default function AboutPage() {
                         — Lao Tzu (chinese philosopher)
                     </p>
                 </div>
-                
+
                 {/* Scroll Down Indicator */}
                 <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4">
                     <div className="w-px h-16 bg-gradient-to-b from-transparent via-white/50 to-transparent" />
@@ -179,7 +178,8 @@ export default function AboutPage() {
             <section className="bg-white dark:bg-gray-900 py-16 px-4 font-sao-chingcha">
                 <div className="container mx-auto max-w-5xl">
                     <div className="font-noto-sans-thai">
-                        <style dangerouslySetInnerHTML={{ __html: `
+                        <style dangerouslySetInnerHTML={{
+                            __html: `
                             .tab-mask {
                                 --svg-left: url("data:image/svg+xml,%3Csvg viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21.3995 24.8356L27.0306 9.12812C28.9935 3.6528 34.1835 0 40 0V40H0V39.897C9.59729 39.897 18.1607 33.8699 21.3995 24.8356Z' fill='black'/%3E%3C/svg%3E");
                                 --svg-right: url("data:image/svg+xml,%3Csvg viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M18.6005 24.8356L12.9694 9.12812C11.0065 3.6528 5.81654 0 0 0V40H40V39.897C30.4027 39.897 21.8393 33.8699 18.6005 24.8356Z' fill='black'/%3E%3C/svg%3E");
@@ -219,170 +219,170 @@ export default function AboutPage() {
                             }
                         ` }} />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-12">
-                                {/* StreetFlood Project Card */}
-                                <div className="relative mt-12 group">
-                                    {/* Protruding Tab (Fluid Curves with SVG) */}
-                                    <div className="absolute bottom-[calc(100%-1px)] left-8 z-20 flex items-center h-[40px] md:h-[48px] tab-mask tab-mask-mobile px-10 md:px-14 overflow-hidden">
-                                        <div className="absolute bottom-0 left-0 w-full h-[2px] bg-white/20 dark:bg-black/40 backdrop-blur-md z-0" />
-                                        
-                                        <img src="https://images.unsplash.com/photo-1694885107585-91268d6b7cf6?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Tab BG" className="absolute top-0 left-0 w-[400px] h-[200px] object-cover blur-xl scale-125 opacity-90 z-0" />
-                                        <div className="absolute inset-0 bg-black/10 dark:bg-black/40 z-0" />
-                                        
-                                        <h3 className="relative z-10 text-base md:text-lg font-bold text-white whitespace-nowrap">StreetFlood Project</h3>
-                                    </div>
-                                    
-                                    <div className="relative rounded-3xl overflow-hidden shadow-xl border border-white/20 dark:border-gray-700/50 min-h-[260px] flex flex-col">
-                                        {/* Background Image */}
-                                        <img 
-                                            src="https://images.unsplash.com/photo-1694885107585-91268d6b7cf6?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" 
-                                            alt="StreetFlood" 
-                                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 z-0" 
-                                        />
-                                        
-                                        {/* Gradient Blur Overlay without white color */}
-                                        <div 
-                                            className="absolute inset-0 w-[95%] sm:w-[85%] bg-black/10 dark:bg-black/40 z-0"
-                                            style={{
-                                                backdropFilter: 'blur(16px)',
-                                                WebkitMaskImage: 'linear-gradient(to right, black 65%, transparent 100%)',
-                                                maskImage: 'linear-gradient(to right, black 65%, transparent 100%)'
-                                            }}
-                                        />
+                            {/* StreetFlood Project Card */}
+                            <div className="relative mt-12 group">
+                                {/* Protruding Tab (Fluid Curves with SVG) */}
+                                <div className="absolute bottom-[calc(100%-1px)] left-8 z-20 flex items-center h-[40px] md:h-[48px] tab-mask tab-mask-mobile px-10 md:px-14 overflow-hidden">
+                                    <div className="absolute bottom-0 left-0 w-full h-[2px] bg-white/20 dark:bg-black/40 backdrop-blur-md z-0" />
 
-                                        {/* Content */}
-                                        <div className="relative z-10 pt-12 px-8 pb-8 w-[85%] sm:w-[70%] flex-grow flex flex-col justify-center">
-                                            <p className="text-white font-medium text-sm leading-relaxed mb-4">
-                                                โครงงานระบบติดตามระดับน้ำเฝ้าระวังและเตือนหากระดับน้ำอันตราย
-                                                พัฒนาโดยนักเรียน ม.2/2 SMTE กลุ่มหมูแดดเดียว
-                                            </p>
-                                        </div>
-                                    </div>
+                                    <img src="https://images.unsplash.com/photo-1694885107585-91268d6b7cf6?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Tab BG" className="absolute top-0 left-0 w-[400px] h-[200px] object-cover blur-xl scale-125 opacity-90 z-0" />
+                                    <div className="absolute inset-0 bg-black/10 dark:bg-black/40 z-0" />
+
+                                    <h3 className="relative z-10 text-base md:text-lg font-bold text-white whitespace-nowrap">StreetFlood Project</h3>
                                 </div>
 
-                                {/* Our Mission Card */}
-                                <div className="relative mt-12 group">
-                                    <div className="absolute bottom-[calc(100%-1px)] left-8 z-20 flex items-center h-[40px] md:h-[48px] tab-mask tab-mask-mobile px-10 md:px-14 overflow-hidden">
-                                        <div className="absolute bottom-0 left-0 w-full h-[2px] bg-white/20 dark:bg-black/40 backdrop-blur-md z-0" />
-                                        <img src="https://images.unsplash.com/photo-1657069342866-2d11c2509b02?q=80&w=1164&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Tab BG" className="absolute top-0 left-0 w-[400px] h-[200px] object-cover blur-xl scale-125 opacity-90 z-0" />
-                                        <div className="absolute inset-0 bg-black/10 dark:bg-black/40 z-0" />
-                                        <h3 className="relative z-10 text-base md:text-lg font-bold text-white whitespace-nowrap">Our Mission</h3>
-                                    </div>
-                                    
-                                    <div className="relative rounded-3xl overflow-hidden shadow-xl border border-white/20 dark:border-gray-700/50 min-h-[260px] flex flex-col">
-                                        <img 
-                                            src="https://images.unsplash.com/photo-1657069342866-2d11c2509b02?q=80&w=1164&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" 
-                                            alt="Mission" 
-                                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 z-0" 
-                                        />
-                                        <div 
-                                            className="absolute inset-0 w-[95%] sm:w-[85%] bg-black/10 dark:bg-black/40 z-0"
-                                            style={{
-                                                backdropFilter: 'blur(16px)',
-                                                WebkitMaskImage: 'linear-gradient(to right, black 65%, transparent 100%)',
-                                                maskImage: 'linear-gradient(to right, black 65%, transparent 100%)'
-                                            }}
-                                        />
-                                        
-                                        <div className="relative z-10 pt-12 px-8 pb-8 w-[85%] sm:w-[70%] flex-grow flex flex-col justify-center">
-                                            <ul className="text-white font-medium text-sm space-y-2">
-                                                <li className="flex items-start gap-2">
-                                                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full mt-1.5 shrink-0 shadow-[0_0_8px_rgba(74,222,128,0.6)]" />
-                                                    พัฒนาระบบแจ้งเตือนภัยที่แม่นยำและรวดเร็ว
-                                                </li>
-                                                <li className="flex items-start gap-2">
-                                                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full mt-1.5 shrink-0 shadow-[0_0_8px_rgba(74,222,128,0.6)]" />
-                                                    จัดเก็บประวัติระดับน้ำได้อย่างมีประสิทธิภาพ
-                                                </li>
-                                                <li className="flex items-start gap-2">
-                                                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full mt-1.5 shrink-0 shadow-[0_0_8px_rgba(74,222,128,0.6)]" />
-                                                    สามารถใช้งานได้จริง ไม่ล่มบ่อย
-                                                </li>
-                                            </ul>
-                                        </div>
+                                <div className="relative rounded-3xl overflow-hidden shadow-xl border border-white/20 dark:border-gray-700/50 min-h-[260px] flex flex-col">
+                                    {/* Background Image */}
+                                    <img
+                                        src="https://images.unsplash.com/photo-1694885107585-91268d6b7cf6?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                                        alt="StreetFlood"
+                                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 z-0"
+                                    />
+
+                                    {/* Gradient Blur Overlay without white color */}
+                                    <div
+                                        className="absolute inset-0 w-[95%] sm:w-[85%] bg-black/10 dark:bg-black/40 z-0"
+                                        style={{
+                                            backdropFilter: 'blur(16px)',
+                                            WebkitMaskImage: 'linear-gradient(to right, black 65%, transparent 100%)',
+                                            maskImage: 'linear-gradient(to right, black 65%, transparent 100%)'
+                                        }}
+                                    />
+
+                                    {/* Content */}
+                                    <div className="relative z-10 pt-12 px-8 pb-8 w-[85%] sm:w-[70%] flex-grow flex flex-col justify-center">
+                                        <p className="text-white font-medium text-sm leading-relaxed mb-4">
+                                            โครงงานระบบติดตามระดับน้ำเฝ้าระวังและเตือนหากระดับน้ำอันตราย
+                                            พัฒนาโดยนักเรียน ม.2/2 SMTE กลุ่มหมูแดดเดียว
+                                        </p>
                                     </div>
                                 </div>
+                            </div>
 
-                                {/* Credits Card */}
-                                <div className="relative mt-12 group">
-                                    <div className="absolute bottom-[calc(100%-1px)] left-8 z-20 flex items-center h-[40px] md:h-[48px] tab-mask tab-mask-mobile px-10 md:px-14 overflow-hidden">
-                                        <div className="absolute bottom-0 left-0 w-full h-[2px] bg-white/20 dark:bg-black/40 backdrop-blur-md z-0" />
-                                        <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=800&auto=format&fit=crop" alt="Tab BG" className="absolute top-0 left-0 w-[400px] h-[200px] object-cover blur-xl scale-125 opacity-90 z-0" />
-                                        <div className="absolute inset-0 bg-black/10 dark:bg-black/40 z-0" />
-                                        <h3 className="relative z-10 text-base md:text-lg font-bold text-white whitespace-nowrap">Credits</h3>
-                                    </div>
-                                    
-                                    <div className="relative rounded-3xl overflow-hidden shadow-xl border border-white/20 dark:border-gray-700/50 min-h-[260px] flex flex-col">
-                                        <img 
-                                            src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=800&auto=format&fit=crop" 
-                                            alt="Credits" 
-                                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 z-0" 
-                                        />
-                                        <div 
-                                            className="absolute inset-0 w-[95%] sm:w-[85%] bg-black/10 dark:bg-black/40 z-0"
-                                            style={{
-                                                backdropFilter: 'blur(16px)',
-                                                WebkitMaskImage: 'linear-gradient(to right, black 65%, transparent 100%)',
-                                                maskImage: 'linear-gradient(to right, black 65%, transparent 100%)'
-                                            }}
-                                        />
-                                        
-                                        <div className="relative z-10 pt-12 px-8 pb-8 w-[85%] sm:w-[70%] flex-grow flex flex-col justify-center">
-                                            <p className="text-white font-medium text-sm leading-relaxed mb-4">
-                                                รูปภาพในหน้านี้นำมากจาก แนวหน้า
-                                            </p>
-                                            <p className="text-white font-medium text-sm leading-relaxed">
-                                                ขอบคุณทุกท่านที่สนับสนุนโครงการนี้
-                                            </p>
-                                        </div>
-                                    </div>
+                            {/* Our Mission Card */}
+                            <div className="relative mt-12 group">
+                                <div className="absolute bottom-[calc(100%-1px)] left-8 z-20 flex items-center h-[40px] md:h-[48px] tab-mask tab-mask-mobile px-10 md:px-14 overflow-hidden">
+                                    <div className="absolute bottom-0 left-0 w-full h-[2px] bg-white/20 dark:bg-black/40 backdrop-blur-md z-0" />
+                                    <img src="https://images.unsplash.com/photo-1657069342866-2d11c2509b02?q=80&w=1164&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Tab BG" className="absolute top-0 left-0 w-[400px] h-[200px] object-cover blur-xl scale-125 opacity-90 z-0" />
+                                    <div className="absolute inset-0 bg-black/10 dark:bg-black/40 z-0" />
+                                    <h3 className="relative z-10 text-base md:text-lg font-bold text-white whitespace-nowrap">Our Mission</h3>
                                 </div>
 
-                                {/* Contact Us Card */}
-                                <div className="relative mt-12 group">
-                                    <div className="absolute bottom-[calc(100%-1px)] left-8 z-20 flex items-center h-[40px] md:h-[48px] tab-mask tab-mask-mobile px-10 md:px-14 overflow-hidden">
-                                        <div className="absolute bottom-0 left-0 w-full h-[2px] bg-white/20 dark:bg-black/40 backdrop-blur-md z-0" />
-                                        <img src="https://images.unsplash.com/photo-1516387938699-a93567ec168e?q=80&w=800&auto=format&fit=crop" alt="Tab BG" className="absolute top-0 left-0 w-[400px] h-[200px] object-cover blur-xl scale-125 opacity-90 z-0" />
-                                        <div className="absolute inset-0 bg-black/10 dark:bg-black/40 z-0" />
-                                        <h3 className="relative z-10 text-base md:text-lg font-bold text-white whitespace-nowrap">Contact Us</h3>
+                                <div className="relative rounded-3xl overflow-hidden shadow-xl border border-white/20 dark:border-gray-700/50 min-h-[260px] flex flex-col">
+                                    <img
+                                        src="https://images.unsplash.com/photo-1657069342866-2d11c2509b02?q=80&w=1164&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                                        alt="Mission"
+                                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 z-0"
+                                    />
+                                    <div
+                                        className="absolute inset-0 w-[95%] sm:w-[85%] bg-black/10 dark:bg-black/40 z-0"
+                                        style={{
+                                            backdropFilter: 'blur(16px)',
+                                            WebkitMaskImage: 'linear-gradient(to right, black 65%, transparent 100%)',
+                                            maskImage: 'linear-gradient(to right, black 65%, transparent 100%)'
+                                        }}
+                                    />
+
+                                    <div className="relative z-10 pt-12 px-8 pb-8 w-[85%] sm:w-[70%] flex-grow flex flex-col justify-center">
+                                        <ul className="text-white font-medium text-sm space-y-2">
+                                            <li className="flex items-start gap-2">
+                                                <span className="w-1.5 h-1.5 bg-green-400 rounded-full mt-1.5 shrink-0 shadow-[0_0_8px_rgba(74,222,128,0.6)]" />
+                                                พัฒนาระบบแจ้งเตือนภัยที่แม่นยำและรวดเร็ว
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="w-1.5 h-1.5 bg-green-400 rounded-full mt-1.5 shrink-0 shadow-[0_0_8px_rgba(74,222,128,0.6)]" />
+                                                จัดเก็บประวัติระดับน้ำได้อย่างมีประสิทธิภาพ
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="w-1.5 h-1.5 bg-green-400 rounded-full mt-1.5 shrink-0 shadow-[0_0_8px_rgba(74,222,128,0.6)]" />
+                                                สามารถใช้งานได้จริง ไม่ล่มบ่อย
+                                            </li>
+                                        </ul>
                                     </div>
-                                    
-                                    <div className="relative rounded-3xl overflow-hidden shadow-xl border border-white/20 dark:border-gray-700/50 min-h-[260px] flex flex-col">
-                                        <img 
-                                            src="https://images.unsplash.com/photo-1516387938699-a93567ec168e?q=80&w=800&auto=format&fit=crop" 
-                                            alt="Contact Us" 
-                                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 z-0" 
-                                        />
-                                        <div 
-                                            className="absolute inset-0 w-[95%] sm:w-[85%] bg-black/10 dark:bg-black/40 z-0"
-                                            style={{
-                                                backdropFilter: 'blur(16px)',
-                                                WebkitMaskImage: 'linear-gradient(to right, black 65%, transparent 100%)',
-                                                maskImage: 'linear-gradient(to right, black 65%, transparent 100%)'
-                                            }}
-                                        />
-                                        
-                                        <div className="relative z-10 pt-12 px-8 pb-8 w-[85%] sm:w-[70%] flex-grow flex flex-col justify-center">
-                                            <p className="text-white font-medium text-sm leading-relaxed mb-4">
-                                                ติดต่อเราได้ผ่านแบบฟอร์ม Google Forms (โปรดใช้อีเมลโรงเรียนในการติดต่อ)
-                                            </p>
-                                            <a
-                                                href="https://forms.gle/1Te39d2yoXZYDfNr5"
-                                                className="group inline-flex items-center gap-2 px-4 py-2 border-2 border-white/80 text-white text-sm font-medium rounded-lg hover:bg-white hover:text-gray-900 transition-colors w-max shadow-sm"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                            >
-                                                ติดต่อเรา
-                                                                                <div className="overflow-hidden">
-                                        <MoveUpRight className="w-4 h-4 animate-move-up-right" />
+                                </div>
+                            </div>
+
+                            {/* Credits Card */}
+                            <div className="relative mt-12 group">
+                                <div className="absolute bottom-[calc(100%-1px)] left-8 z-20 flex items-center h-[40px] md:h-[48px] tab-mask tab-mask-mobile px-10 md:px-14 overflow-hidden">
+                                    <div className="absolute bottom-0 left-0 w-full h-[2px] bg-white/20 dark:bg-black/40 backdrop-blur-md z-0" />
+                                    <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=800&auto=format&fit=crop" alt="Tab BG" className="absolute top-0 left-0 w-[400px] h-[200px] object-cover blur-xl scale-125 opacity-90 z-0" />
+                                    <div className="absolute inset-0 bg-black/10 dark:bg-black/40 z-0" />
+                                    <h3 className="relative z-10 text-base md:text-lg font-bold text-white whitespace-nowrap">Credits</h3>
+                                </div>
+
+                                <div className="relative rounded-3xl overflow-hidden shadow-xl border border-white/20 dark:border-gray-700/50 min-h-[260px] flex flex-col">
+                                    <img
+                                        src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=800&auto=format&fit=crop"
+                                        alt="Credits"
+                                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 z-0"
+                                    />
+                                    <div
+                                        className="absolute inset-0 w-[95%] sm:w-[85%] bg-black/10 dark:bg-black/40 z-0"
+                                        style={{
+                                            backdropFilter: 'blur(16px)',
+                                            WebkitMaskImage: 'linear-gradient(to right, black 65%, transparent 100%)',
+                                            maskImage: 'linear-gradient(to right, black 65%, transparent 100%)'
+                                        }}
+                                    />
+
+                                    <div className="relative z-10 pt-12 px-8 pb-8 w-[85%] sm:w-[70%] flex-grow flex flex-col justify-center">
+                                        <p className="text-white font-medium text-sm leading-relaxed mb-4">
+                                            รูปภาพในหน้านี้นำมากจาก แนวหน้า
+                                        </p>
+                                        <p className="text-white font-medium text-sm leading-relaxed">
+                                            ขอบคุณทุกท่านที่สนับสนุนโครงการนี้
+                                        </p>
                                     </div>
-                                            </a>
-                                        </div>
+                                </div>
+                            </div>
+
+                            {/* Contact Us Card */}
+                            <div className="relative mt-12 group">
+                                <div className="absolute bottom-[calc(100%-1px)] left-8 z-20 flex items-center h-[40px] md:h-[48px] tab-mask tab-mask-mobile px-10 md:px-14 overflow-hidden">
+                                    <div className="absolute bottom-0 left-0 w-full h-[2px] bg-white/20 dark:bg-black/40 backdrop-blur-md z-0" />
+                                    <img src="https://images.unsplash.com/photo-1516387938699-a93567ec168e?q=80&w=800&auto=format&fit=crop" alt="Tab BG" className="absolute top-0 left-0 w-[400px] h-[200px] object-cover blur-xl scale-125 opacity-90 z-0" />
+                                    <div className="absolute inset-0 bg-black/10 dark:bg-black/40 z-0" />
+                                    <h3 className="relative z-10 text-base md:text-lg font-bold text-white whitespace-nowrap">Contact Us</h3>
+                                </div>
+
+                                <div className="relative rounded-3xl overflow-hidden shadow-xl border border-white/20 dark:border-gray-700/50 min-h-[260px] flex flex-col">
+                                    <img
+                                        src="https://images.unsplash.com/photo-1516387938699-a93567ec168e?q=80&w=800&auto=format&fit=crop"
+                                        alt="Contact Us"
+                                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 z-0"
+                                    />
+                                    <div
+                                        className="absolute inset-0 w-[95%] sm:w-[85%] bg-black/10 dark:bg-black/40 z-0"
+                                        style={{
+                                            backdropFilter: 'blur(16px)',
+                                            WebkitMaskImage: 'linear-gradient(to right, black 65%, transparent 100%)',
+                                            maskImage: 'linear-gradient(to right, black 65%, transparent 100%)'
+                                        }}
+                                    />
+
+                                    <div className="relative z-10 pt-12 px-8 pb-8 w-[85%] sm:w-[70%] flex-grow flex flex-col justify-center">
+                                        <p className="text-white font-medium text-sm leading-relaxed mb-4">
+                                            ติดต่อเราได้ผ่านแบบฟอร์ม Google Forms (โปรดใช้อีเมลโรงเรียนในการติดต่อ)
+                                        </p>
+                                        <a
+                                            href="https://forms.gle/1Te39d2yoXZYDfNr5"
+                                            className="group inline-flex items-center gap-2 px-4 py-2 border-2 border-white/80 text-white text-sm font-medium rounded-lg hover:bg-white hover:text-gray-900 transition-colors w-max shadow-sm"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            ติดต่อเรา
+                                            <div className="overflow-hidden">
+                                                <MoveUpRight className="w-4 h-4 animate-move-up-right" />
+                                            </div>
+                                        </a>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </section>
+                </div>
+            </section>
 
             {/* Technology & Features - Slide 1 (Header) */}
             <section className="relative w-full h-screen sticky top-0 overflow-hidden z-[30]">
@@ -410,7 +410,7 @@ export default function AboutPage() {
                     <source src="https://www.pexels.com/download/video/1085656/" type="video/mp4" />
                 </video>
                 <div className="absolute inset-0 bg-black/40" />
-                <div 
+                <div
                     className="absolute inset-y-0 left-0 w-full md:w-[60%] bg-black/20 backdrop-blur-3xl z-10 flex items-center p-8 md:p-16"
                     style={{
                         maskImage: 'linear-gradient(to right, black 60%, transparent 100%)',
@@ -448,7 +448,7 @@ export default function AboutPage() {
                     <source src="https://www.pexels.com/download/video/31014581/" type="video/mp4" />
                 </video>
                 <div className="absolute inset-0 bg-black/40" />
-                <div 
+                <div
                     className="absolute inset-y-0 left-0 w-full md:w-[60%] bg-black/20 backdrop-blur-3xl z-10 flex items-center p-8 md:p-16"
                     style={{
                         maskImage: 'linear-gradient(to right, black 60%, transparent 100%)',
@@ -499,7 +499,7 @@ export default function AboutPage() {
                     <source src="https://www.pexels.com/download/video/8865886/" type="video/mp4" />
                 </video>
                 <div className="absolute inset-0 bg-black/40" />
-                <div 
+                <div
                     className="absolute inset-y-0 left-0 w-full md:w-[60%] bg-black/20 backdrop-blur-3xl z-10 flex items-center p-8 md:p-16"
                     style={{
                         maskImage: 'linear-gradient(to right, black 60%, transparent 100%)',
