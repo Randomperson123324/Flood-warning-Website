@@ -83,6 +83,11 @@
   font-family: var(--font-ibm-plex-sans-thai), sans-serif;
 }
 
+/* Playfair Display font utility */
+.font-playfair {
+  font-family: var(--font-playfair), serif !important;
+}
+
 /* Utility class for numbers - uses IBM Plex Sans Thai font */
 .font-inter-numbers {
   font-family: var(--font-ibm-plex-sans-thai), sans-serif !important;
