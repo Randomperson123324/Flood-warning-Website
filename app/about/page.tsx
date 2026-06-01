@@ -327,10 +327,7 @@ export default function AboutPage() {
 
                                     <div className="relative z-10 pt-12 px-8 pb-8 w-[85%] sm:w-[70%] flex-grow flex flex-col justify-center">
                                         <p className="text-white font-medium text-sm leading-relaxed mb-4">
-                                            รูปภาพในหน้านี้นำมากจาก แนวหน้า
-                                        </p>
-                                        <p className="text-white font-medium text-sm leading-relaxed">
-                                            ขอบคุณทุกท่านที่สนับสนุนโครงการนี้
+                                            รูปภาพและวีดีโอในหน้านี้นำมากจาก แนวหน้า pexels และ Unsplash
                                         </p>
                                     </div>
                                 </div>
