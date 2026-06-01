@@ -5,6 +5,15 @@ import Link from "next/link"
 import { Footer } from "@/components/footer"
 import { useEffect, useState, useRef } from "react"
 import Image from "next/image"
+import { Playfair_Display } from "next/font/google"
+
+const playfair = Playfair_Display({
+    subsets: ["latin", "latin-ext"],
+    weight: ["400", "700"],
+    style: ["normal", "italic"],
+    variable: "--font-playfair-display",
+    display: "swap",
+})
 
 export default function AboutPage() {
     const [showGradient, setShowGradient] = useState(false)
@@ -52,10 +61,10 @@ export default function AboutPage() {
     }, [])
 
     return (
-        <div className="min-h-screen bg-white dark:bg-gray-900 font-sao-chingcha">
+        <div className="min-h-screen bg-white dark:bg-gray-900">
             {/* Loading Screen */}
             <div className={`fixed inset-0 z-[100] bg-gray-900 flex flex-col items-center justify-center transition-all duration-700 ${pageReady ? 'opacity-0 pointer-events-none' : 'opacity-100'
-                }`}>
+                } font-sao-chingcha`}>
                 <div className="relative mb-6">
                     <div className="w-16 h-16 border-4 border-blue-500/30 rounded-full" />
                     <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-blue-500 rounded-full animate-spin" />
@@ -74,7 +83,7 @@ export default function AboutPage() {
                 className="hidden"
             />
             {/* Hero Section - Full Screen */}
-            <section className="relative w-full h-screen flex items-end justify-center overflow-hidden">
+            <section className="relative w-full h-screen flex items-end justify-center overflow-hidden font-sao-chingcha">
                 {/* Background Image */}
                 <img
                     src="/images/about-banner.jpg"
@@ -142,7 +151,7 @@ export default function AboutPage() {
                     playsInline
                     className="absolute inset-0 w-full h-full object-cover"
                 >
-                    <source src="/videos/rain2.mp4" type="video/mp4" />
+                    <source src="https://www.pexels.com/download/video/6252550/" type="video/mp4" />
                 </video>
 
                 {/* Dark Overlay */}
@@ -150,10 +159,10 @@ export default function AboutPage() {
 
                 {/* Quote Content */}
                 <div className="relative z-10 text-center px-6 max-w-5xl mx-auto">
-                    <h2 className="text-4xl md:text-6xl lg:text-7xl font-playfair italic text-white mb-10 leading-tight drop-shadow-2xl">
+                    <h2 className={`text-4xl md:text-6xl lg:text-7xl text-white mb-10 leading-tight drop-shadow-2xl font-normal not-italic ${playfair.className}`}>
                         “Nothing is softer or more flexible than water, yet nothing can resist it.”
                     </h2>
-                    <p className="text-xl md:text-3xl text-gray-200 font-playfair font-medium tracking-wide">
+                    <p className={`text-xl md:text-3xl text-gray-200 tracking-wide font-normal not-italic ${playfair.className}`}>
                         — Lao Tzu (chinese philosopher)
                     </p>
                 </div>
@@ -166,7 +175,7 @@ export default function AboutPage() {
             </section>
 
             {/* Content Section - 4 Parts with Folder Tab Design */}
-            <section className="bg-white dark:bg-gray-900 py-16 px-4">
+            <section className="bg-white dark:bg-gray-900 py-16 px-4 font-sao-chingcha">
                 <div className="container mx-auto max-w-5xl">
                     <div className="font-noto-sans-thai">
                         <style dangerouslySetInnerHTML={{
@@ -216,7 +225,7 @@ export default function AboutPage() {
                                 <div className="absolute bottom-[calc(100%-1px)] left-8 z-20 flex items-center h-[40px] md:h-[48px] tab-mask tab-mask-mobile px-10 md:px-14 overflow-hidden">
                                     <div className="absolute bottom-0 left-0 w-full h-[2px] bg-white/20 dark:bg-black/40 backdrop-blur-md z-0" />
 
-                                    <img src="https://images.unsplash.com/photo-1544383835-bda2bc66a55d?q=80&w=800&auto=format&fit=crop" alt="Tab BG" className="absolute top-0 left-0 w-[400px] h-[200px] object-cover blur-xl scale-125 opacity-90 z-0" />
+                                    <img src="https://images.unsplash.com/photo-1694885107585-91268d6b7cf6?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Tab BG" className="absolute top-0 left-0 w-[400px] h-[200px] object-cover blur-xl scale-125 opacity-90 z-0" />
                                     <div className="absolute inset-0 bg-black/10 dark:bg-black/40 z-0" />
 
                                     <h3 className="relative z-10 text-base md:text-lg font-bold text-white whitespace-nowrap">StreetFlood Project</h3>
@@ -225,7 +234,7 @@ export default function AboutPage() {
                                 <div className="relative rounded-3xl overflow-hidden shadow-xl border border-white/20 dark:border-gray-700/50 min-h-[260px] flex flex-col">
                                     {/* Background Image */}
                                     <img
-                                        src="https://images.unsplash.com/photo-1544383835-bda2bc66a55d?q=80&w=800&auto=format&fit=crop"
+                                        src="https://images.unsplash.com/photo-1694885107585-91268d6b7cf6?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                                         alt="StreetFlood"
                                         className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 z-0"
                                     />
@@ -254,14 +263,14 @@ export default function AboutPage() {
                             <div className="relative mt-12 group">
                                 <div className="absolute bottom-[calc(100%-1px)] left-8 z-20 flex items-center h-[40px] md:h-[48px] tab-mask tab-mask-mobile px-10 md:px-14 overflow-hidden">
                                     <div className="absolute bottom-0 left-0 w-full h-[2px] bg-white/20 dark:bg-black/40 backdrop-blur-md z-0" />
-                                    <img src="https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?q=80&w=800&auto=format&fit=crop" alt="Tab BG" className="absolute top-0 left-0 w-[400px] h-[200px] object-cover blur-xl scale-125 opacity-90 z-0" />
+                                    <img src="https://images.unsplash.com/photo-1657069342866-2d11c2509b02?q=80&w=1164&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Tab BG" className="absolute top-0 left-0 w-[400px] h-[200px] object-cover blur-xl scale-125 opacity-90 z-0" />
                                     <div className="absolute inset-0 bg-black/10 dark:bg-black/40 z-0" />
                                     <h3 className="relative z-10 text-base md:text-lg font-bold text-white whitespace-nowrap">Our Mission</h3>
                                 </div>
 
                                 <div className="relative rounded-3xl overflow-hidden shadow-xl border border-white/20 dark:border-gray-700/50 min-h-[260px] flex flex-col">
                                     <img
-                                        src="https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?q=80&w=800&auto=format&fit=crop"
+                                        src="https://images.unsplash.com/photo-1657069342866-2d11c2509b02?q=80&w=1164&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                                         alt="Mission"
                                         className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 z-0"
                                     />
@@ -378,11 +387,11 @@ export default function AboutPage() {
             {/* Technology & Features - Slide 1 (Header) */}
             <section className="relative w-full h-screen sticky top-0 overflow-hidden z-[30]">
                 <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
-                    <source src="/video/rain.mp4" type="video/mp4" />
+                    <source src="https://www.pexels.com/download/video/7140928/" type="video/mp4" />
                 </video>
                 <div className="absolute inset-0 bg-black/40" />
-                <div className="absolute inset-y-0 left-0 w-full md:w-1/2 bg-black/20 backdrop-blur-3xl z-10 flex items-center p-8 md:p-16">
-                    <div className="text-white max-w-xl">
+                <div className="absolute inset-0 z-10 flex items-center justify-center p-8 md:p-16 text-center">
+                    <div className="text-white max-w-3xl">
                         <h2 className="text-5xl md:text-7xl font-bold mb-4 drop-shadow-lg leading-tight">
                             Technology & Features
                         </h2>
@@ -398,10 +407,16 @@ export default function AboutPage() {
             {/* WebSocket - Slide 2 */}
             <section className="relative w-full h-screen sticky top-0 overflow-hidden z-[31]">
                 <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
-                    <source src="/video/rain.mp4" type="video/mp4" />
+                    <source src="https://www.pexels.com/download/video/1085656/" type="video/mp4" />
                 </video>
                 <div className="absolute inset-0 bg-black/40" />
-                <div className="absolute inset-y-0 left-0 w-full md:w-1/2 bg-black/30 backdrop-blur-3xl z-10 flex items-center p-8 md:p-16">
+                <div
+                    className="absolute inset-y-0 left-0 w-full md:w-[60%] bg-black/20 backdrop-blur-3xl z-10 flex items-center p-8 md:p-16"
+                    style={{
+                        maskImage: 'linear-gradient(to right, black 60%, transparent 100%)',
+                        WebkitMaskImage: 'linear-gradient(to right, black 60%, transparent 100%)'
+                    }}
+                >
                     <div className="text-white w-full max-w-xl">
                         <div className="flex items-center gap-6 mb-12">
                             <div className="flex items-center justify-center w-20 h-20 bg-blue-500/20 rounded-2xl border border-blue-500/30 backdrop-blur-md">
@@ -430,10 +445,16 @@ export default function AboutPage() {
             {/* Notifications - Slide 3 */}
             <section className="relative w-full h-screen sticky top-0 overflow-hidden z-[32]">
                 <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
-                    <source src="/video/rain.mp4" type="video/mp4" />
+                    <source src="https://www.pexels.com/download/video/31014581/" type="video/mp4" />
                 </video>
                 <div className="absolute inset-0 bg-black/40" />
-                <div className="absolute inset-y-0 left-0 w-full md:w-1/2 bg-black/30 backdrop-blur-3xl z-10 flex items-center p-8 md:p-16">
+                <div
+                    className="absolute inset-y-0 left-0 w-full md:w-[60%] bg-black/20 backdrop-blur-3xl z-10 flex items-center p-8 md:p-16"
+                    style={{
+                        maskImage: 'linear-gradient(to right, black 60%, transparent 100%)',
+                        WebkitMaskImage: 'linear-gradient(to right, black 60%, transparent 100%)'
+                    }}
+                >
                     <div className="text-white w-full max-w-xl">
                         <div className="mb-12">
                             <div className="flex items-center justify-center w-24 h-24 bg-red-500/20 rounded-3xl border border-red-500/30 backdrop-blur-md animate-pulse">
@@ -475,10 +496,16 @@ export default function AboutPage() {
             {/* Community - Slide 4 */}
             <section className="relative w-full h-screen sticky top-0 overflow-hidden z-[33]">
                 <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
-                    <source src="/video/rain.mp4" type="video/mp4" />
+                    <source src="https://www.pexels.com/download/video/8865886/" type="video/mp4" />
                 </video>
                 <div className="absolute inset-0 bg-black/40" />
-                <div className="absolute inset-y-0 left-0 w-full md:w-1/2 bg-black/30 backdrop-blur-3xl z-10 flex items-center p-8 md:p-16">
+                <div
+                    className="absolute inset-y-0 left-0 w-full md:w-[60%] bg-black/20 backdrop-blur-3xl z-10 flex items-center p-8 md:p-16"
+                    style={{
+                        maskImage: 'linear-gradient(to right, black 60%, transparent 100%)',
+                        WebkitMaskImage: 'linear-gradient(to right, black 60%, transparent 100%)'
+                    }}
+                >
                     <div className="text-white w-full max-w-xl">
                         <div className="flex items-center gap-6 mb-12">
                             <div className="flex items-center justify-center w-20 h-20 bg-purple-500/20 rounded-2xl border border-purple-500/30 backdrop-blur-md">
