@@ -1,0 +1,85 @@
+"use client"
+
+import { useState } from "react"
+import { ChevronDown, ExternalLink, FileText, TriangleAlert, X } from "lucide-react"
+import { useTMDWarning } from "@/hooks/use-tmd-warning"
+import { useLanguage } from "@/hooks/use-language"
+import { cn } from "@/lib/utils"
+
+const TMD_URL = "https://www.tmd.go.th/"
+
+export function TMDWarningBanner() {
+  const { warning } = useTMDWarning()
+  const { locale, t } = useLanguage()
+  const [expanded, setExpanded] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
+
+  if (!warning || !warning.hasWarning || dismissed) return null
+
+  const isThai = locale === "th"
+  const title = (isThai ? warning.titleThai : warning.titleEnglish) || warning.badge
+  const headline = isThai ? warning.headlineThai : warning.headlineEnglish
+  const description = isThai ? warning.descriptionThai : warning.descriptionEnglish
+  const advisoryUrl = (isThai ? warning.webUrlThai : warning.webUrlEnglish) || TMD_URL
+
+  const badge = t("tmdWarning", "badge")
+  const hasBody = Boolean(headline || description)
+
+  return (
+    <div className="glass-panel animate-fade-in-up overflow-hidden text-status-danger">
+      <div className="flex items-start gap-3 px-4 py-3">
+        <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0" />
+
+        <div className="flex-1">
+          <p className="text-[0.7rem] font-medium uppercase tracking-wide text-status-danger/80">{badge}</p>
+          <p className="mt-0.5 text-sm font-semibold leading-relaxed text-pretty text-ink">{title}</p>
+
+          {expanded && hasBody && (
+            <div className="mt-2 flex flex-col gap-2 text-sm leading-relaxed text-ink-soft">
+              {headline && <p className="text-pretty">{headline}</p>}
+              {description && <p className="whitespace-pre-line text-pretty">{description}</p>}
+            </div>
+          )}
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {hasBody && (
+              <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                className="glass-panel-strong glass-interactive inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-ink"
+                aria-expanded={expanded}
+              >
+                {expanded ? t("tmdWarning", "seeLess") : t("tmdWarning", "seeMore")}
+                <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-300", expanded && "rotate-180")} />
+              </button>
+            )}
+
+            <a
+              href={TMD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="glass-panel-strong glass-interactive inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-ink"
+            >
+              {t("tmdWarning", "goToTmd")}
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+
+            <a
+              href={advisoryUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="glass-panel-strong glass-interactive inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-ink"
+            >
+              {t("tmdWarning", "advisoryDoc")}
+              <FileText className="h-3.5 w-3.5" />
+            </a>
+          </div>
+        </div>
+
+        <button type="button" onClick={() => setDismissed(true)} aria-label="dismiss" className="glass-interactive rounded-full p-1">
+          <X className="h-4 w-4 text-ink-soft" />
+        </button>
+      </div>
+    </div>
+  )
+}
