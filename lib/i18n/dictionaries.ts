@@ -120,10 +120,15 @@ export const dictionary = {
     no: { th: "ไม่ตก", en: "Not raining" },
     thanks: { th: "ขอบคุณสำหรับการโหวต!", en: "Thanks for voting!" },
     alreadyVoted: { th: "คุณโหวตไปแล้วเมื่อสักครู่", en: "You already voted recently" },
-    resultsRaining: { th: "รายงานว่าฝนตก", en: "reported raining" },
+    resultsRaining: { th: "รายงานว���าฝนตก", en: "reported raining" },
   },
   announcements: {
     title: { th: "ประกาศ", en: "Announcements" },
+  },
+  tmdWarning: {
+    badge: { th: "ประกาศเตือนภัย กรมอุตุฯ", en: "TMD Weather Warning" },
+    seeMore: { th: "ดูเพิ่มเติมที่กรมอุตุฯ", en: "See more · Go to TMD" },
+    advisoryDoc: { th: "ดูเอกสารประกาศ", en: "See advisory doc" },
   },
   notifications: {
     title: { th: "การแจ้งเตือน", en: "Notifications" },
