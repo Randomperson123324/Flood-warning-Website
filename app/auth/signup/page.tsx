@@ -19,6 +19,7 @@ export default function SignupPage() {
 
   const [turnstileToken, setTurnstileToken] = useState("")
   const [turnstileAvailable, setTurnstileAvailable] = useState<boolean | null>(null)
+  const [turnstileReset, setTurnstileReset] = useState(0)
 
   const domainsLabel = allowedDomainsLabel()
   const needsTurnstile = turnstileAvailable === true
@@ -32,10 +33,12 @@ export default function SignupPage() {
     }
     setSubmitting(true)
     setError(null)
-    const { error } = await signUp({ email, password, username })
+    const { error } = await signUp({ email, password, username, captchaToken: turnstileToken })
     setSubmitting(false)
     if (error) {
       setError(error)
+      setTurnstileToken("")
+      setTurnstileReset((n) => n + 1)
       return
     }
     setDone(true)
@@ -85,7 +88,12 @@ export default function SignupPage() {
           />
         </div>
 
-        <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken("")} onAvailability={setTurnstileAvailable} />
+        <TurnstileWidget
+          onVerify={setTurnstileToken}
+          onExpire={() => setTurnstileToken("")}
+          onAvailability={setTurnstileAvailable}
+          resetKey={turnstileReset}
+        />
 
         {error && <p className="text-sm text-status-danger">{error}</p>}
 

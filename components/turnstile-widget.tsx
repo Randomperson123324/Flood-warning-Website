@@ -8,6 +8,10 @@ interface TurnstileWidgetProps {
   /** Fired once, on mount, telling the caller whether Turnstile is even
    * configured — lets forms skip requiring a token entirely when it's not. */
   onAvailability?: (available: boolean) => void
+  /** Change this value (e.g. increment a counter) to force the widget to
+   * issue a fresh challenge. Needed after a failed submit because Turnstile
+   * tokens are single-use once Supabase has verified them. */
+  resetKey?: number
 }
 
 declare global {
@@ -30,7 +34,7 @@ declare global {
 
 const SCRIPT_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js"
 
-export function TurnstileWidget({ onVerify, onExpire, onAvailability }: TurnstileWidgetProps) {
+export function TurnstileWidget({ onVerify, onExpire, onAvailability, resetKey = 0 }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const widgetIdRef = useRef<string | null>(null)
   const [siteKey, setSiteKey] = useState<string | null>(null)
@@ -86,6 +90,12 @@ export function TurnstileWidget({ onVerify, onExpire, onAvailability }: Turnstil
       }
     }
   }, [siteKey, handleVerify, handleExpire])
+
+  useEffect(() => {
+    if (resetKey > 0 && widgetIdRef.current && window.turnstile) {
+      window.turnstile.reset(widgetIdRef.current)
+    }
+  }, [resetKey])
 
   if (!siteKey) return null
 
