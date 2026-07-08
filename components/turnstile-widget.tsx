@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 interface TurnstileWidgetProps {
   onVerify: (token: string) => void
@@ -39,6 +39,18 @@ export function TurnstileWidget({ onVerify, onExpire, onAvailability, resetKey =
   const widgetIdRef = useRef<string | null>(null)
   const [siteKey, setSiteKey] = useState<string | null>(null)
 
+  // Keep the latest callbacks in refs so the render effect never re-runs
+  // when the parent passes new inline function props (which would tear down
+  // and recreate the widget, causing flicker).
+  const onVerifyRef = useRef(onVerify)
+  const onExpireRef = useRef(onExpire)
+  const onAvailabilityRef = useRef(onAvailability)
+  useEffect(() => {
+    onVerifyRef.current = onVerify
+    onExpireRef.current = onExpire
+    onAvailabilityRef.current = onAvailability
+  })
+
   useEffect(() => {
     let cancelled = false
     fetch("/api/turnstile-sitekey")
@@ -46,19 +58,16 @@ export function TurnstileWidget({ onVerify, onExpire, onAvailability, resetKey =
       .then((data) => {
         if (cancelled) return
         setSiteKey(data.siteKey)
-        onAvailability?.(true)
+        onAvailabilityRef.current?.(true)
       })
       .catch(() => {
-        if (!cancelled) onAvailability?.(false)
+        if (!cancelled) onAvailabilityRef.current?.(false)
       })
     return () => {
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  const handleVerify = useCallback((token: string) => onVerify(token), [onVerify])
-  const handleExpire = useCallback(() => onExpire?.(), [onExpire])
 
   useEffect(() => {
     if (!siteKey || !containerRef.current) return
@@ -67,8 +76,8 @@ export function TurnstileWidget({ onVerify, onExpire, onAvailability, resetKey =
       if (!window.turnstile || !containerRef.current || widgetIdRef.current) return
       widgetIdRef.current = window.turnstile.render(containerRef.current, {
         sitekey: siteKey!,
-        callback: handleVerify,
-        "expired-callback": handleExpire,
+        callback: (token: string) => onVerifyRef.current(token),
+        "expired-callback": () => onExpireRef.current?.(),
       })
     }
 
@@ -89,7 +98,7 @@ export function TurnstileWidget({ onVerify, onExpire, onAvailability, resetKey =
         widgetIdRef.current = null
       }
     }
-  }, [siteKey, handleVerify, handleExpire])
+  }, [siteKey])
 
   useEffect(() => {
     if (resetKey > 0 && widgetIdRef.current && window.turnstile) {
