@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import { Header } from "@/components/header"
 import { AnnouncementBanner } from "@/components/announcement-banner"
-import { TMDWarningBanner } from "@/components/tmd-warning-banner"
 import { LocationBanner } from "@/components/dashboard/location-banner"
 import { SensorSelector } from "@/components/dashboard/sensor-selector"
 import { CurrentStatusCard } from "@/components/dashboard/current-status-card"
@@ -74,7 +73,6 @@ export default function DashboardPage() {
 
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 pt-4 sm:px-6">
         <AnnouncementBanner />
-        <TMDWarningBanner />
         <LocationBanner status={geoStatus} location={location} onRetry={retryGeo} />
 
         {!sensorsLoading && sensors.length === 0 && (
