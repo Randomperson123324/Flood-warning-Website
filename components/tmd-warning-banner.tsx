@@ -17,12 +17,11 @@ export function TMDWarningBanner() {
   if (!warning || !warning.hasWarning || dismissed) return null
 
   const isThai = locale === "th"
-  const title = (isThai ? warning.titleThai : warning.titleEnglish) || warning.badge
+  const badge = t("tmdWarning", "badge")
+  const title = (isThai ? warning.titleThai : warning.titleEnglish) || badge
   const headline = isThai ? warning.headlineThai : warning.headlineEnglish
   const description = isThai ? warning.descriptionThai : warning.descriptionEnglish
   const advisoryUrl = (isThai ? warning.webUrlThai : warning.webUrlEnglish) || TMD_URL
-
-  const badge = t("tmdWarning", "badge")
   const hasBody = Boolean(headline || description)
 
   return (
