@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { LoaderCircle } from "lucide-react"
 import { AuthShell, FieldLabel, glassInputClass } from "@/components/auth/auth-shell"
+import { TurnstileWidget } from "@/components/turnstile-widget"
 import { useAuth } from "@/hooks/use-auth"
 
 export default function LoginPage() {
@@ -15,14 +16,23 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
+  const [turnstileToken, setTurnstileToken] = useState("")
+  const [turnstileAvailable, setTurnstileAvailable] = useState<boolean | null>(null)
+  const [turnstileReset, setTurnstileReset] = useState(0)
+
+  const needsTurnstile = turnstileAvailable === true
+  const canSubmit = !needsTurnstile || turnstileToken
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
     setError(null)
-    const { error } = await signIn({ email, password })
+    const { error } = await signIn({ email, password, captchaToken: turnstileToken })
     setSubmitting(false)
     if (error) {
       setError(error)
+      setTurnstileToken("")
+      setTurnstileReset((n) => n + 1)
       return
     }
     router.push("/")
@@ -54,11 +64,18 @@ export default function LoginPage() {
           />
         </div>
 
+        <TurnstileWidget
+          onVerify={setTurnstileToken}
+          onExpire={() => setTurnstileToken("")}
+          onAvailability={setTurnstileAvailable}
+          resetKey={turnstileReset}
+        />
+
         {error && <p className="text-sm text-status-danger">{error}</p>}
 
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || !canSubmit}
           className="glass-panel-strong flex items-center justify-center gap-2 py-2.5 font-medium text-accent transition-transform duration-300 ease-glass hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60"
         >
           {submitting && <LoaderCircle className="h-4 w-4 animate-spin" />}

@@ -12,8 +12,13 @@ interface AuthContextValue {
   profile: UserProfile | null
   loading: boolean
   isDev: boolean
-  signUp: (params: { email: string; password: string; username: string }) => Promise<{ error: string | null }>
-  signIn: (params: { email: string; password: string }) => Promise<{ error: string | null }>
+  signUp: (params: {
+    email: string
+    password: string
+    username: string
+    captchaToken?: string
+  }) => Promise<{ error: string | null }>
+  signIn: (params: { email: string; password: string; captchaToken?: string }) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
 }
 
@@ -58,7 +63,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => listener.subscription.unsubscribe()
   }, [])
 
-  async function signUp({ email, password, username }: { email: string; password: string; username: string }) {
+  async function signUp({
+    email,
+    password,
+    username,
+    captchaToken,
+  }: {
+    email: string
+    password: string
+    username: string
+    captchaToken?: string
+  }) {
     if (!supabase) return { error: "Supabase is not configured" }
     if (!isEmailDomainAllowed(email)) return { error: "อีเมลนี้ไม่ได้รับอนุญาตให้สมัครสมาชิก" }
 
@@ -68,14 +83,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: {
         data: { username },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
+        captchaToken,
       },
     })
     return { error: error?.message ?? null }
   }
 
-  async function signIn({ email, password }: { email: string; password: string }) {
+  async function signIn({ email, password, captchaToken }: { email: string; password: string; captchaToken?: string }) {
     if (!supabase) return { error: "Supabase is not configured" }
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+      options: { captchaToken },
+    })
     return { error: error?.message ?? null }
   }
 
