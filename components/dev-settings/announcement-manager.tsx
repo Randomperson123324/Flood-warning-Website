@@ -7,9 +7,8 @@ import { useManageAnnouncements } from "@/hooks/use-manage-announcements"
 import { glassInputClass } from "@/components/auth/auth-shell"
 
 const TYPES = [
-  { value: "info", key: "typeInfo" as const },
-  { value: "warning", key: "typeWarning" as const },
-  { value: "danger", key: "typeDanger" as const },
+  { value: "banner", key: "typeBanner" as const },
+  { value: "popup", key: "typePopup" as const },
 ]
 
 export function AnnouncementManager() {
@@ -17,7 +16,7 @@ export function AnnouncementManager() {
   const { announcements, loading, createAnnouncement, toggleActive, deleteAnnouncement } = useManageAnnouncements()
   const [showForm, setShowForm] = useState(false)
   const [message, setMessage] = useState("")
-  const [type, setType] = useState("info")
+  const [type, setType] = useState("banner")
   const [error, setError] = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
