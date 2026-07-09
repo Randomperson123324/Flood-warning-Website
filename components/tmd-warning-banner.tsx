@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronDown, ExternalLink, FileText, TriangleAlert, X } from "lucide-react"
+import { ChevronDown, ExternalLink, FileText, Languages, TriangleAlert, X } from "lucide-react"
 import { useTMDWarning } from "@/hooks/use-tmd-warning"
 import { useLanguage } from "@/hooks/use-language"
 import { cn } from "@/lib/utils"
@@ -14,15 +14,71 @@ export function TMDWarningBanner() {
   const [expanded, setExpanded] = useState(false)
   const [dismissed, setDismissed] = useState(false)
 
+  // AI translation state (only used when English UI has no English source text)
+  const [translated, setTranslated] = useState<{ title?: string; headline?: string; description?: string } | null>(null)
+  const [showTranslated, setShowTranslated] = useState(false)
+  const [translating, setTranslating] = useState(false)
+  const [translateError, setTranslateError] = useState(false)
+
   if (!warning || !warning.hasWarning || dismissed) return null
 
   const isThai = locale === "th"
   const badge = t("tmdWarning", "badge")
-  const title = (isThai ? warning.titleThai : warning.titleEnglish) || badge
-  const headline = isThai ? warning.headlineThai : warning.headlineEnglish
-  const description = isThai ? warning.descriptionThai : warning.descriptionEnglish
-  const advisoryUrl = (isThai ? warning.webUrlThai : warning.webUrlEnglish) || TMD_URL
+
+  // TMD sometimes only publishes the Thai fields. When the UI is English but
+  // there's no English text available, fall back to the Thai source and offer
+  // an on-demand Gemini translation (same provider the chatbot uses).
+  const englishMissing =
+    !isThai && !warning.titleEnglish && !warning.headlineEnglish && !warning.descriptionEnglish
+
+  // Pick which language's raw fields we're displaying.
+  const useThaiSource = isThai || englishMissing
+
+  const srcTitle = (useThaiSource ? warning.titleThai : warning.titleEnglish) || badge
+  const srcHeadline = useThaiSource ? warning.headlineThai : warning.headlineEnglish
+  const srcDescription = useThaiSource ? warning.descriptionThai : warning.descriptionEnglish
+
+  // When showing the AI translation, swap in translated strings (falling back
+  // to the Thai source for any field the model didn't return).
+  const title = showTranslated && translated ? translated.title || srcTitle : srcTitle
+  const headline = showTranslated && translated ? translated.headline || srcHeadline : srcHeadline
+  const description = showTranslated && translated ? translated.description || srcDescription : srcDescription
+
+  const advisoryUrl = (isThai ? warning.webUrlThai : warning.webUrlEnglish) || warning.webUrlThai || TMD_URL
   const hasBody = Boolean(headline || description)
+
+  async function handleTranslate() {
+    // If we already have a translation cached, just toggle back to it.
+    if (translated) {
+      setShowTranslated(true)
+      return
+    }
+    setTranslating(true)
+    setTranslateError(false)
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          target: "English",
+          fields: {
+            title: warning!.titleThai,
+            headline: warning!.headlineThai,
+            description: warning!.descriptionThai,
+          },
+        }),
+      })
+      if (!res.ok) throw new Error("translate failed")
+      const data = (await res.json()) as { translations: Record<string, string> }
+      setTranslated(data.translations)
+      setShowTranslated(true)
+      setExpanded(true)
+    } catch {
+      setTranslateError(true)
+    } finally {
+      setTranslating(false)
+    }
+  }
 
   return (
     <div className="glass-panel animate-fade-in-up overflow-hidden text-status-danger">
@@ -33,11 +89,22 @@ export function TMDWarningBanner() {
           <p className="text-[0.7rem] font-medium uppercase tracking-wide text-status-danger/80">{badge}</p>
           <p className="mt-0.5 text-sm font-semibold leading-relaxed text-pretty text-ink">{title}</p>
 
+          {showTranslated && translated && (
+            <p className="mt-1 inline-flex items-center gap-1 text-[0.7rem] text-ink-soft">
+              <Languages className="h-3 w-3" />
+              {t("tmdWarning", "translatedNote")}
+            </p>
+          )}
+
           {expanded && hasBody && (
             <div className="mt-2 flex flex-col gap-2 text-sm leading-relaxed text-ink-soft">
               {headline && <p className="text-pretty">{headline}</p>}
               {description && <p className="whitespace-pre-line text-pretty">{description}</p>}
             </div>
+          )}
+
+          {translateError && (
+            <p className="mt-2 text-xs text-status-danger">{t("tmdWarning", "translateError")}</p>
           )}
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -50,6 +117,29 @@ export function TMDWarningBanner() {
               >
                 {expanded ? t("tmdWarning", "seeLess") : t("tmdWarning", "seeMore")}
                 <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-300", expanded && "rotate-180")} />
+              </button>
+            )}
+
+            {englishMissing && !showTranslated && (
+              <button
+                type="button"
+                onClick={handleTranslate}
+                disabled={translating}
+                className="glass-panel-strong glass-interactive inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-ink disabled:opacity-60"
+              >
+                {translating ? t("tmdWarning", "translating") : t("tmdWarning", "translate")}
+                <Languages className="h-3.5 w-3.5" />
+              </button>
+            )}
+
+            {englishMissing && showTranslated && (
+              <button
+                type="button"
+                onClick={() => setShowTranslated(false)}
+                className="glass-panel-strong glass-interactive inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-ink"
+              >
+                {t("tmdWarning", "showOriginal")}
+                <Languages className="h-3.5 w-3.5" />
               </button>
             )}
 
