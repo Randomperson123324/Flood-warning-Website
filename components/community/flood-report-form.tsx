@@ -2,10 +2,11 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { LoaderCircle, Send } from "lucide-react"
+import { LoaderCircle, MapPin, Send } from "lucide-react"
 import { useLanguage } from "@/hooks/use-language"
 import { useAuth } from "@/hooks/use-auth"
 import { useFloodReports } from "@/hooks/use-flood-reports"
+import { useAffectedAreas } from "@/hooks/use-affected-areas"
 import { SITE_CONFIG } from "@/lib/config"
 import { TurnstileWidget } from "@/components/turnstile-widget"
 import { glassInputClass } from "@/components/auth/auth-shell"
@@ -29,8 +30,9 @@ export function FloodReportForm() {
   const { t } = useLanguage()
   const { user } = useAuth()
   const { submitReport } = useFloodReports()
+  const { areas, loading: areasLoading } = useAffectedAreas()
 
-  const [areaName, setAreaName] = useState("")
+  const [selectedAreaId, setSelectedAreaId] = useState<string>("")
   const [severity, setSeverity] = useState<ReportSeverity>("moderate")
   const [description, setDescription] = useState("")
   const [submitting, setSubmitting] = useState(false)
@@ -40,7 +42,8 @@ export function FloodReportForm() {
   const [turnstileToken, setTurnstileToken] = useState("")
   const [turnstileAvailable, setTurnstileAvailable] = useState<boolean | null>(null)
   const needsTurnstile = turnstileAvailable === true
-  const canSubmit = areaName.trim() && description.trim() && (!needsTurnstile || turnstileToken)
+  const selectedArea = areas.find((a) => a.id === selectedAreaId)
+  const canSubmit = selectedArea && description.trim() && (!needsTurnstile || turnstileToken)
 
   if (!user) {
     return (
@@ -55,16 +58,17 @@ export function FloodReportForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!selectedArea) return
     setSubmitting(true)
     setError(null)
-    const { error } = await submitReport({ area_name: areaName, severity, description, turnstileToken })
+    const { error } = await submitReport({ area_name: selectedArea.name, severity, description, turnstileToken })
     setSubmitting(false)
     if (error) {
       setError(error)
       return
     }
     setSuccess(true)
-    setAreaName("")
+    setSelectedAreaId("")
     setDescription("")
     setTimeout(() => setSuccess(false), SITE_CONFIG.community.floodReportSuccessDurationMs)
   }
@@ -73,14 +77,39 @@ export function FloodReportForm() {
     <form onSubmit={handleSubmit} className="glass-panel flex flex-col gap-4 p-5">
       <p className="text-sm font-medium text-ink-soft">{t("reports", "title")}</p>
 
-      <div>
-        <input
-          value={areaName}
-          onChange={(e) => setAreaName(e.target.value)}
-          placeholder={t("reports", "area")}
-          className={glassInputClass}
-          maxLength={120}
-        />
+      <div className="flex flex-col gap-2">
+        <p className="text-xs font-medium text-ink-soft">{t("reports", "selectArea")}</p>
+        {areasLoading ? (
+          <p className="text-sm text-ink-soft">{t("common", "loading")}</p>
+        ) : areas.length === 0 ? (
+          <p className="text-sm text-ink-soft">{t("reports", "noAreas")}</p>
+        ) : (
+          <div className="flex max-h-64 flex-col gap-2 overflow-y-auto">
+            {areas.map((area) => {
+              const active = area.id === selectedAreaId
+              return (
+                <button
+                  type="button"
+                  key={area.id}
+                  onClick={() => setSelectedAreaId(area.id)}
+                  aria-pressed={active}
+                  className={`glass-panel-strong flex items-start gap-3 p-3 text-left transition-all ${
+                    active ? "ring-1 ring-accent" : "hover:scale-[1.01]"
+                  }`}
+                >
+                  <MapPin className={`mt-0.5 h-4 w-4 shrink-0 ${active ? "text-accent" : "text-ink-soft"}`} />
+                  <div className="min-w-0 flex-1">
+                    <p className={`truncate text-sm font-medium ${active ? "text-accent" : ""}`}>{area.name}</p>
+                    {area.description && <p className="truncate text-xs text-ink-soft">{area.description}</p>}
+                    <p className="mt-0.5 text-xs text-ink-soft">
+                      {t("reports", "areaThreshold")}: {area.water_level_threshold} cm
+                    </p>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       <div className="flex gap-2">

@@ -102,6 +102,9 @@ export const dictionary = {
     title: { th: "แจ้งเหตุน้ำท่วม", en: "Report flooding" },
     submit: { th: "ส่งรายงาน", en: "Submit report" },
     area: { th: "พื้นที่ที่ได้รับผลกระทบ", en: "Affected area" },
+    selectArea: { th: "เลือกพื้นที่ที่ได้รับผลกระทบ", en: "Select an affected area" },
+    noAreas: { th: "ยังไม่มีพื้นที่ให้เลือก", en: "No areas available yet" },
+    areaThreshold: { th: "ระดับน้ำที่กระทบ", en: "Impact threshold" },
     severity: { th: "ระดับความรุนแรง", en: "Severity" },
     description: { th: "รายละเอียด", en: "Description" },
     severityLow: { th: "น้อย", en: "Low" },
@@ -120,7 +123,7 @@ export const dictionary = {
     no: { th: "ไม่ตก", en: "Not raining" },
     thanks: { th: "ขอบคุณสำหรับการโหวต!", en: "Thanks for voting!" },
     alreadyVoted: { th: "คุณโหวตไปแล้วเมื่อสักครู่", en: "You already voted recently" },
-    resultsRaining: { th: "รายงานว�������าฝนตก", en: "reported raining" },
+    resultsRaining: { th: "รายงานว���������าฝนตก", en: "reported raining" },
   },
   announcements: {
     title: { th: "ประกาศ", en: "Announcements" },
