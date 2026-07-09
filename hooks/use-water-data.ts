@@ -40,19 +40,22 @@ export function useWaterData(sensor: Sensor | null): UseWaterDataResult {
     async function loadHistory() {
       setLoading(true)
       const since = new Date(Date.now() - SITE_CONFIG.fetch.historyDays * 86_400_000).toISOString()
+      // Order newest-first so the row limit keeps the MOST recent readings
+      // (ascending + limit would keep the oldest N and drop new ones, making
+      // `latest` stale). Reverse to ascending afterwards for chart/trend math.
       const { data, error: queryError } = await supabase!
         .from("water_readings")
         .select("*")
         .eq("sensor_id", sensor!.sensor_id)
         .gte("timestamp", since)
-        .order("timestamp", { ascending: true })
+        .order("timestamp", { ascending: false })
         .limit(SITE_CONFIG.fetch.realtimeLimit)
 
       if (cancelled) return
       if (queryError) {
         setError(queryError.message)
       } else {
-        setHistory(data ?? [])
+        setHistory((data ?? []).slice().reverse())
         setError(null)
       }
       setLoading(false)
