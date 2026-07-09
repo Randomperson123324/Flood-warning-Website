@@ -93,7 +93,7 @@ export function FloodReportForm() {
                   key={area.id}
                   onClick={() => setSelectedAreaId(area.id)}
                   aria-pressed={active}
-                  className={`glass-panel-strong flex items-start gap-3 p-3 text-left transition-all ${
+                  className={`glass-panel-strong flex shrink-0 items-start gap-3 p-3 text-left transition-all ${
                     active ? "ring-1 ring-accent" : "hover:scale-[1.01]"
                   }`}
                 >
