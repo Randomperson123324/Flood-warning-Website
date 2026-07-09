@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import { Header } from "@/components/header"
 import { AnnouncementBanner } from "@/components/announcement-banner"
+import { AnnouncementPopup } from "@/components/announcement-popup"
 import { TMDWarningBanner } from "@/components/tmd-warning-banner"
 import { LocationBanner } from "@/components/dashboard/location-banner"
 import { SensorSelector } from "@/components/dashboard/sensor-selector"
@@ -128,6 +129,8 @@ export default function DashboardPage() {
       </div>
 
       {aiContext && <AssistantLauncher context={aiContext} />}
+
+      <AnnouncementPopup />
     </main>
   )
 }
