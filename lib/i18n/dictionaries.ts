@@ -120,7 +120,7 @@ export const dictionary = {
     no: { th: "ไม่ตก", en: "Not raining" },
     thanks: { th: "ขอบคุณสำหรับการโหวต!", en: "Thanks for voting!" },
     alreadyVoted: { th: "คุณโหวตไปแล้วเมื่อสักครู่", en: "You already voted recently" },
-    resultsRaining: { th: "รายงานว�����าฝนตก", en: "reported raining" },
+    resultsRaining: { th: "รายงานว�������าฝนตก", en: "reported raining" },
   },
   announcements: {
     title: { th: "ประกาศ", en: "Announcements" },
@@ -131,6 +131,11 @@ export const dictionary = {
     seeLess: { th: "ย่อ", en: "See less" },
     goToTmd: { th: "ไปที่กรมอุตุฯ", en: "Go to TMD" },
     advisoryDoc: { th: "ดูเอกสารประกาศ", en: "See advisory doc" },
+    translate: { th: "แปลเป็นอังกฤษ", en: "Translate to English" },
+    translating: { th: "กำลังแปล...", en: "Translating..." },
+    showOriginal: { th: "แสดงต้นฉบับ (ไทย)", en: "Show original (Thai)" },
+    translatedNote: { th: "แปลโดย AI", en: "Translated by AI" },
+    translateError: { th: "แปลไม่สำเร็จ ลองใหม่อีกครั้ง", en: "Translation failed, please try again" },
   },
   notifications: {
     title: { th: "การแจ้งเตือน", en: "Notifications" },
