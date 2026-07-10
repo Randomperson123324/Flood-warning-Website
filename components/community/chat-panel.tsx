@@ -23,9 +23,10 @@ export function ChatPanel() {
   const [notice, setNotice] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
+  const isInitialScroll = useRef(true)
 
-  const scrollToBottom = () => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })
+  const scrollToBottom = (smooth = true) => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: smooth ? "smooth" : "auto" })
   }
 
   const handleScroll = () => {
@@ -36,7 +37,10 @@ export function ChatPanel() {
   }
 
   useEffect(() => {
-    scrollToBottom()
+    scrollToBottom(!isInitialScroll.current)
+    if (messages.length > 0) {
+      isInitialScroll.current = false
+    }
   }, [messages.length])
 
   async function handleSend(e: React.FormEvent) {
@@ -72,7 +76,7 @@ export function ChatPanel() {
 
         {showScrollBottom && (
           <button
-            onClick={scrollToBottom}
+            onClick={() => scrollToBottom(true)}
             className="absolute bottom-4 right-4 glass-panel-strong flex h-10 w-10 items-center justify-center rounded-full text-accent transition-transform duration-300 ease-glass hover:scale-105 z-10"
             aria-label="Scroll to bottom"
           >
