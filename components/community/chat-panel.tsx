@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { Send, X } from "lucide-react"
+import { Send, X, ArrowDown } from "lucide-react"
 import { useLanguage } from "@/hooks/use-language"
 import { useAuth } from "@/hooks/use-auth"
 import { useCommunityChat } from "@/hooks/use-community-chat"
@@ -22,9 +22,21 @@ export function ChatPanel() {
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const [showScrollBottom, setShowScrollBottom] = useState(false)
+
+  const scrollToBottom = () => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })
+  }
+
+  const handleScroll = () => {
+    if (!scrollRef.current) return
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current
+    const isNotAtBottom = scrollHeight - scrollTop - clientHeight > 100
+    setShowScrollBottom(isNotAtBottom)
+  }
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })
+    scrollToBottom()
   }, [messages.length])
 
   async function handleSend(e: React.FormEvent) {
@@ -42,18 +54,31 @@ export function ChatPanel() {
 
   return (
     <div className="glass-panel flex h-[clamp(24rem,70vh,42rem)] flex-col overflow-hidden">
-      <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-4">
-        {!loading && messages.length === 0 && <p className="py-8 text-center text-sm text-ink-soft">{t("community", "empty")}</p>}
+      <div className="relative flex-1 overflow-hidden flex flex-col">
+        <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+          <div className="flex-1 min-h-0" />
+          {!loading && messages.length === 0 && <p className="py-8 text-center text-sm text-ink-soft">{t("community", "empty")}</p>}
 
-        {messages.map((message) => (
-          <MessageItem
-            key={message.id}
-            message={message}
-            reactions={byMessage[message.id] ?? []}
-            onReply={setReplyTo}
-            onToggleReaction={toggleReaction}
-          />
-        ))}
+          {messages.map((message) => (
+            <MessageItem
+              key={message.id}
+              message={message}
+              reactions={byMessage[message.id] ?? []}
+              onReply={setReplyTo}
+              onToggleReaction={toggleReaction}
+            />
+          ))}
+        </div>
+
+        {showScrollBottom && (
+          <button
+            onClick={scrollToBottom}
+            className="absolute bottom-4 right-4 glass-panel-strong flex h-10 w-10 items-center justify-center rounded-full text-accent transition-transform duration-300 ease-glass hover:scale-105 z-10"
+            aria-label="Scroll to bottom"
+          >
+            <ArrowDown className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
       <div className="border-t border-border/10 p-3">
