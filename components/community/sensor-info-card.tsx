@@ -9,6 +9,9 @@ import type { Sensor, WaterTrend } from "@/types"
 
 interface SensorInfoCardProps {
   sensor: Sensor
+  username?: string
+  time?: string
+  isMine?: boolean
   onDismiss?: () => void
 }
 
@@ -27,7 +30,7 @@ const SEVERITY_TEXT_CLASS = {
 /** Read-only sensor snapshot summoned by the community chat's `/sensor`
  * command — renders inline in the message feed (like the `/AI` exchange
  * bubbles), not as a popup, so it reads as part of the conversation. */
-export function SensorInfoCard({ sensor, onDismiss }: SensorInfoCardProps) {
+export function SensorInfoCard({ sensor, username, time, isMine, onDismiss }: SensorInfoCardProps) {
   const { t, locale } = useLanguage()
   const water = useWaterData(sensor)
 
@@ -35,10 +38,17 @@ export function SensorInfoCard({ sensor, onDismiss }: SensorInfoCardProps) {
   const levelCm = water.latest?.level ?? null
 
   return (
-    <div className="flex animate-fade-in-up flex-col items-start gap-1">
-      <div className="flex items-center gap-1.5 px-1 text-xs text-ink-soft">
-        <Gauge className="h-3.5 w-3.5 text-accent" />
+    <div className={cn("flex animate-fade-in-up flex-col gap-1", isMine ? "items-end" : "items-start")}>
+      <div className="flex items-baseline gap-1.5 px-1 text-xs text-ink-soft">
+        <Gauge className="h-3.5 w-3.5 shrink-0 self-center text-accent" />
         <span className="font-medium text-accent">/sensor</span>
+        {username && (
+          <>
+            <span aria-hidden>·</span>
+            <span className="font-medium text-ink">{username}</span>
+          </>
+        )}
+        {time && <span>{time}</span>}
       </div>
 
       <div className="glass-panel-strong relative flex w-full max-w-sm flex-col gap-4 p-4">

@@ -72,7 +72,7 @@ function parseSlash(draft: string): SlashState {
 type MenuItem = { kind: "command"; command: SlashCommand } | { kind: "sensor"; sensor: Sensor }
 
 export function ChatPanel() {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const { user } = useAuth()
   const { messages, loading, sendMessage, sendAIExchange, sendSensorCard } = useCommunityChat()
   const messageIds = useMemo(() => messages.map((m) => m.id), [messages])
@@ -164,7 +164,19 @@ export function ChatPanel() {
         if (!sensor) continue // sensor since removed/deactivated — skip rendering
         items.push({
           id: message.id,
-          node: <SensorInfoCard sensor={sensor} onDismiss={() => setHiddenIds((prev) => new Set(prev).add(message.id))} />,
+          node: (
+            <SensorInfoCard
+              sensor={sensor}
+              username={message.users?.username}
+              time={
+                message.created_at
+                  ? new Date(message.created_at).toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", { hour: "2-digit", minute: "2-digit" })
+                  : undefined
+              }
+              isMine={message.user_id === user?.id}
+              onDismiss={() => setHiddenIds((prev) => new Set(prev).add(message.id))}
+            />
+          ),
         })
         continue
       }
@@ -187,7 +199,7 @@ export function ChatPanel() {
     }
 
     return items
-  }, [messages, byMessage, sensors, hiddenIds, liveAIExchange])
+  }, [messages, byMessage, sensors, hiddenIds, liveAIExchange, locale, user])
 
   const slash = useMemo(() => parseSlash(draft), [draft])
 
