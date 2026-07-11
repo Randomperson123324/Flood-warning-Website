@@ -1,0 +1,192 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Color tokens ──────────────────────────────────────────────────────────
+   RGB triplets (no # / no alpha) so Tailwind's <alpha-value> trick works.
+   Light = soft sky + white glass. Dark = deep ocean + frosted navy glass.
+   Palette is named, not incidental:
+     Deep Ocean   #0B1F33 (dark base)
+     Sky Mist     #EAF6FB (light base)
+     Aqua Cyan    #22D3EE (accent)
+     Seafoam      #67E8CA (accent-soft / normal status)
+     Amber Watch  #FBBF24 (warning status)
+     Coral Alarm  #F0453A (danger status)
+--------------------------------------------------------------------------- */
+:root {
+  --base-rgb: 234 246 251;
+  --surface-rgb: 255 255 255;
+  --surface-strong-rgb: 255 255 255;
+  --border-rgb: 15 55 75;
+  --ink-rgb: 9 30 44;
+  --ink-soft-rgb: 51 82 97;
+  --accent-rgb: 8 145 178;
+  --accent-soft-rgb: 34 211 238;
+  --status-normal-rgb: 13 148 110;
+  --status-warning-rgb: 217 119 6;
+  --status-danger-rgb: 220 38 38;
+  --shadow-rgb: 15 40 60;
+
+  --glass-surface-alpha: 0.55;
+  --glass-surface-strong-alpha: 0.75;
+  --glass-border-alpha: 0.08;
+}
+
+.dark {
+  --base-rgb: 7 17 28;
+  --surface-rgb: 20 38 54;
+  --surface-strong-rgb: 26 48 68;
+  --border-rgb: 255 255 255;
+  --ink-rgb: 232 244 250;
+  --ink-soft-rgb: 158 190 205;
+  --accent-rgb: 34 211 238;
+  --accent-soft-rgb: 103 232 202;
+  --status-normal-rgb: 52 211 153;
+  --status-warning-rgb: 251 191 36;
+  --status-danger-rgb: 248 113 113;
+  --shadow-rgb: 0 0 0;
+
+  --glass-surface-alpha: 0.4;
+  --glass-surface-strong-alpha: 0.6;
+  --glass-border-alpha: 0.14;
+}
+
+* {
+  border-color: rgb(var(--border-rgb) / var(--glass-border-alpha));
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  background-color: rgb(var(--base-rgb));
+  color: rgb(var(--ink-rgb));
+  font-family: var(--font-body), "Noto Sans Thai Looped", sans-serif;
+  background-image: radial-gradient(
+      60rem 60rem at 90% -10%,
+      rgb(var(--accent-rgb) / 0.14),
+      transparent 60%
+    ),
+    radial-gradient(50rem 50rem at -10% 110%, rgb(var(--status-normal-rgb) / 0.12), transparent 55%);
+  background-attachment: fixed;
+  min-height: 100dvh;
+  /* Cross-fade instead of snapping when .dark toggles — a glass surface
+     shouldn't switch light like a hard cut. */
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Liquid glass primitives ─────────────────────────────────────────────── */
+@layer components {
+  .glass-panel {
+    @apply relative overflow-hidden rounded-glass border shadow-glass backdrop-blur-glass;
+    background-color: rgb(var(--surface-rgb) / var(--glass-surface-alpha));
+    border-color: rgb(var(--border-rgb) / var(--glass-border-alpha));
+    transition: background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.3s ease;
+  }
+
+  .glass-panel-strong {
+    @apply relative overflow-hidden rounded-glass-sm border shadow-glass-sm backdrop-blur-glass;
+    background-color: rgb(var(--surface-strong-rgb) / var(--glass-surface-strong-alpha));
+    border-color: rgb(var(--border-rgb) / var(--glass-border-alpha));
+    transition: background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.3s ease;
+  }
+
+  /* Shared hover/press feedback for any clickable glass surface — nav links,
+     toggles, selectors, retry buttons. Centralized here instead of repeating
+     "hover:scale-[1.03] active:scale-[0.97] transition-all duration-300" per
+     component, so every interactive control stays consistent by construction. */
+  .glass-interactive {
+    @apply cursor-pointer transition-all duration-300 ease-glass hover:scale-[1.03] hover:shadow-glass active:scale-[0.97];
+  }
+  .glass-interactive:focus-visible {
+    @apply outline-none ring-2 ring-accent/60;
+  }
+
+  /* Thin light streak across the top edge of a glass panel — the "specular
+     highlight" that sells the glass material. Purely decorative, so it's a
+     pseudo-element, not markup. */
+  .glass-panel::before,
+  .glass-panel-strong::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.6), transparent);
+  }
+
+  .glass-shimmer {
+    background-image: linear-gradient(
+      100deg,
+      transparent 30%,
+      rgb(255 255 255 / 0.25) 45%,
+      rgb(255 255 255 / 0.25) 55%,
+      transparent 70%
+    );
+    background-size: 200% 100%;
+  }
+
+  .text-status-normal {
+    color: rgb(var(--status-normal-rgb));
+  }
+  .text-status-warning {
+    color: rgb(var(--status-warning-rgb));
+  }
+  .text-status-danger {
+    color: rgb(var(--status-danger-rgb));
+  }
+  .bg-status-normal {
+    background-color: rgb(var(--status-normal-rgb));
+  }
+  .bg-status-warning {
+    background-color: rgb(var(--status-warning-rgb));
+  }
+  .bg-status-danger {
+    background-color: rgb(var(--status-danger-rgb));
+  }
+}
+
+/* Leaflet needs its own stacking context sorted out inside a glass panel */
+.leaflet-container {
+  background: transparent !important;
+  border-radius: inherit;
+  font-family: inherit;
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background-color: rgb(var(--surface-strong-rgb) / 0.95);
+  color: rgb(var(--ink-rgb));
+  backdrop-filter: blur(12px);
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 0.875rem;
+  box-shadow: 0 8px 24px rgb(var(--shadow-rgb) / 0.28);
+}
+
+.leaflet-control-zoom a {
+  background-color: rgb(var(--surface-strong-rgb) / 0.9) !important;
+  color: rgb(var(--ink-rgb)) !important;
+  border-color: rgb(var(--border-rgb) / var(--glass-border-alpha)) !important;
+}
+
+.leaflet-control-attribution {
+  background-color: rgb(var(--surface-rgb) / 0.6) !important;
+  color: rgb(var(--ink-soft-rgb)) !important;
+}
+
+.leaflet-control-attribution a {
+  color: rgb(var(--accent-rgb)) !important;
+}

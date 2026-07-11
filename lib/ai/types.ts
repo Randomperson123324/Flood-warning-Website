@@ -1,0 +1,83 @@
+import type { AIContext, AIMessage } from "@/types"
+import { TOOL_REGISTRY, getAllSources } from "@/lib/ai/tools/tool-registry"
+
+// เหตุการณ์ที่ stream ออกมาระหว่างการสนทนา — ตั้งชื่อ type ตามแนวทาง
+// event ของ LM Studio SSE (chat.start / message.delta / tool_call.start / chat.end)
+// เพื่อให้ provider ทั้งสองฝั่ง (Gemini, LM Studio) ส่งผลลัพธ์ในรูปแบบเดียวกัน
+export type AIStreamEvent =
+  | { type: "content"; text: string }
+  | { type: "tool_call"; name: string }
+
+export interface AIProvider {
+  chatStream(params: {
+    systemInstruction: string
+    messages: AIMessage[]
+    tools?: ToolDefinition[]
+    onToolCall: (name: string, args: Record<string, unknown>) => Promise<unknown>
+  }): AsyncGenerator<AIStreamEvent>
+}
+
+export interface ToolDefinition {
+  name: string
+  description: string
+  parameters: Record<string, unknown>
+}
+
+export function buildSystemPrompt(context: AIContext, timestamp: string): string {
+  const trendText =
+    context.trend === "rising"
+      ? "กำลังสูงขึ้น"
+      : context.trend === "falling"
+        ? "กำลังลดลง"
+        : "คงที่"
+
+  const toolList = TOOL_REGISTRY.map((t) => `- ${t.name}: ${t.description}`).join("\n")
+  const sourceList = getAllSources()
+    .map((s) => `- ${s}`)
+    .join("\n")
+
+  return `
+คุณคือ AI ผู้ช่วยวิเคราะห์สถานการณ์น้ำท่วม ประจำ ${context.sensorLabel}
+ตอบเป็นภาษาไทย กระชับ ชัดเจน ห้ามแต่งข้อมูล
+
+เวลาปัจจุบัน (server): ${timestamp}
+
+ข้อมูล context เบื้องต้น (อาจไม่ใช่ real-time):
+- ระดับน้ำ: ${context.currentLevel} cm
+- เกณฑ์เตือนภัย: ${context.warningLevel} cm | เกณฑ์อันตราย: ${context.dangerLevel} cm
+- แนวโน้ม: ${trendText} (${context.ratePerHour > 0 ? "+" : ""}${context.ratePerHour.toFixed(2)} cm/ชม.)
+${context.weather ? `- สภาพอากาศ: ${context.weather.current.descriptionTh}, ${context.weather.current.temp ?? "?"}°C, ความชื้น ${context.weather.current.humidity ?? "?"}%` : ""}
+${context.weather?.current.rain?.["1h"] ? `- ฝนตก 1 ชม.ที่ผ่านมา: ${context.weather.current.rain["1h"]} mm` : ""}
+- รายงานน้ำท่วมที่ใช้งานอยู่: ${context.activeFloodReports} รายงาน
+
+เครื่องมือที่ใช้ได้:
+${toolList}
+
+แหล่งข้อมูล:
+${sourceList}
+
+ขั้นตอนการวิเคราะห์สถานการณ์ (ทำตามลำดับทุกครั้ง):
+
+ขั้น 1 — ตรวจสอบ sensor:
+- เรียก get_latest_reading เพื่อดู timestamp จริงของข้อมูลล่าสุด
+- คำนวณว่าข้อมูลเก่าแค่ไหน เทียบกับเวลา server
+- ถ้าเก่าเกิน 30 นาที → แจ้ง ⚠️ "sensor ขาดการอัปเดตมา X นาที"
+- ถ้าเก่าเกิน 24 ชั่วโมง → แจ้ง ⛔ "sensor อาจมีปัญหา กรุณาตรวจสอบอุปกรณ์"
+
+ขั้น 2 — ดึงข้อมูลเพื่อ cross-check (ทำพร้อมกันหรือต่อเนื่อง):
+- เรียก get_weather เพื่อดูว่าฝนตกหรือไม่ — ถ้า sensor บอกน้ำสูงแต่ไม่มีฝนเลย อาจผิดปกติ
+- เรียก get_flood_reports เพื่อดูว่าชุมชนรายงานสอดคล้องกับ sensor หรือไม่
+- เรียก get_water_history หากต้องการดูแนวโน้มย้อนหลังประกอบการวิเคราะห์
+
+ขั้น 3 — cross-check และสรุป:
+- เปรียบเทียบข้อมูลจากทุกแหล่ง
+- ถ้าข้อมูลขัดแย้งกัน เช่น sensor บอกน้ำสูงแต่ไม่มีฝนและไม่มีรายงานชุมชน → ระบุความขัดแย้งนั้นชัดเจน
+- ถ้าข้อมูลสอดคล้องกัน → วิเคราะห์และประเมินความเสี่ยงได้เลย
+- ระบุเวลาและแหล่งที่มาของข้อมูลแต่ละจุดในคำตอบ เช่น "(sensor วัดเมื่อ 21:00 น.)"
+- สำคัญ: ผลลัพธ์จาก get_weather จะมี field "source" ระบุว่าข้อมูลมาจากไหนจริง (เช่น "Thai Meteorological Department (TMD)" หรือ "Open-Meteo") — ต้องอ้างอิงตาม field นี้เท่านั้น ห้ามเดาหรือสมมติว่าเป็น TMD ถ้า source ที่ได้จริงคือ Open-Meteo (TMD จะถูกใช้ก็ต่อเมื่อมี token ที่ใช้งานได้จริง ไม่เช่นนั้นระบบจะ fallback ไป Open-Meteo โดยอัตโนมัติ)
+
+กฎทั่วไป:
+- ห้ามสรุปสถานการณ์โดยอิงแค่แหล่งเดียว
+- คำถามทั่วไป (แปลภาษา เขียนบทความ) ไม่ต้องเรียก tool
+`.trim()
+}
