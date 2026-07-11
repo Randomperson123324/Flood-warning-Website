@@ -36,21 +36,23 @@ export function Header() {
               <MessageCircle className="h-4 w-4 text-accent" />
               {t("nav", "community")}
             </Link>
-            <Link
-              href="/notifications"
-              className="glass-panel-strong glass-interactive relative flex items-center gap-1.5 px-3 py-2 text-sm font-medium"
-            >
-              <Bell className="h-4 w-4 text-accent" />
-              {t("nav", "notifications")}
+            <div className="relative">
+              <Link
+                href="/notifications"
+                className="glass-panel-strong glass-interactive flex items-center gap-1.5 px-3 py-2 text-sm font-medium"
+              >
+                <Bell className="h-4 w-4 text-accent" />
+                {t("nav", "notifications")}
+              </Link>
               {atRiskCount > 0 && (
                 <span className="pointer-events-none absolute -right-1 -top-1 h-4 w-4 rounded-full bg-status-danger animate-pulse-ring" />
               )}
               {atRiskCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-status-danger text-[10px] font-semibold text-white">
+                <span className="pointer-events-none absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-status-danger text-[10px] font-semibold text-white">
                   {atRiskCount}
                 </span>
               )}
-            </Link>
+            </div>
             {isDev && (
               <Link
                 href="/dev-settings"
@@ -89,18 +91,20 @@ export function Header() {
             {/* Everything above (community/notifications/dev-settings/user) collapses
                 into this single button below md — hiding it with no replacement was
                 the old behavior and made those pages unreachable on mobile. */}
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen((v) => !v)}
-              className="glass-panel-strong glass-interactive relative flex h-10 w-10 items-center justify-center md:hidden"
-              aria-label={t("nav", "menu")}
-              aria-expanded={mobileMenuOpen}
-            >
-              {mobileMenuOpen ? <X className="h-4 w-4 text-accent" /> : <Menu className="h-4 w-4 text-accent" />}
+            <div className="relative md:hidden">
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen((v) => !v)}
+                className="glass-panel-strong glass-interactive flex h-10 w-10 items-center justify-center"
+                aria-label={t("nav", "menu")}
+                aria-expanded={mobileMenuOpen}
+              >
+                {mobileMenuOpen ? <X className="h-4 w-4 text-accent" /> : <Menu className="h-4 w-4 text-accent" />}
+              </button>
               {!mobileMenuOpen && atRiskCount > 0 && (
                 <span className="pointer-events-none absolute -right-1 -top-1 h-3 w-3 rounded-full bg-status-danger animate-pulse-ring" />
               )}
-            </button>
+            </div>
           </div>
         </div>
 
