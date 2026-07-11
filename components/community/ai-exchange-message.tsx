@@ -3,6 +3,8 @@
 import { Bot, LoaderCircle, Terminal } from "lucide-react"
 import { useLanguage } from "@/hooks/use-language"
 import { MarkdownMessage } from "@/components/ai-assistant/markdown-message"
+import { ReactionBar } from "@/components/community/reaction-bar"
+import type { ReactionSummary } from "@/hooks/use-message-reactions"
 
 export interface AIExchange {
   id: string
@@ -14,13 +16,19 @@ export interface AIExchange {
 
 interface AIExchangeMessageProps {
   exchange: AIExchange
+  /** Reactions on the persisted exchange (keyed by the same `messages.id`
+   * used for reply text and sensor cards). Omitted while the answer is
+   * still streaming — there's no persisted row to react to yet. */
+  reactions?: ReactionSummary[]
+  onToggleReaction?: (reactionType: string) => void
 }
 
 /** Renders one `/AI` question + streamed answer as a pair of chat bubbles,
  * reusing the same AI plumbing (useAIChat, MarkdownMessage) and glass style
  * as the floating assistant panel — just inline in the community feed. */
-export function AIExchangeMessage({ exchange }: AIExchangeMessageProps) {
+export function AIExchangeMessage({ exchange, reactions, onToggleReaction }: AIExchangeMessageProps) {
   const { t } = useLanguage()
+  const canReact = !exchange.isLoading && !!onToggleReaction
 
   return (
     <div className="flex animate-fade-in-up flex-col gap-3">
@@ -34,7 +42,7 @@ export function AIExchangeMessage({ exchange }: AIExchangeMessageProps) {
         </div>
       </div>
 
-      <div className="flex flex-col items-start gap-1">
+      <div className="group flex flex-col items-start gap-1">
         <div className="flex items-center gap-1.5 px-1 text-xs text-ink-soft">
           <Bot className="h-3.5 w-3.5 text-accent" />
           <span className="font-medium text-accent">{t("ai", "title")}</span>
@@ -56,6 +64,8 @@ export function AIExchangeMessage({ exchange }: AIExchangeMessageProps) {
             </>
           )}
         </div>
+
+        {canReact && <ReactionBar reactions={reactions ?? []} onToggleReaction={onToggleReaction!} align="start" />}
       </div>
     </div>
   )

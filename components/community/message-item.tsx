@@ -4,10 +4,9 @@ import { Reply } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { useLanguage } from "@/hooks/use-language"
 import { cn } from "@/lib/utils"
+import { ReactionBar } from "@/components/community/reaction-bar"
 import type { ChatMessage } from "@/types"
 import type { ReactionSummary } from "@/hooks/use-message-reactions"
-
-const QUICK_REACTIONS = ["👍", "❤️", "😂", "😮"]
 
 interface MessageItemProps {
   message: ChatMessage
@@ -43,40 +42,16 @@ export function MessageItem({ message, reactions, onReply, onToggleReaction }: M
           <p className="whitespace-pre-wrap break-words">{message.content}</p>
         </div>
 
-        <div className="flex items-center gap-1 px-1 opacity-0 transition-opacity group-hover:opacity-100">
-          <button type="button" onClick={() => onReply(message)} className="text-ink-soft hover:text-accent" aria-label="reply">
-            <Reply className="h-3.5 w-3.5" />
-          </button>
-          {QUICK_REACTIONS.map((emoji) => (
-            <button
-              key={emoji}
-              type="button"
-              onClick={() => onToggleReaction(message.id, emoji)}
-              className="text-xs hover:scale-125 transition-transform"
-            >
-              {emoji}
+        <ReactionBar
+          reactions={reactions}
+          onToggleReaction={(type) => onToggleReaction(message.id, type)}
+          align={isMine ? "end" : "start"}
+          leading={
+            <button type="button" onClick={() => onReply(message)} className="text-ink-soft hover:text-accent" aria-label="reply">
+              <Reply className="h-3.5 w-3.5" />
             </button>
-          ))}
-        </div>
-
-        {reactions.length > 0 && (
-          <div className="flex flex-wrap gap-1 px-1">
-            {reactions.map((r) => (
-              <button
-                key={r.reaction_type}
-                type="button"
-                onClick={() => onToggleReaction(message.id, r.reaction_type)}
-                className={cn(
-                  "glass-panel-strong flex items-center gap-1 rounded-full px-2 py-0.5 text-xs",
-                  r.reactedByMe && "ring-1 ring-accent",
-                )}
-              >
-                <span>{r.reaction_type}</span>
-                <span className="text-ink-soft">{r.count}</span>
-              </button>
-            ))}
-          </div>
-        )}
+          }
+        />
       </div>
     </div>
   )

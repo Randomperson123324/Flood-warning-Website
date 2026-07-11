@@ -155,7 +155,16 @@ export function ChatPanel() {
           answer: message.ai_answer ?? "",
           isLoading: false,
         }
-        items.push({ id: message.id, node: <AIExchangeMessage exchange={exchange} /> })
+        items.push({
+          id: message.id,
+          node: (
+            <AIExchangeMessage
+              exchange={exchange}
+              reactions={byMessage[message.id] ?? []}
+              onToggleReaction={(type) => toggleReaction(message.id, type)}
+            />
+          ),
+        })
         continue
       }
 
@@ -175,6 +184,8 @@ export function ChatPanel() {
               }
               isMine={message.user_id === user?.id}
               onDismiss={() => setHiddenIds((prev) => new Set(prev).add(message.id))}
+              reactions={byMessage[message.id] ?? []}
+              onToggleReaction={(type) => toggleReaction(message.id, type)}
             />
           ),
         })

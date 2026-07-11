@@ -4,8 +4,10 @@ import { ArrowDown, ArrowRight, ArrowUp, Clock, Gauge, X } from "lucide-react"
 import { useLanguage } from "@/hooks/use-language"
 import { useWaterData } from "@/hooks/use-water-data"
 import { LiquidGauge } from "@/components/dashboard/liquid-gauge"
+import { ReactionBar } from "@/components/community/reaction-bar"
 import { cn } from "@/lib/utils"
 import type { Sensor, WaterTrend } from "@/types"
+import type { ReactionSummary } from "@/hooks/use-message-reactions"
 
 interface SensorInfoCardProps {
   sensor: Sensor
@@ -13,6 +15,10 @@ interface SensorInfoCardProps {
   time?: string
   isMine?: boolean
   onDismiss?: () => void
+  /** Reactions on the persisted `/sensor` card, keyed by the same
+   * `messages.id` used for text messages and `/AI` exchanges. */
+  reactions?: ReactionSummary[]
+  onToggleReaction?: (reactionType: string) => void
 }
 
 const TREND_ICON: Record<WaterTrend, typeof ArrowUp> = {
@@ -30,7 +36,7 @@ const SEVERITY_TEXT_CLASS = {
 /** Read-only sensor snapshot summoned by the community chat's `/sensor`
  * command — renders inline in the message feed (like the `/AI` exchange
  * bubbles), not as a popup, so it reads as part of the conversation. */
-export function SensorInfoCard({ sensor, username, time, isMine, onDismiss }: SensorInfoCardProps) {
+export function SensorInfoCard({ sensor, username, time, isMine, onDismiss, reactions, onToggleReaction }: SensorInfoCardProps) {
   const { t, locale } = useLanguage()
   const water = useWaterData(sensor)
 
@@ -38,7 +44,7 @@ export function SensorInfoCard({ sensor, username, time, isMine, onDismiss }: Se
   const levelCm = water.latest?.level ?? null
 
   return (
-    <div className={cn("flex animate-fade-in-up flex-col gap-1", isMine ? "items-end" : "items-start")}>
+    <div className={cn("group flex animate-fade-in-up flex-col gap-1", isMine ? "items-end" : "items-start")}>
       <div className="flex items-baseline gap-1.5 px-1 text-xs text-ink-soft">
         <Gauge className="h-3.5 w-3.5 shrink-0 self-center text-accent" />
         <span className="font-medium text-accent">/sensor</span>
@@ -121,6 +127,10 @@ export function SensorInfoCard({ sensor, username, time, isMine, onDismiss }: Se
           </div>
         )}
       </div>
+
+      {onToggleReaction && (
+        <ReactionBar reactions={reactions ?? []} onToggleReaction={onToggleReaction} align={isMine ? "end" : "start"} />
+      )}
     </div>
   )
 }
