@@ -32,11 +32,11 @@ export function AnnouncementPopup() {
         className="absolute inset-0 bg-ink/40 backdrop-blur-sm"
       />
 
-      <div className="glass-panel-strong relative flex w-full max-w-md animate-fade-in-up flex-col gap-4 p-6">
+      <div className="glass-panel-strong relative flex w-full max-w-md animate-fade-in-up flex-col gap-4 bg-surface-strong/95 p-6">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-2 text-accent">
-            <Megaphone className="h-5 w-5 shrink-0" />
-            <h2 id="announcement-popup-title" className="text-base font-semibold">
+          <div className="flex items-center gap-2">
+            <Megaphone className="h-5 w-5 shrink-0 text-accent" />
+            <h2 id="announcement-popup-title" className="text-base font-semibold text-ink">
               {t("devSettings", "popupTitle")}
             </h2>
           </div>
