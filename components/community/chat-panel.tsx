@@ -73,7 +73,7 @@ type MenuItem = { kind: "command"; command: SlashCommand } | { kind: "sensor"; s
 
 export function ChatPanel() {
   const { t, locale } = useLanguage()
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const { messages, loading, sendMessage, sendAIExchange, sendSensorCard } = useCommunityChat()
   const messageIds = useMemo(() => messages.map((m) => m.id), [messages])
   const { byMessage, toggleReaction } = useMessageReactions(messageIds)
@@ -160,6 +160,13 @@ export function ChatPanel() {
           node: (
             <AIExchangeMessage
               exchange={exchange}
+              username={message.users?.username}
+              time={
+                message.created_at
+                  ? new Date(message.created_at).toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", { hour: "2-digit", minute: "2-digit" })
+                  : undefined
+              }
+              isMine={message.user_id === user?.id}
               reactions={byMessage[message.id] ?? []}
               onToggleReaction={(type) => toggleReaction(message.id, type)}
             />
@@ -206,11 +213,14 @@ export function ChatPanel() {
     }
 
     if (liveAIExchange) {
-      items.push({ id: "ai-live", node: <AIExchangeMessage exchange={liveAIExchange} /> })
+      items.push({
+        id: "ai-live",
+        node: <AIExchangeMessage exchange={liveAIExchange} username={profile?.username} isMine />,
+      })
     }
 
     return items
-  }, [messages, byMessage, sensors, hiddenIds, liveAIExchange, locale, user])
+  }, [messages, byMessage, sensors, hiddenIds, liveAIExchange, locale, user, profile])
 
   const slash = useMemo(() => parseSlash(draft), [draft])
 
