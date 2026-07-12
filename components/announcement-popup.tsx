@@ -29,7 +29,7 @@ export function AnnouncementPopup() {
         type="button"
         aria-label={t("devSettings", "popupClose")}
         onClick={dismiss}
-        className="absolute inset-0 bg-ink/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-ink/70 backdrop-blur-md"
       />
 
       <div className="glass-panel-strong relative flex w-full max-w-md animate-fade-in-up flex-col gap-4 bg-surface-strong/95 p-6">

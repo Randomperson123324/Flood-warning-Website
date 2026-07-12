@@ -132,7 +132,6 @@ export const dictionary = {
     no: { th: "ไม่ตก", en: "Not raining" },
     thanks: { th: "ขอบคุณสำหรับการโหวต!", en: "Thanks for voting!" },
     alreadyVoted: { th: "คุณโหวตไปแล้วเมื่อสักครู่", en: "You already voted recently" },
-    resultsRaining: { th: "รายงานว���������าฝนตก", en: "reported raining" },
   },
   announcements: {
     title: { th: "ประกาศ", en: "Announcements" },

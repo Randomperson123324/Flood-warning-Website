@@ -47,15 +47,22 @@ export function WeatherVoteWidget({ location }: { location: string }) {
 
       {tally && tally.totalValidVotes > 0 && (
         <div className="mt-4">
-          <div className={cn("h-2 overflow-hidden rounded-full bg-surface-strong")}>
+          <div className={cn("h-2 overflow-hidden rounded-full bg-status-warning/30")}>
             <div
               className="h-full rounded-full bg-accent transition-all duration-700 ease-glass"
               style={{ width: `${tally.rainPercentage}%` }}
             />
           </div>
-          <p className="mt-1.5 text-xs text-ink-soft">
-            {tally.rainPercentage}% ({tally.totalValidVotes}) {t("weatherVote", "resultsRaining")}
-          </p>
+          <div className="mt-1.5 flex items-center justify-between text-xs text-ink-soft">
+            <span className="flex items-center gap-1">
+              <CloudRain className="h-3 w-3 text-accent" />
+              {t("weatherVote", "yes")} {tally.rainPercentage}% ({tally.rainVotes})
+            </span>
+            <span className="flex items-center gap-1">
+              <Sun className="h-3 w-3 text-status-warning" />
+              {t("weatherVote", "no")} {100 - tally.rainPercentage}% ({tally.totalValidVotes - tally.rainVotes})
+            </span>
+          </div>
         </div>
       )}
     </div>
