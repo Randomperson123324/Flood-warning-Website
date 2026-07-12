@@ -12,9 +12,10 @@ interface ThemeToggleProps {
   align?: "left" | "right"
   direction?: "down" | "up"
   fullWidth?: boolean
+  hideLabel?: boolean
 }
 
-export function ThemeToggle({ align, direction, fullWidth }: ThemeToggleProps = {}) {
+export function ThemeToggle({ align, direction, fullWidth, hideLabel }: ThemeToggleProps = {}) {
   const { theme, setTheme } = useTheme()
   const { t } = useLanguage()
   const [mounted, setMounted] = useState(false)
@@ -29,6 +30,7 @@ export function ThemeToggle({ align, direction, fullWidth }: ThemeToggleProps = 
       value={current}
       onChange={setTheme}
       hideLabelOnMobile
+      hideLabel={hideLabel}
       align={align}
       direction={direction}
       fullWidth={fullWidth}

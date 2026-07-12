@@ -20,6 +20,8 @@ interface GlassDropdownProps<T extends string> {
   triggerLabel?: string
   /** Hides the trigger label below the `sm` breakpoint, showing icon-only. */
   hideLabelOnMobile?: boolean
+  /** Icon-only trigger at every breakpoint — for tight spots like the sidebar footer. */
+  hideLabel?: boolean
   align?: "left" | "right"
   /** "up" opens the menu above the trigger — for triggers near the bottom of the viewport (e.g. the sidebar footer). */
   direction?: "down" | "up"
@@ -51,6 +53,7 @@ export function GlassDropdown<T extends string>({
   triggerIcon,
   triggerLabel,
   hideLabelOnMobile,
+  hideLabel,
   align = "right",
   direction = "down",
   fullWidth,
@@ -112,6 +115,7 @@ export function GlassDropdown<T extends string>({
         className={cn(
           "glass-panel-strong glass-interactive flex items-center gap-2 px-3 py-2 text-sm font-medium text-ink",
           fullWidth && "w-full",
+          hideLabel && fullWidth && "justify-center",
           className,
         )}
         aria-haspopup="listbox"
@@ -119,9 +123,11 @@ export function GlassDropdown<T extends string>({
         aria-label={ariaLabel}
       >
         {triggerIcon}
-        <span className={cn(hideLabelOnMobile && "hidden sm:inline", "truncate", fullWidth && "flex-1 text-left")}>
-          {triggerLabel ?? selected?.label}
-        </span>
+        {!hideLabel && (
+          <span className={cn(hideLabelOnMobile && "hidden sm:inline", "truncate", fullWidth && "flex-1 text-left")}>
+            {triggerLabel ?? selected?.label}
+          </span>
+        )}
         <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 text-ink-soft transition-transform duration-200", open && "rotate-180")} />
       </button>
 

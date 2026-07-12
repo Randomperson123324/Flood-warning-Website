@@ -26,10 +26,10 @@ export const dictionary = {
     menu: { th: "เมนู", en: "Menu" },
     devSettings: { th: "ตั้งค่านักพัฒนา", en: "Dev Settings" },
     archives: { th: "ข้อมูลย้อนหลัง", en: "Archives" },
-    govData: { th: "ศูนย์ข้อมูลรัฐฯ", en: "Gov Data" },
+    govData: { th: "ข้อมูลจากรัฐฯ", en: "Data from gov" },
   },
   gov: {
-    title: { th: "ศูนย์ข้อมูลจากรัฐฯ", en: "Government Data Center" },
+    title: { th: "ศูนย์ข้อมูลน้ำและสภาพอากาศจากรัฐฯ", en: "Hydro and weather data from government" },
     subtitle: {
       th: "ข่าว ประกาศเตือนภัย และปริมาณฝนจากหน่วยงานรัฐของไทย",
       en: "News, warnings, and rainfall data from Thai government agencies",

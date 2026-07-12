@@ -102,10 +102,15 @@ export function Header() {
 
           {/* Bottom of the sidebar, so the menus open upward and to the right
               (align="left") — downward/right-aligned would run off-screen here.
-              Stacked full-width rows: side by side the labels truncate. */}
-          <div className="flex flex-col gap-1.5">
-            <LanguageToggle align="left" direction="up" fullWidth />
-            <ThemeToggle align="left" direction="up" fullWidth />
+              Theme is icon-only: with both labels shown side by side,
+              "System" doesn't fit in half the sidebar width. */}
+          <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <LanguageToggle align="left" direction="up" fullWidth />
+            </div>
+            <div className="min-w-0 flex-1">
+              <ThemeToggle align="left" direction="up" fullWidth hideLabel />
+            </div>
           </div>
 
           {!loading &&
