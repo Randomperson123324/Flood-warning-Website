@@ -76,6 +76,16 @@ body {
   transition: background-color 0.4s ease, color 0.4s ease;
 }
 
+/* Pages that render the floating desktop sidebar (<aside data-app-sidebar>
+   in Header) get their content shifted right so the fixed panel never
+   overlaps it: 1rem inset + 15rem sidebar + 1.5rem gap. Scoped with :has()
+   so pages without the sidebar (e.g. auth) keep the full width. */
+@media (min-width: 1024px) {
+  body:has([data-app-sidebar]) {
+    padding-left: 17.5rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

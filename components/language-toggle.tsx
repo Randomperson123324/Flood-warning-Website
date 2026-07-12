@@ -5,7 +5,13 @@ import { useLanguage } from "@/hooks/use-language"
 import { GlassDropdown } from "@/components/ui/glass-dropdown"
 import type { Locale } from "@/lib/i18n/dictionaries"
 
-export function LanguageToggle() {
+interface LanguageToggleProps {
+  align?: "left" | "right"
+  direction?: "down" | "up"
+  fullWidth?: boolean
+}
+
+export function LanguageToggle({ align, direction, fullWidth }: LanguageToggleProps = {}) {
   const { locale, setLocale } = useLanguage()
 
   return (
@@ -13,6 +19,9 @@ export function LanguageToggle() {
       value={locale}
       onChange={setLocale}
       ariaLabel="Language"
+      align={align}
+      direction={direction}
+      fullWidth={fullWidth}
       triggerLabel={locale.toUpperCase()}
       triggerIcon={<Languages className="h-4 w-4 text-accent" strokeWidth={2.25} />}
       options={[

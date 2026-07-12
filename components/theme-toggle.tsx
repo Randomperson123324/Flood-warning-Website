@@ -8,7 +8,13 @@ import { GlassDropdown } from "@/components/ui/glass-dropdown"
 
 type ThemeValue = "system" | "light" | "dark"
 
-export function ThemeToggle() {
+interface ThemeToggleProps {
+  align?: "left" | "right"
+  direction?: "down" | "up"
+  fullWidth?: boolean
+}
+
+export function ThemeToggle({ align, direction, fullWidth }: ThemeToggleProps = {}) {
   const { theme, setTheme } = useTheme()
   const { t } = useLanguage()
   const [mounted, setMounted] = useState(false)
@@ -23,6 +29,9 @@ export function ThemeToggle() {
       value={current}
       onChange={setTheme}
       hideLabelOnMobile
+      align={align}
+      direction={direction}
+      fullWidth={fullWidth}
       ariaLabel={t("theme", current)}
       triggerIcon={<Icon className="h-4 w-4 text-accent" strokeWidth={2.25} />}
       options={[
