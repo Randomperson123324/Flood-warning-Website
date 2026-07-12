@@ -5,6 +5,8 @@
  * routine forecasts from get_weather).
  */
 
+import { SITE_CONFIG } from "@/lib/config"
+
 export interface TMDWarningData {
   hasWarning: boolean
   issueNo: string
@@ -20,7 +22,8 @@ export interface TMDWarningData {
 }
 
 export async function fetchTMDWarning(): Promise<TMDWarningData> {
-  const response = await fetch("https://data.tmd.go.th/api/WeatherWarningNews/v2/?uid=demo&ukey=demokey", {
+  const { tmdUid, tmdUkey } = SITE_CONFIG.gov
+  const response = await fetch(`https://data.tmd.go.th/api/WeatherWarningNews/v2/?uid=${tmdUid}&ukey=${tmdUkey}`, {
     cache: "no-store",
   })
 

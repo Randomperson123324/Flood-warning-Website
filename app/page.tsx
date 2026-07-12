@@ -9,6 +9,7 @@ import { TMDWarningBanner } from "@/components/tmd-warning-banner"
 import { LocationBanner } from "@/components/dashboard/location-banner"
 import { SensorSelector } from "@/components/dashboard/sensor-selector"
 import { CurrentStatusCard } from "@/components/dashboard/current-status-card"
+import { NearbyGovStations } from "@/components/dashboard/nearby-gov-stations"
 import { WaterLevelChart } from "@/components/dashboard/water-level-chart"
 import { WeatherCard } from "@/components/dashboard/weather-card"
 import { useGeolocation } from "@/hooks/use-geolocation"
@@ -126,6 +127,8 @@ export default function DashboardPage() {
             </div>
           </>
         )}
+
+        <NearbyGovStations location={location} status={geoStatus} onRetry={retryGeo} />
       </div>
 
       {aiContext && <AssistantLauncher context={aiContext} />}

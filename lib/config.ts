@@ -26,6 +26,16 @@ export const SITE_CONFIG = {
     // Max readings fetched for a single day on the Archives page — covers
     // minute-resolution sensors (1440/day) with headroom.
     archiveDayLimit: num(process.env.NEXT_PUBLIC_ARCHIVE_DAY_LIMIT, 2000),
+    // Government Data Center page: server-side cache lifetime for upstream
+    // TMD/ThaiWater responses, client polling cadence, and how many of the
+    // wettest rain stations to surface.
+    govRevalidateSeconds: num(process.env.GOV_REVALIDATE_SECONDS, 900),
+    govRefreshIntervalMs: num(process.env.NEXT_PUBLIC_GOV_REFRESH_MS, 900_000),
+    govRainTopStations: num(process.env.GOV_RAIN_TOP_STATIONS, 10),
+    // "HII stations near you" section on the dashboard (GPS users only).
+    govNearbyStations: num(process.env.GOV_NEARBY_STATIONS, 5),
+    // Max river stations listed in the "high/overflowing" list on /gov-data.
+    govRiverStations: num(process.env.GOV_RIVER_STATIONS, 8),
     aiAnalysisIntervalMs: num(process.env.NEXT_PUBLIC_AI_ANALYSIS_INTERVAL_MS, 300_000),
     // Shared by both TMD and Open-Meteo providers — keep it one number so the
     // two sources can never silently drift apart on how many hours they return.
@@ -68,6 +78,17 @@ export const SITE_CONFIG = {
   },
   search: {
     maxResults: num(process.env.NEXT_PUBLIC_SEARCH_MAX_RESULTS, 5),
+  },
+  gov: {
+    // TMD legacy API credentials (data.tmd.go.th/api/*). The public demo pair
+    // works but is shared/rate-limited — register at data.tmd.go.th for your
+    // own. Server-side only; never NEXT_PUBLIC.
+    tmdUid: process.env.TMD_UID ?? "demo",
+    tmdUkey: process.env.TMD_UKEY ?? "demokey",
+    // Bearer token for TMD's newer nwpapi point forecasts. Currently unused:
+    // tokens issued without the forecast scope return empty data — see
+    // .env.local for details.
+    tmdApiToken: process.env.TMD_API_TOKEN ?? "",
   },
   ai: {
     provider: (process.env.AI_PROVIDER ?? "gemini") as "gemini" | "lmstudio",
