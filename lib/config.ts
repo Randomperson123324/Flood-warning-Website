@@ -23,6 +23,9 @@ export const SITE_CONFIG = {
     weatherRefreshIntervalMs: num(process.env.NEXT_PUBLIC_WEATHER_REFRESH_MS, 300_000),
     tmdWarningRefreshIntervalMs: num(process.env.NEXT_PUBLIC_TMD_WARNING_REFRESH_MS, 600_000),
     sensorsRefreshIntervalMs: num(process.env.NEXT_PUBLIC_SENSORS_REFRESH_MS, 300_000),
+    // Max readings fetched for a single day on the Archives page — covers
+    // minute-resolution sensors (1440/day) with headroom.
+    archiveDayLimit: num(process.env.NEXT_PUBLIC_ARCHIVE_DAY_LIMIT, 2000),
     aiAnalysisIntervalMs: num(process.env.NEXT_PUBLIC_AI_ANALYSIS_INTERVAL_MS, 300_000),
     // Shared by both TMD and Open-Meteo providers — keep it one number so the
     // two sources can never silently drift apart on how many hours they return.

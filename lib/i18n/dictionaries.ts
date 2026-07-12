@@ -24,6 +24,22 @@ export const dictionary = {
     login: { th: "เข้าสู่ระบบ", en: "Log in" },
     menu: { th: "เมนู", en: "Menu" },
     devSettings: { th: "ตั้งค่านักพัฒนา", en: "Dev Settings" },
+    archives: { th: "ข้อมูลย้อนหลัง", en: "Archives" },
+  },
+  archives: {
+    title: { th: "ข้อมูลระดับน้ำย้อนหลัง", en: "Past water level data" },
+    subtitle: {
+      th: "เลือกจุดวัด วันที่ และเวลา เพื่อดูระดับน้ำ ณ ขณะนั้น",
+      en: "Pick a sensor, a date, and a time to see the water level at that moment",
+    },
+    selectDate: { th: "เลือกวันที่", en: "Select date" },
+    selectTime: { th: "เลือกเวลา", en: "Select time" },
+    levelAtTime: { th: "ระดับน้ำ ณ เวลาที่เลือก", en: "Water level at selected time" },
+    noData: { th: "ไม่มีข้อมูลบันทึกไว้ในวันที่เลือก", en: "No data recorded on this date" },
+    readingCount: { th: "จำนวนข้อมูล", en: "Readings" },
+    min: { th: "ต่ำสุด", en: "Min" },
+    max: { th: "สูงสุด", en: "Max" },
+    avg: { th: "เฉลี่ย", en: "Average" },
   },
   location: {
     resolving: { th: "กำลังค้นหาตำแหน่งของคุณ...", en: "Finding your location..." },

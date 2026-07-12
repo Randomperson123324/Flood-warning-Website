@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Bell, Droplets, LogOut, Menu, MessageCircle, Settings2, User, X } from "lucide-react"
+import { Bell, Droplets, History, LogOut, Menu, MessageCircle, Settings2, User, X } from "lucide-react"
 import { useLanguage } from "@/hooks/use-language"
 import { useAuth } from "@/hooks/use-auth"
 import { useAlertWatcher } from "@/hooks/use-browser-notifications"
@@ -35,6 +35,10 @@ export function Header() {
             <Link href="/community" className="glass-panel-strong glass-interactive flex items-center gap-1.5 px-3 py-2 text-sm font-medium">
               <MessageCircle className="h-4 w-4 text-accent" />
               {t("nav", "community")}
+            </Link>
+            <Link href="/archives" className="glass-panel-strong glass-interactive flex items-center gap-1.5 px-3 py-2 text-sm font-medium">
+              <History className="h-4 w-4 text-accent" />
+              {t("nav", "archives")}
             </Link>
             <div className="relative">
               <Link
@@ -117,6 +121,14 @@ export function Header() {
             >
               <MessageCircle className="h-4 w-4 text-accent" />
               {t("nav", "community")}
+            </Link>
+            <Link
+              href="/archives"
+              onClick={() => setMobileMenuOpen(false)}
+              className="glass-interactive flex items-center gap-2 rounded-glass-sm px-3 py-2.5 text-sm font-medium"
+            >
+              <History className="h-4 w-4 text-accent" />
+              {t("nav", "archives")}
             </Link>
             <Link
               href="/notifications"
