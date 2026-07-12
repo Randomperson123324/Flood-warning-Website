@@ -68,7 +68,10 @@ export function Header() {
 
           <div className="border-t border-border/10" />
 
-          <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
+          {/* No overflow-y-auto here: the glass-interactive hover scale makes
+              items poke past the container for a moment, which flashed a
+              scrollbar. The list is short enough to never need scrolling. */}
+          <nav className="flex flex-1 flex-col gap-1">
             {navItems.map(({ href, icon: Icon, label, badge }) => {
               const active = pathname === href
               return (
