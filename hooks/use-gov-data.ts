@@ -10,14 +10,20 @@ interface UseGovDataResult {
   error: string | null
 }
 
-/** Government Data Center feeds (TMD + ThaiWater), polled on a slow cadence —
- * the server caches upstream responses so this is cheap to refresh. */
-export function useGovData(): UseGovDataResult {
+/** Government Data Center feeds (TMD + ThaiWater + RID), polled on a slow
+ * cadence — the server caches upstream responses so this is cheap to refresh.
+ *
+ * Pass `enabled: false` to defer fetching entirely (the community chat does
+ * this until a gov card is actually on screen, so opening the chat doesn't
+ * pull the feeds for nothing). One instance serves every card — individual
+ * cards never fetch. */
+export function useGovData(enabled = true): UseGovDataResult {
   const [data, setData] = useState<GovDataPayload | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!enabled) return
     let cancelled = false
 
     async function load() {
@@ -42,7 +48,7 @@ export function useGovData(): UseGovDataResult {
       cancelled = true
       clearInterval(interval)
     }
-  }, [])
+  }, [enabled])
 
   return { data, loading, error }
 }

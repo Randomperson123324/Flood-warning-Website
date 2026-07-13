@@ -26,9 +26,11 @@ export function LocationBanner({ status, location, onRetry }: LocationBannerProp
 
   if (status === "unavailable" || !location) {
     return (
-      <BannerShell tone="warning">
-        <TriangleAlert className="h-4 w-4" />
-        <span className="flex-1">{t("location", "fallbackDefault")}</span>
+      <BannerShell tone="warning" stacked>
+        <div className="flex flex-1 items-center gap-2">
+          <TriangleAlert className="h-4 w-4 shrink-0" />
+          <span>{t("location", "fallbackDefault")}</span>
+        </div>
         <RetryButton onRetry={onRetry} label={t("location", "retry")} />
       </BannerShell>
     )
@@ -44,12 +46,14 @@ export function LocationBanner({ status, location, onRetry }: LocationBannerProp
   }
 
   return (
-    <BannerShell tone="warning">
-      <MapPinned className="h-4 w-4 shrink-0" />
-      <span className="flex-1">
-        {t("location", "ipFallback")}
-        {location.approximateCity ? ` (${location.approximateCity})` : ""}
-      </span>
+    <BannerShell tone="warning" stacked>
+      <div className="flex flex-1 items-center gap-2">
+        <MapPinned className="h-4 w-4 shrink-0" />
+        <span>
+          {t("location", "ipFallback")}
+          {location.approximateCity ? ` (${location.approximateCity})` : ""}
+        </span>
+      </div>
       <RetryButton onRetry={onRetry} label={t("location", "enableGps")} />
     </BannerShell>
   )
@@ -60,18 +64,30 @@ function RetryButton({ onRetry, label }: { onRetry: () => void; label: string })
     <button
       type="button"
       onClick={onRetry}
-      className="glass-panel-strong glass-interactive shrink-0 px-3 py-1.5 text-xs font-medium"
+      className="glass-panel-strong glass-interactive w-full shrink-0 px-3 py-1.5 text-xs font-medium sm:w-auto"
     >
       {label}
     </button>
   )
 }
 
-function BannerShell({ tone, children }: { tone: "normal" | "warning" | "neutral"; children: React.ReactNode }) {
+function BannerShell({
+  tone,
+  stacked,
+  children,
+}: {
+  tone: "normal" | "warning" | "neutral"
+  /** Icon+text row on top, action button full-width below — for narrow
+   * screens where a long message and a button don't fit on one line.
+   * Collapses back to a single row at sm+. */
+  stacked?: boolean
+  children: React.ReactNode
+}) {
   return (
     <div
       className={cn(
-        "glass-panel mx-auto flex max-w-6xl animate-fade-in-up items-center gap-2 px-4 py-2.5 text-sm",
+        "glass-panel mx-auto flex max-w-6xl animate-fade-in-up gap-2 px-4 py-2.5 text-sm",
+        stacked ? "flex-col sm:flex-row sm:items-center" : "items-center",
         tone === "warning" && "text-status-warning",
         tone === "normal" && "text-status-normal",
         tone === "neutral" && "text-ink-soft",

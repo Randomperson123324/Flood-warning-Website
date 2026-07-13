@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase/client"
 import { SITE_CONFIG } from "@/lib/config"
 import { uniqueId } from "@/lib/utils"
 import { useAuth } from "@/hooks/use-auth"
-import type { ChatMessage, Sensor } from "@/types"
+import type { ChatMessage, GovCommandKind, Sensor } from "@/types"
 
 interface SendMessageParams {
   content: string
@@ -19,6 +19,7 @@ interface UseCommunityChatResult {
   sendMessage: (params: SendMessageParams) => Promise<{ error: string | null }>
   sendAIExchange: (params: { question: string; answer: string }) => Promise<{ error: string | null }>
   sendSensorCard: (sensor: Sensor) => Promise<{ error: string | null }>
+  sendGovCard: (kind: GovCommandKind) => Promise<{ error: string | null }>
 }
 
 export function useCommunityChat(): UseCommunityChatResult {
@@ -125,5 +126,21 @@ export function useCommunityChat(): UseCommunityChatResult {
     return { error: insertError ? insertError.message : null }
   }
 
-  return { messages, loading, error, sendMessage, sendAIExchange, sendSensorCard }
+  /** Like `/sensor`, only the card KIND is persisted — data renders live
+   * from the shared /api/gov cache, so old cards show current figures. */
+  async function sendGovCard(kind: GovCommandKind): Promise<{ error: string | null }> {
+    if (!supabase) return { error: "Supabase is not configured" }
+    if (!user) return { error: "not_authenticated" }
+
+    const { error: insertError } = await supabase.from("messages").insert({
+      user_id: user.id,
+      type: "gov",
+      content: `/${kind}`,
+      gov_kind: kind,
+    })
+
+    return { error: insertError ? insertError.message : null }
+  }
+
+  return { messages, loading, error, sendMessage, sendAIExchange, sendSensorCard, sendGovCard }
 }

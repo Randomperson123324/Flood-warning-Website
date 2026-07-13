@@ -142,6 +142,10 @@ export interface TMDWarning {
 
 // ─── Community (Phase 2) ────────────────────────────────────────────────────
 
+/** Which Government Data Center card a `/`-command chat message shows —
+ * mirrors the sections on /gov-data. */
+export type GovCommandKind = "tmdwarning" | "tmdforecast" | "rainfall" | "river" | "floodalert" | "reservoir"
+
 export interface ChatMessage {
   id: string
   user_id: string | null
@@ -151,13 +155,14 @@ export interface ChatMessage {
   reply_to_content: string | null
   reply_to_username: string | null
   users: { username: string; role: string } | null
-  /** Discriminates plain chat text from persisted `/AI` exchanges and
-   * `/sensor` cards — all three share the `messages` table so they get
-   * realtime + refresh-persistence for free. */
-  type: "text" | "ai" | "sensor"
+  /** Discriminates plain chat text from persisted `/AI` exchanges, `/sensor`
+   * cards, and government-data cards — all share the `messages` table so
+   * they get realtime + refresh-persistence for free. */
+  type: "text" | "ai" | "sensor" | "gov"
   ai_question: string | null
   ai_answer: string | null
   sensor_id: string | null
+  gov_kind: GovCommandKind | null
 }
 
 export interface MessageReaction {

@@ -7,6 +7,7 @@ import { useLanguage } from "@/hooks/use-language"
 import { useAuth } from "@/hooks/use-auth"
 import { useCommunityChat } from "@/hooks/use-community-chat"
 import { useMessageReactions } from "@/hooks/use-message-reactions"
+import { useGovData } from "@/hooks/use-gov-data"
 import { useSensors } from "@/hooks/use-sensors"
 import { useLatestReadings } from "@/hooks/use-latest-readings"
 import { useWaterData } from "@/hooks/use-water-data"
@@ -19,8 +20,9 @@ import { cn } from "@/lib/utils"
 import { MessageItem } from "@/components/community/message-item"
 import { ChatCommandMenu } from "@/components/community/chat-command-menu"
 import { SensorInfoCard } from "@/components/community/sensor-info-card"
+import { GovInfoCard, GOV_COMMANDS } from "@/components/community/gov-info-card"
 import { AIExchangeMessage, type AIExchange } from "@/components/community/ai-exchange-message"
-import type { AIContext, ChatMessage, Sensor, WarningSeverity } from "@/types"
+import type { AIContext, ChatMessage, GovCommandKind, Sensor, WarningSeverity } from "@/types"
 
 const SEVERITY_DOT_CLASS: Record<WarningSeverity, string> = {
   normal: "bg-status-normal",
@@ -40,17 +42,21 @@ const EMPTY_AI_CONTEXT: AIContext = {
   activeFloodReports: 0,
 }
 
-type SlashCommand = { token: string; key: "sensor" | "ai"; descKey: "commandSensorDesc" | "commandAiDesc" }
+type SlashCommand = { token: string; key: "sensor" | "ai" | GovCommandKind }
+
+const GOV_KINDS = Object.keys(GOV_COMMANDS) as GovCommandKind[]
 
 const SLASH_COMMANDS: SlashCommand[] = [
-  { token: "/sensor", key: "sensor", descKey: "commandSensorDesc" },
-  { token: "/AI", key: "ai", descKey: "commandAiDesc" },
+  { token: "/sensor", key: "sensor" },
+  { token: "/AI", key: "ai" },
+  ...GOV_KINDS.map((kind) => ({ token: GOV_COMMANDS[kind].token, key: kind })),
 ]
 
 type SlashState =
   | { type: "menu"; matches: SlashCommand[] }
   | { type: "sensor"; query: string }
   | { type: "ai"; question: string }
+  | { type: "gov"; kind: GovCommandKind }
   | null
 
 function parseSlash(draft: string): SlashState {
@@ -66,17 +72,48 @@ function parseSlash(draft: string): SlashState {
 
   if (cmd === "sensor") return { type: "sensor", query: draft.slice(spaceIdx + 1) }
   if (cmd === "ai") return { type: "ai", question: draft.slice(spaceIdx + 1) }
+  // Gov commands take no argument, so "/rainfall " (trailing space) is
+  // already complete — Enter posts the card.
+  const govKind = GOV_KINDS.find((kind) => kind === cmd)
+  if (govKind) return { type: "gov", kind: govKind }
   return null
 }
 
 type MenuItem = { kind: "command"; command: SlashCommand } | { kind: "sensor"; sensor: Sensor }
 
+function CommandMenuRow({ command }: { command: SlashCommand }) {
+  const { t } = useLanguage()
+  const Icon = command.key === "sensor" ? Gauge : command.key === "ai" ? Bot : GOV_COMMANDS[command.key].icon
+  const desc =
+    command.key === "sensor"
+      ? t("community", "commandSensorDesc")
+      : command.key === "ai"
+        ? t("community", "commandAiDesc")
+        : t("gov", GOV_COMMANDS[command.key].titleKey)
+  return (
+    <>
+      <Icon className="h-4 w-4 shrink-0" />
+      <span className="flex flex-col">
+        <span className="font-mono font-medium">{command.token}</span>
+        <span className="text-xs text-ink-soft">{desc}</span>
+      </span>
+    </>
+  )
+}
+
 export function ChatPanel() {
   const { t, locale } = useLanguage()
   const { user, profile } = useAuth()
-  const { messages, loading, sendMessage, sendAIExchange, sendSensorCard } = useCommunityChat()
+  const { messages, loading, sendMessage, sendAIExchange, sendSensorCard, sendGovCard } = useCommunityChat()
   const messageIds = useMemo(() => messages.map((m) => m.id), [messages])
   const { byMessage, toggleReaction } = useMessageReactions(messageIds)
+
+  // ── Gov commands: ONE shared payload for every gov card in the feed, and
+  // nothing is fetched until a gov card actually exists. The server route
+  // additionally caches upstream agency responses, so posting the same
+  // command repeatedly never re-hits TMD/HII/RID. ──
+  const hasGovCards = useMemo(() => messages.some((m) => m.type === "gov"), [messages])
+  const { data: govData } = useGovData(hasGovCards)
 
   // ── /sensor: live sensor directory for autocomplete + inline info cards ──
   const { sensors, recommendedSensor } = useSensors(null)
@@ -175,6 +212,30 @@ export function ChatPanel() {
         continue
       }
 
+      if (message.type === "gov") {
+        if (!message.gov_kind || !(message.gov_kind in GOV_COMMANDS)) continue
+        items.push({
+          id: message.id,
+          node: (
+            <GovInfoCard
+              kind={message.gov_kind}
+              data={govData}
+              username={message.users?.username}
+              time={
+                message.created_at
+                  ? new Date(message.created_at).toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", { hour: "2-digit", minute: "2-digit" })
+                  : undefined
+              }
+              isMine={message.user_id === user?.id}
+              onDismiss={() => setHiddenIds((prev) => new Set(prev).add(message.id))}
+              reactions={byMessage[message.id] ?? []}
+              onToggleReaction={(type) => toggleReaction(message.id, type)}
+            />
+          ),
+        })
+        continue
+      }
+
       if (message.type === "sensor") {
         const sensor = sensors.find((s) => s.sensor_id === message.sensor_id)
         if (!sensor) continue // sensor since removed/deactivated — skip rendering
@@ -220,7 +281,7 @@ export function ChatPanel() {
     }
 
     return items
-  }, [messages, byMessage, sensors, hiddenIds, liveAIExchange, locale, user, profile])
+  }, [messages, byMessage, sensors, hiddenIds, liveAIExchange, govData, locale, user, profile])
 
   const slash = useMemo(() => parseSlash(draft), [draft])
 
@@ -260,8 +321,14 @@ export function ChatPanel() {
 
   async function selectMenuItem(item: MenuItem) {
     if (item.kind === "command") {
-      setDraft(`${item.command.token} `)
-      inputRef.current?.focus()
+      if (item.command.key === "sensor" || item.command.key === "ai") {
+        setDraft(`${item.command.token} `)
+        inputRef.current?.focus()
+      } else {
+        // Gov commands take no argument — picking one posts the card.
+        setDraft("")
+        await sendGovCard(item.command.key)
+      }
     } else {
       setDraft("")
       await sendSensorCard(item.sensor)
@@ -296,6 +363,12 @@ export function ChatPanel() {
         await sendAIExchange({ question, answer: finalText })
         clearAIHistory()
       })
+      return
+    }
+
+    if (slash?.type === "gov") {
+      setDraft("")
+      await sendGovCard(slash.kind)
       return
     }
 
@@ -371,13 +444,7 @@ export function ChatPanel() {
                 emptyMessage={slash?.type === "sensor" ? t("sensor", "noMatch") : undefined}
                 renderItem={(item) =>
                   item.kind === "command" ? (
-                    <>
-                      {item.command.key === "sensor" ? <Gauge className="h-4 w-4 shrink-0" /> : <Bot className="h-4 w-4 shrink-0" />}
-                      <span className="flex flex-col">
-                        <span className="font-mono font-medium">{item.command.token}</span>
-                        <span className="text-xs text-ink-soft">{t("community", item.command.descKey)}</span>
-                      </span>
-                    </>
+                    <CommandMenuRow command={item.command} />
                   ) : (
                     <>
                       <span
