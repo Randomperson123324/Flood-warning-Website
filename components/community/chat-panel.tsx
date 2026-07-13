@@ -623,6 +623,7 @@ export function ChatPanel() {
                 highlightedIndex={clampedIndex}
                 onHover={setHighlightedIndex}
                 onSelect={selectMenuItem}
+                header={slash?.type === "gov" && !slash.query.trim() ? t("community", "govSearchHint") : undefined}
                 emptyMessage={
                   slash?.type === "sensor"
                     ? t("sensor", "noMatch")

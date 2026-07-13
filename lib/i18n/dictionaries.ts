@@ -217,6 +217,7 @@ export const dictionary = {
     govOptHighest: { th: "สูงสุดทั่วประเทศ", en: "Highest nationwide" },
     govSearchPlaceholder: { th: "พิมพ์ชื่อสถานี อ่างเก็บน้ำ หรือจังหวัดเพื่อค้นหา…", en: "Type a station, reservoir, or province name to search…" },
     govSearchNoMatch: { th: "ไม่พบผลลัพธ์", en: "No matches" },
+    govSearchHint: { th: "เลือกตัวเลือก หรือพิมพ์ชื่อเพื่อค้นหา", en: "Pick an option, or type a name to search" },
     govSearchResult: { th: "ผลการค้นหา", en: "Search result" },
     commandSearchPlaceholder: { th: "ค้นหาจุดวัด...", en: "Search sensor..." },
     askAiPlaceholder: { th: "พิมพ์คำถามถึง AI...", en: "Ask the AI..." },
