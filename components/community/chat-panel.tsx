@@ -61,7 +61,7 @@ type SlashState =
   | { type: "menu"; matches: SlashCommand[] }
   | { type: "sensor"; query: string }
   | { type: "ai"; question: string }
-  | { type: "gov"; kind: GovCommandKind; query: string }
+  | { type: "gov"; kind: GovCommandKind; query: string; search: boolean }
   | null
 
 function parseSlash(draft: string): SlashState {
@@ -69,17 +69,24 @@ function parseSlash(draft: string): SlashState {
   const spaceIdx = draft.indexOf(" ")
   const cmdRaw = spaceIdx === -1 ? draft.slice(1) : draft.slice(1, spaceIdx)
   const cmd = cmdRaw.toLowerCase()
+  const rest = spaceIdx === -1 ? "" : draft.slice(spaceIdx + 1)
+
+  // "/rainfallsearch" etc. — the dedicated search form the "Search by name…"
+  // menu option fills in. Recognized with or without a trailing space so the
+  // menu doesn't collapse mid-typing.
+  const searchKind = GOV_KINDS.find((kind) => `${kind}search` === cmd)
+  if (searchKind) return { type: "gov", kind: searchKind, query: rest, search: true }
 
   if (spaceIdx === -1) {
     const matches = SLASH_COMMANDS.filter((c) => c.token.slice(1).toLowerCase().startsWith(cmd))
     return matches.length > 0 ? { type: "menu", matches } : null
   }
 
-  if (cmd === "sensor") return { type: "sensor", query: draft.slice(spaceIdx + 1) }
-  if (cmd === "ai") return { type: "ai", question: draft.slice(spaceIdx + 1) }
-  // Gov commands open a scope menu: highest / near me, or type to search by name.
+  if (cmd === "sensor") return { type: "sensor", query: rest }
+  if (cmd === "ai") return { type: "ai", question: rest }
+  // Gov commands open a scope menu: highest / near me / search by name.
   const govKind = GOV_KINDS.find((kind) => kind === cmd)
-  if (govKind) return { type: "gov", kind: govKind, query: draft.slice(spaceIdx + 1) }
+  if (govKind) return { type: "gov", kind: govKind, query: rest, search: false }
   return null
 }
 
@@ -460,7 +467,7 @@ export function ChatPanel() {
         .map((sensor) => ({ kind: "sensor" as const, sensor }))
     }
     if (slash?.type === "gov") {
-      if (!slash.query.trim()) {
+      if (!slash.search && !slash.query.trim()) {
         const opts: MenuItem[] = [{ kind: "govopt", govKind: slash.kind, opt: "highest" }]
         // Reservoirs only have region granularity — "near me" would mislead.
         if (slash.kind !== "reservoir") opts.push({ kind: "govopt", govKind: slash.kind, opt: "local" })
@@ -503,7 +510,9 @@ export function ChatPanel() {
       inputRef.current?.focus()
     } else if (item.kind === "govopt") {
       if (item.opt === "search") {
-        // Not a posting action — just hand focus back so they type the name.
+        // Not a posting action — switch to the dedicated search command and
+        // hand focus back so they type the name.
+        setDraft(`${GOV_COMMANDS[item.govKind].token}search `)
         inputRef.current?.focus()
         return
       }
@@ -635,7 +644,9 @@ export function ChatPanel() {
                     : slash?.type === "gov"
                       ? govSearching
                         ? t("common", "loading")
-                        : t("community", "govSearchNoMatch")
+                        : slash.query.trim()
+                          ? t("community", "govSearchNoMatch")
+                          : t("community", "govOptSearchDesc")
                       : undefined
                 }
                 renderItem={(item) =>
