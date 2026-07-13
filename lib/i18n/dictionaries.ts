@@ -143,8 +143,8 @@ export const dictionary = {
       en: "GPS access denied — using an approximate IP-based location instead (less accurate than GPS)",
     },
     fallbackDefault: {
-      th: "ไม่สามารถหาตำแหน่งได้ — แสดงจุดวัดเริ่มต้น",
-      en: "Couldn't determine your location — showing the default sensor",
+      th: "ไม่สามารถหาตำแหน่งได้ — จุดวัดที่แสดงอาจไม่ใช่จุดที่ใกล้คุณที่สุด",
+      en: "Couldn't determine your location — the sensor shown may not be the nearest to you",
     },
     nearestSensor: { th: "จุดวัดใกล้คุณที่สุด", en: "Nearest sensor to you" },
     enableGps: { th: "เปิดสิทธิ์ GPS เพื่อความแม่นยำ", en: "Enable GPS for better accuracy" },
@@ -166,7 +166,6 @@ export const dictionary = {
   },
   sensor: {
     select: { th: "เลือกจุดวัด", en: "Select sensor" },
-    default: { th: "ค่าเริ่มต้น", en: "Default" },
     infoTitle: { th: "ข้อมูลจุดวัด", en: "Sensor info" },
     warningLevel: { th: "ระดับเฝ้าระวัง", en: "Warning level" },
     dangerLevel: { th: "ระดับอันตราย", en: "Danger level" },
@@ -295,7 +294,6 @@ export const dictionary = {
     heightCm: { th: "ความสูงจากพื้น (ซม.)", en: "Height (cm)" },
     warningLevel: { th: "ระดับเฝ้าระวัง (ซม.)", en: "Warning level (cm)" },
     dangerLevel: { th: "ระดับอันตราย (ซม.)", en: "Danger level (cm)" },
-    isDefault: { th: "เป็นค่าเริ่มต้น", en: "Default sensor" },
     areaName: { th: "ชื่อพื้นที่", en: "Area name" },
     threshold: { th: "ระดับน้ำที่กระทบ (ซม.)", en: "Impact threshold (cm)" },
     description: { th: "รายละเอียด", en: "Description" },

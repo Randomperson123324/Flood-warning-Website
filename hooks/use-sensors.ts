@@ -10,7 +10,7 @@ interface UseSensorsResult {
   sensors: Sensor[]
   /** Sensors sorted by distance to `location`, or by label if location is unknown. */
   sensorsByDistance: SensorWithDistance[]
-  /** Nearest sensor to `location`, falling back to the DB's is_default sensor. */
+  /** Nearest sensor to `location`; first sensor (alphabetical) if location is unknown. */
   recommendedSensor: Sensor | null
   loading: boolean
   error: string | null
@@ -67,7 +67,7 @@ export function useSensors(location: UserLocation | null): UseSensorsResult {
 
   const recommendedSensor = useMemo<Sensor | null>(() => {
     if (location && sensorsByDistance.length > 0) return sensorsByDistance[0]
-    return sensors.find((s) => s.is_default) ?? sensors[0] ?? null
+    return sensors[0] ?? null
   }, [sensors, sensorsByDistance, location])
 
   return { sensors, sensorsByDistance, recommendedSensor, loading, error }

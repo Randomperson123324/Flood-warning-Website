@@ -100,7 +100,9 @@ async function handleGetSiteSettings(args: Record<string, unknown>): Promise<unk
   if (!supabase) return null
   const sensorId = args.sensorId as string | undefined
   let query = supabase.from("sensors").select("sensor_id, label, warning_level_cm, danger_level_cm, lat, lon")
-  query = sensorId ? query.eq("sensor_id", sensorId) : query.eq("is_default", true)
+  // Sensor choice is nearest-to-user client-side; with no sensorId given,
+  // any active sensor is as good a fallback as another — take the first.
+  query = sensorId ? query.eq("sensor_id", sensorId) : query.eq("is_active", true).order("label")
   const { data } = await query.limit(1).single()
   return data
 }

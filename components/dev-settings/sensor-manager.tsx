@@ -16,7 +16,6 @@ const EMPTY_FORM: SensorInput = {
   warning_level_cm: 5,
   danger_level_cm: 10,
   is_active: true,
-  is_default: false,
 }
 
 export function SensorManager() {
@@ -37,7 +36,6 @@ export function SensorManager() {
       warning_level_cm: sensor.warning_level_cm,
       danger_level_cm: sensor.danger_level_cm,
       is_active: sensor.is_active,
-      is_default: sensor.is_default,
     })
   }
 
@@ -123,10 +121,6 @@ export function SensorManager() {
               onChange={(e) => setForm({ ...form, danger_level_cm: Number(e.target.value) })}
               className={glassInputClass}
             />
-            <label className="glass-panel-strong flex items-center gap-2 px-3.5 py-2.5 text-sm">
-              <input type="checkbox" checked={form.is_default} onChange={(e) => setForm({ ...form, is_default: e.target.checked })} />
-              {t("devSettings", "isDefault")}
-            </label>
           </div>
 
           {error && <p className="text-sm text-status-danger">{error}</p>}
@@ -152,9 +146,7 @@ export function SensorManager() {
         {sensors.map((sensor) => (
           <div key={sensor.id} className="glass-panel flex items-center justify-between gap-3 p-4">
             <div>
-              <p className="font-medium">
-                {sensor.label} {sensor.is_default && <span className="text-xs text-accent">({t("devSettings", "isDefault")})</span>}
-              </p>
+              <p className="font-medium">{sensor.label}</p>
               <p className="font-mono text-xs text-ink-soft">
                 {sensor.sensor_id} · {sensor.lat.toFixed(4)}, {sensor.lon.toFixed(4)} · ⚠{sensor.warning_level_cm} 🚨{sensor.danger_level_cm}
               </p>

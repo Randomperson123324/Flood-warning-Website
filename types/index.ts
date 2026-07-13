@@ -10,7 +10,6 @@ export interface Sensor {
   warning_level_cm: number
   danger_level_cm: number
   is_active: boolean
-  is_default: boolean
   created_at: string | null
   updated_at: string | null
 }
