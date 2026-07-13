@@ -11,7 +11,9 @@ interface GeolocationState {
   status: GeolocationStatus
 }
 
-async function resolveViaGps(): Promise<UserLocation> {
+/** One-shot GPS fix (exported for imperative flows like the chat's
+ * "based on my location" gov cards, where a hook doesn't fit). */
+export async function resolveViaGps(): Promise<UserLocation> {
   if (typeof navigator === "undefined" || !navigator.geolocation) {
     throw new Error("Geolocation API not available")
   }
@@ -54,8 +56,12 @@ async function resolveViaIp(): Promise<UserLocation | null> {
  * GPS is tried first; on denial/timeout/unsupported it falls back to an
  * IP-based lookup, which is clearly marked as lower-accuracy downstream
  * (the UI must say so — see components/dashboard/location-banner.tsx).
+ *
+ * Pass `enabled: false` to defer resolving (and the browser's GPS permission
+ * prompt) until the caller actually needs a location — e.g. the /gov-data
+ * "based on my location" toggle.
  */
-export function useGeolocation(): GeolocationState & { retry: () => void } {
+export function useGeolocation(enabled = true): GeolocationState & { retry: () => void } {
   const [state, setState] = useState<GeolocationState>({ location: null, status: "resolving" })
   const [attempt, setAttempt] = useState(0)
 
@@ -78,9 +84,10 @@ export function useGeolocation(): GeolocationState & { retry: () => void } {
   }, [])
 
   useEffect(() => {
+    if (!enabled) return
     resolve()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [attempt])
+  }, [attempt, enabled])
 
   return { ...state, retry: () => setAttempt((n) => n + 1) }
 }

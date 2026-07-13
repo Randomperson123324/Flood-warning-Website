@@ -1,9 +1,10 @@
 "use client"
 
-import { Clock, CloudRain, CloudSun, Droplets, LoaderCircle, Megaphone, ShieldAlert, Waves, X } from "lucide-react"
+import { Clock, CloudRain, CloudSun, Droplets, LoaderCircle, LocateFixed, Megaphone, Search, ShieldAlert, Waves, X } from "lucide-react"
 import { useLanguage } from "@/hooks/use-language"
 import { ReactionBar } from "@/components/community/reaction-bar"
-import { RAIN_HEAVY_MM, RAIN_VERY_HEAVY_MM, RIVER_OVERFLOW_LEVEL } from "@/lib/gov/thaiwater"
+import { RAIN_HEAVY_MM, RAIN_VERY_HEAVY_MM, RIVER_HIGH_LEVEL, RIVER_OVERFLOW_LEVEL } from "@/lib/gov/thaiwater"
+import type { GovNearbyStation } from "@/lib/gov/thaiwater"
 import { RESERVOIR_HIGH_PERCENT, RESERVOIR_OVER_PERCENT } from "@/lib/gov/rid-reservoir"
 import { cn } from "@/lib/utils"
 import type { dictionary } from "@/lib/i18n/dictionaries"
@@ -36,6 +37,17 @@ export const GOV_KIND_TO_FIELD: Record<GovCommandKind, keyof Omit<GovDataPayload
   reservoir: "reservoirs",
 }
 
+export type GovCardMode = "highest" | "local" | "search"
+
+/** What `messages.gov_payload` stores: the section snapshot plus how it was
+ * scoped. Legacy rows hold the bare section data (treated as "highest"). */
+export interface GovCardPayload {
+  mode: GovCardMode
+  /** Province the card was scoped to, for mode "local". */
+  label?: { th: string; en: string }
+  data: unknown
+}
+
 /** All-sections-failed payload — spread a snapshot's section over it to
  * render a persisted card without any live data. */
 export const EMPTY_GOV_PAYLOAD: GovDataPayload = {
@@ -59,6 +71,10 @@ interface GovInfoCardProps {
   /** True when `data` is the snapshot persisted with the message — shows
    * the "data as of when this was sent" footnote. */
   snapshot?: boolean
+  /** How the snapshot was scoped (nationwide top, sender's area, name search). */
+  mode?: GovCardMode
+  /** Province for mode "local". */
+  label?: { th: string; en: string }
   username?: string
   time?: string
   isMine?: boolean
@@ -126,7 +142,7 @@ function CompactRow({
   )
 }
 
-function CardBody({ kind, data }: { kind: GovCommandKind; data: GovDataPayload }) {
+function CardBody({ kind, data, mode }: { kind: GovCommandKind; data: GovDataPayload; mode: GovCardMode }) {
   const { t, locale } = useLanguage()
   const sectionError = <p className="py-3 text-center text-sm text-ink-soft">{t("gov", "sectionError")}</p>
 
@@ -172,6 +188,8 @@ function CardBody({ kind, data }: { kind: GovCommandKind; data: GovDataPayload }
         {data.rainfall.slice(0, CARD_MAX_ROWS).map((s, i) => {
           const veryHeavy = s.rain24h > RAIN_VERY_HEAVY_MM
           const heavy = s.rain24h > RAIN_HEAVY_MM
+          // "Near me" snapshots carry GovNearbyStation rows — surface the distance.
+          const distanceKm = (s as GovNearbyStation).distanceKm
           return (
             <CompactRow
               key={`${s.stationName}-${i}`}
@@ -180,8 +198,16 @@ function CardBody({ kind, data }: { kind: GovCommandKind; data: GovDataPayload }
               subtitle={locale === "th" ? `${s.amphoe.th} · ${s.province.th}` : `${s.amphoe.en} · ${s.province.en}`}
               value={`${s.rain24h.toFixed(1)} ${t("gov", "mm")}`}
               valueClass={veryHeavy ? "text-status-danger" : heavy ? "text-status-warning" : "text-accent"}
-              label={veryHeavy ? t("gov", "rainVeryHeavy") : heavy ? t("gov", "rainHeavy") : undefined}
-              labelClass={veryHeavy ? "text-status-danger" : "text-status-warning"}
+              label={
+                typeof distanceKm === "number"
+                  ? `${distanceKm.toFixed(1)} ${t("gov", "kmAway")}`
+                  : veryHeavy
+                    ? t("gov", "rainVeryHeavy")
+                    : heavy
+                      ? t("gov", "rainHeavy")
+                      : undefined
+              }
+              labelClass={typeof distanceKm === "number" ? undefined : veryHeavy ? "text-status-danger" : "text-status-warning"}
             />
           )
         })}
@@ -194,31 +220,43 @@ function CardBody({ kind, data }: { kind: GovCommandKind; data: GovDataPayload }
     const s = data.riverSituation
     return (
       <div>
-        <div className="mb-2 flex flex-wrap gap-1.5">
-          <Chip tone="danger">
-            {t("gov", "riverOverflow")}: {s.overflowCount}
-          </Chip>
-          <Chip tone="warning">
-            {t("gov", "riverHigh")}: {s.highCount}
-          </Chip>
-          <Chip tone="soft">
-            {t("gov", "riverStationsTotal")}: {s.totalStations}
-          </Chip>
-        </div>
+        {mode !== "search" && (
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            <Chip tone="danger">
+              {t("gov", "riverOverflow")}: {s.overflowCount}
+            </Chip>
+            <Chip tone="warning">
+              {t("gov", "riverHigh")}: {s.highCount}
+            </Chip>
+            <Chip tone="soft">
+              {t("gov", "riverStationsTotal")}: {s.totalStations}
+            </Chip>
+          </div>
+        )}
         {s.critical.length === 0 ? (
           <p className="py-2 text-center text-sm text-status-normal">{t("gov", "riverAllNormal")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {s.critical.slice(0, CARD_MAX_ROWS).map((st, i) => {
+              // Search results can include normal-level stations, unlike the
+              // high/overflowing-only nationwide summary.
               const overflowing = st.situationLevel >= RIVER_OVERFLOW_LEVEL
+              const high = st.situationLevel >= RIVER_HIGH_LEVEL
               return (
                 <CompactRow
                   key={`${st.stationName}-${i}`}
-                  icon={<Waves className={cn("h-4 w-4 shrink-0", overflowing ? "text-status-danger" : "text-status-warning")} />}
+                  icon={
+                    <Waves
+                      className={cn(
+                        "h-4 w-4 shrink-0",
+                        overflowing ? "text-status-danger" : high ? "text-status-warning" : "text-status-normal",
+                      )}
+                    />
+                  }
                   title={st.stationName}
                   subtitle={[st.river, locale === "th" ? st.province.th : st.province.en].filter(Boolean).join(" · ")}
-                  value={overflowing ? t("gov", "riverOverflow") : t("gov", "riverHigh")}
-                  valueClass={overflowing ? "text-status-danger" : "text-status-warning"}
+                  value={overflowing ? t("gov", "riverOverflow") : high ? t("gov", "riverHigh") : t("status", "normal")}
+                  valueClass={overflowing ? "text-status-danger" : high ? "text-status-warning" : "text-status-normal"}
                   label={st.storagePercent !== null ? `${st.storagePercent.toFixed(0)}% ${t("gov", "riverBank")}` : undefined}
                 />
               )
@@ -239,14 +277,16 @@ function CardBody({ kind, data }: { kind: GovCommandKind; data: GovDataPayload }
     const flashFloodCount = alerts.filter((a) => a.flashFloodRisk).length
     return (
       <div>
-        <div className="mb-2 flex flex-wrap gap-1.5">
-          <Chip tone="danger">
-            {t("gov", "warnFlashFlood")}: {flashFloodCount}
-          </Chip>
-          <Chip tone="soft">
-            {t("gov", "warnTotal")}: {alerts.length}
-          </Chip>
-        </div>
+        {mode !== "search" && (
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            <Chip tone="danger">
+              {t("gov", "warnFlashFlood")}: {flashFloodCount}
+            </Chip>
+            <Chip tone="soft">
+              {t("gov", "warnTotal")}: {alerts.length}
+            </Chip>
+          </div>
+        )}
         <ul className="flex flex-col gap-2">
           {alerts.slice(0, CARD_MAX_ROWS).map((a, i) =>
             !a.parsed ? (
@@ -282,17 +322,19 @@ function CardBody({ kind, data }: { kind: GovCommandKind; data: GovDataPayload }
   const r = data.reservoirs
   return (
     <div>
-      <div className="mb-2 flex flex-wrap gap-1.5">
-        <Chip tone="danger">
-          {t("gov", "reservoirOverCapacity")}: {r.overCapacityCount}
-        </Chip>
-        <Chip tone="warning">
-          {t("gov", "reservoirHigh")}: {r.highCount}
-        </Chip>
-        <Chip tone="soft">
-          {t("gov", "reservoirTotal")}: {r.totalReservoirs}
-        </Chip>
-      </div>
+      {mode !== "search" && (
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          <Chip tone="danger">
+            {t("gov", "reservoirOverCapacity")}: {r.overCapacityCount}
+          </Chip>
+          <Chip tone="warning">
+            {t("gov", "reservoirHigh")}: {r.highCount}
+          </Chip>
+          <Chip tone="soft">
+            {t("gov", "reservoirTotal")}: {r.totalReservoirs}
+          </Chip>
+        </div>
+      )}
       <ul className="flex flex-col gap-2">
         {r.top.slice(0, CARD_MAX_ROWS).map((res) => {
           const over = res.percentStorage > RESERVOIR_OVER_PERCENT
@@ -318,8 +360,20 @@ function CardBody({ kind, data }: { kind: GovCommandKind; data: GovDataPayload }
  * commands — same inline-card pattern as `/sensor`. `data` is normally the
  * snapshot persisted with the message (figures from when the command was
  * typed); legacy snapshot-less cards get the panel-level live payload. */
-export function GovInfoCard({ kind, data, snapshot, username, time, isMine, onDismiss, reactions, onToggleReaction }: GovInfoCardProps) {
-  const { t } = useLanguage()
+export function GovInfoCard({
+  kind,
+  data,
+  snapshot,
+  mode = "highest",
+  label,
+  username,
+  time,
+  isMine,
+  onDismiss,
+  reactions,
+  onToggleReaction,
+}: GovInfoCardProps) {
+  const { t, locale } = useLanguage()
   const { token, icon: Icon, titleKey } = GOV_COMMANDS[kind]
 
   return (
@@ -338,7 +392,21 @@ export function GovInfoCard({ kind, data, snapshot, username, time, isMine, onDi
 
       <div className="glass-panel-strong relative flex w-full max-w-md flex-col gap-3 p-4">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="text-sm font-semibold text-ink">{t("gov", titleKey)}</h3>
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-ink">{t("gov", titleKey)}</h3>
+            {mode === "local" && label && (
+              <p className="mt-0.5 flex items-center gap-1 text-xs text-accent">
+                <LocateFixed className="h-3 w-3 shrink-0" />
+                {t("gov", "localFilteredTo")} {locale === "th" ? `จ.${label.th}` : label.en}
+              </p>
+            )}
+            {mode === "search" && (
+              <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-soft">
+                <Search className="h-3 w-3 shrink-0" />
+                {t("community", "govSearchResult")}
+              </p>
+            )}
+          </div>
           {onDismiss && (
             <button type="button" onClick={onDismiss} aria-label={t("sensor", "close")} className="glass-interactive -m-1 rounded-full p-1 text-ink-soft">
               <X className="h-3.5 w-3.5" />
@@ -352,7 +420,7 @@ export function GovInfoCard({ kind, data, snapshot, username, time, isMine, onDi
             {t("common", "loading")}
           </div>
         ) : (
-          <CardBody kind={kind} data={data} />
+          <CardBody kind={kind} data={data} mode={mode} />
         )}
 
         {snapshot && (

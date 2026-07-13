@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { Send, X, ArrowDown, Gauge, Bot, LoaderCircle } from "lucide-react"
+import { Send, X, ArrowDown, Gauge, Bot, LoaderCircle, LocateFixed, TrendingUp } from "lucide-react"
 import { useLanguage } from "@/hooks/use-language"
 import { useAuth } from "@/hooks/use-auth"
 import { useCommunityChat } from "@/hooks/use-community-chat"
@@ -20,8 +20,12 @@ import { cn } from "@/lib/utils"
 import { MessageItem } from "@/components/community/message-item"
 import { ChatCommandMenu } from "@/components/community/chat-command-menu"
 import { SensorInfoCard } from "@/components/community/sensor-info-card"
-import { GovInfoCard, GOV_COMMANDS, GOV_KIND_TO_FIELD, EMPTY_GOV_PAYLOAD } from "@/components/community/gov-info-card"
+import { GovInfoCard, GOV_COMMANDS, GOV_KIND_TO_FIELD, EMPTY_GOV_PAYLOAD, type GovCardPayload } from "@/components/community/gov-info-card"
 import type { GovDataPayload } from "@/app/api/gov/route"
+import { resolveViaGps } from "@/hooks/use-geolocation"
+import { RIVER_HIGH_LEVEL, RIVER_OVERFLOW_LEVEL } from "@/lib/gov/thaiwater"
+import type { GovNearbyStation, GovRainStation, GovRiverStation, GovWarningAlert } from "@/lib/gov/thaiwater"
+import type { GovReservoir } from "@/lib/gov/rid-reservoir"
 import { AIExchangeMessage, type AIExchange } from "@/components/community/ai-exchange-message"
 import type { AIContext, ChatMessage, GovCommandKind, Sensor, WarningSeverity } from "@/types"
 
@@ -57,7 +61,7 @@ type SlashState =
   | { type: "menu"; matches: SlashCommand[] }
   | { type: "sensor"; query: string }
   | { type: "ai"; question: string }
-  | { type: "gov"; kind: GovCommandKind }
+  | { type: "gov"; kind: GovCommandKind; query: string }
   | null
 
 function parseSlash(draft: string): SlashState {
@@ -73,14 +77,46 @@ function parseSlash(draft: string): SlashState {
 
   if (cmd === "sensor") return { type: "sensor", query: draft.slice(spaceIdx + 1) }
   if (cmd === "ai") return { type: "ai", question: draft.slice(spaceIdx + 1) }
-  // Gov commands take no argument, so "/rainfall " (trailing space) is
-  // already complete — Enter posts the card.
+  // Gov commands open a scope menu: highest / near me, or type to search by name.
   const govKind = GOV_KINDS.find((kind) => kind === cmd)
-  if (govKind) return { type: "gov", kind: govKind }
+  if (govKind) return { type: "gov", kind: govKind, query: draft.slice(spaceIdx + 1) }
   return null
 }
 
-type MenuItem = { kind: "command"; command: SlashCommand } | { kind: "sensor"; sensor: Sensor }
+/** A result row from /api/gov/search — shape depends on the command. */
+type GovSearchResult = GovRainStation | GovRiverStation | GovWarningAlert | GovReservoir
+
+type MenuItem =
+  | { kind: "command"; command: SlashCommand }
+  | { kind: "sensor"; sensor: Sensor }
+  | { kind: "govopt"; govKind: GovCommandKind; opt: "highest" | "local" }
+  | { kind: "govresult"; govKind: GovCommandKind; item: GovSearchResult }
+
+/** Display strings for a search-result menu row (also used as its key). */
+function govResultDisplay(govKind: GovCommandKind, item: GovSearchResult, locale: string): { title: string; sub: string; value: string } {
+  if (govKind === "reservoir") {
+    const r = item as GovReservoir
+    return { title: r.name, sub: locale === "th" ? r.region.th : r.region.en, value: `${r.percentStorage.toFixed(0)}%` }
+  }
+  if (govKind === "river") {
+    const s = item as GovRiverStation
+    return {
+      title: s.stationName,
+      sub: [s.river, locale === "th" ? s.province.th : s.province.en].filter(Boolean).join(" · "),
+      value: s.storagePercent !== null ? `${s.storagePercent.toFixed(0)}%` : "",
+    }
+  }
+  if (govKind === "floodalert") {
+    const a = item as GovWarningAlert
+    return { title: a.station, sub: `จ.${a.province}`, value: `${a.amountMm.toFixed(1)} mm` }
+  }
+  const s = item as GovRainStation
+  return {
+    title: s.stationName,
+    sub: locale === "th" ? `${s.amphoe.th} · ${s.province.th}` : `${s.amphoe.en} · ${s.province.en}`,
+    value: `${s.rain24h.toFixed(1)} mm`,
+  }
+}
 
 function CommandMenuRow({ command }: { command: SlashCommand }) {
   const { t } = useLanguage()
@@ -119,17 +155,79 @@ export function ChatPanel() {
   // Snapshot source for a NEW gov card: reuse the already-loaded payload if
   // there is one, otherwise a one-off request (cheap — served from the
   // route's 15-min upstream cache, not from the agencies).
-  async function postGovCard(kind: GovCommandKind) {
-    let payload: GovDataPayload | null = govData
-    if (!payload) {
-      try {
-        const res = await fetch("/api/gov", { cache: "no-store" })
-        payload = res.ok ? ((await res.json()) as GovDataPayload) : null
-      } catch {
-        payload = null
+  async function getGovPayload(): Promise<GovDataPayload | null> {
+    if (govData) return govData
+    try {
+      const res = await fetch("/api/gov", { cache: "no-store" })
+      return res.ok ? ((await res.json()) as GovDataPayload) : null
+    } catch {
+      return null
+    }
+  }
+
+  async function postGovHighest(kind: GovCommandKind) {
+    const payload = await getGovPayload()
+    const wrapper: GovCardPayload = { mode: "highest", data: payload ? payload[GOV_KIND_TO_FIELD[kind]] : null }
+    await sendGovCard(kind, wrapper)
+  }
+
+  /** "Based on my location": GPS → nearest stations → sender's province.
+   * Rainfall snapshots the near-you list itself; river/flood alerts snapshot
+   * the nationwide data filtered to that province. */
+  async function postGovLocal(kind: GovCommandKind) {
+    let lat: number, lon: number
+    try {
+      const loc = await resolveViaGps()
+      lat = loc.lat
+      lon = loc.lon
+    } catch {
+      showNotice(t("gov", "nearbyNeedsGps"))
+      return
+    }
+
+    let stations: GovNearbyStation[] = []
+    try {
+      const res = await fetch(`/api/gov/nearby?lat=${lat}&lon=${lon}`, { cache: "no-store" })
+      if (res.ok) stations = ((await res.json()).stations ?? []) as GovNearbyStation[]
+    } catch {
+      // fall through with no stations — the card will show its empty state
+    }
+    const province = stations[0]?.province
+
+    let data: unknown
+    if (kind === "rainfall") {
+      data = stations
+    } else {
+      const payload = await getGovPayload()
+      if (kind === "river") {
+        const situation = payload?.riverSituation
+        const critical = situation && province ? situation.critical.filter((s) => s.province.th === province.th) : []
+        data = situation
+          ? {
+              totalStations: critical.length,
+              overflowCount: critical.filter((s) => s.situationLevel >= RIVER_OVERFLOW_LEVEL).length,
+              highCount: critical.filter((s) => s.situationLevel === RIVER_HIGH_LEVEL).length,
+              critical,
+            }
+          : null
+      } else {
+        const alerts = payload?.waterWarnings
+        data = alerts ? (province ? alerts.filter((a) => a.parsed && a.province === province.th) : []) : null
       }
     }
-    await sendGovCard(kind, payload ? payload[GOV_KIND_TO_FIELD[kind]] : null)
+
+    const wrapper: GovCardPayload = { mode: "local", label: province, data }
+    await sendGovCard(kind, wrapper)
+  }
+
+  /** A single station/reservoir/alert picked from the name-search menu. */
+  async function postGovSearch(kind: GovCommandKind, item: GovSearchResult) {
+    let data: unknown
+    if (kind === "river") data = { totalStations: 0, overflowCount: 0, highCount: 0, critical: [item] }
+    else if (kind === "reservoir") data = { date: "", totalReservoirs: 0, overCapacityCount: 0, highCount: 0, top: [item] }
+    else data = [item]
+    const wrapper: GovCardPayload = { mode: "search", data }
+    await sendGovCard(kind, wrapper)
   }
 
   // ── /sensor: live sensor directory for autocomplete + inline info cards ──
@@ -189,6 +287,11 @@ export function ChatPanel() {
   const [draft, setDraft] = useState("")
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+
+  function showNotice(text: string) {
+    setNotice(text)
+    setTimeout(() => setNotice(null), SITE_CONFIG.community.chatNoticeDurationMs)
+  }
   const [highlightedIndex, setHighlightedIndex] = useState(0)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -231,10 +334,16 @@ export function ChatPanel() {
 
       if (message.type === "gov") {
         if (!message.gov_kind || !(message.gov_kind in GOV_COMMANDS)) continue
-        // Snapshot from post time when present; legacy cards fall back to live data.
+        // Snapshot from post time when present; legacy cards fall back to live
+        // data. Newer snapshots wrap the section in { mode, label, data };
+        // older ones stored the bare section (implicitly "highest").
+        const raw = message.gov_payload
+        const wrapped =
+          raw !== null && typeof raw === "object" && !Array.isArray(raw) && "mode" in raw ? (raw as GovCardPayload) : null
+        const section = wrapped ? wrapped.data : raw
         const cardData =
-          message.gov_payload != null
-            ? ({ ...EMPTY_GOV_PAYLOAD, [GOV_KIND_TO_FIELD[message.gov_kind]]: message.gov_payload } as GovDataPayload)
+          raw != null
+            ? ({ ...EMPTY_GOV_PAYLOAD, [GOV_KIND_TO_FIELD[message.gov_kind]]: section } as GovDataPayload)
             : govData
         items.push({
           id: message.id,
@@ -242,7 +351,9 @@ export function ChatPanel() {
             <GovInfoCard
               kind={message.gov_kind}
               data={cardData}
-              snapshot={message.gov_payload != null}
+              snapshot={raw != null}
+              mode={wrapped?.mode}
+              label={wrapped?.label}
               username={message.users?.username}
               time={
                 message.created_at
@@ -308,6 +419,38 @@ export function ChatPanel() {
 
   const slash = useMemo(() => parseSlash(draft), [draft])
 
+  // ── Gov name search: debounced server-side lookup over the full cached
+  // feeds (the client payload only carries top-N lists). ──
+  const [govResults, setGovResults] = useState<GovSearchResult[]>([])
+  const [govSearching, setGovSearching] = useState(false)
+  const govSearchKind = slash?.type === "gov" ? slash.kind : null
+  const govSearchQuery = slash?.type === "gov" ? slash.query.trim() : ""
+
+  useEffect(() => {
+    if (!govSearchKind || !govSearchQuery) {
+      setGovResults([])
+      setGovSearching(false)
+      return
+    }
+    setGovSearching(true)
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/gov/search?kind=${govSearchKind}&q=${encodeURIComponent(govSearchQuery)}`)
+        const json = res.ok ? await res.json() : { results: [] }
+        if (!cancelled) setGovResults(json.results ?? [])
+      } catch {
+        if (!cancelled) setGovResults([])
+      } finally {
+        if (!cancelled) setGovSearching(false)
+      }
+    }, 300)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [govSearchKind, govSearchQuery])
+
   const menuItems = useMemo<MenuItem[]>(() => {
     if (slash?.type === "menu") return slash.matches.map((command) => ({ kind: "command" as const, command }))
     if (slash?.type === "sensor") {
@@ -316,10 +459,19 @@ export function ChatPanel() {
         .filter((s) => !q || s.label.toLowerCase().includes(q) || s.sensor_id.toLowerCase().includes(q))
         .map((sensor) => ({ kind: "sensor" as const, sensor }))
     }
+    if (slash?.type === "gov") {
+      if (!slash.query.trim()) {
+        const opts: MenuItem[] = [{ kind: "govopt", govKind: slash.kind, opt: "highest" }]
+        // Reservoirs only have region granularity — "near me" would mislead.
+        if (slash.kind !== "reservoir") opts.push({ kind: "govopt", govKind: slash.kind, opt: "local" })
+        return opts
+      }
+      return govResults.map((item) => ({ kind: "govresult" as const, govKind: slash.kind, item }))
+    }
     return []
-  }, [slash, sensors])
+  }, [slash, sensors, govResults])
 
-  const menuOpen = slash?.type === "menu" || slash?.type === "sensor"
+  const menuOpen = slash?.type === "menu" || slash?.type === "sensor" || slash?.type === "gov"
   const clampedIndex = menuItems.length > 0 ? Math.min(highlightedIndex, menuItems.length - 1) : 0
 
   useEffect(() => setHighlightedIndex(0), [draft])
@@ -344,14 +496,17 @@ export function ChatPanel() {
 
   async function selectMenuItem(item: MenuItem) {
     if (item.kind === "command") {
-      if (item.command.key === "sensor" || item.command.key === "ai") {
-        setDraft(`${item.command.token} `)
-        inputRef.current?.focus()
-      } else {
-        // Gov commands take no argument — picking one posts the card.
-        setDraft("")
-        await postGovCard(item.command.key)
-      }
+      // Every command takes a second step now — /sensor and gov commands
+      // open their scope/search menus, /AI awaits a question.
+      setDraft(`${item.command.token} `)
+      inputRef.current?.focus()
+    } else if (item.kind === "govopt") {
+      setDraft("")
+      if (item.opt === "highest") await postGovHighest(item.govKind)
+      else await postGovLocal(item.govKind)
+    } else if (item.kind === "govresult") {
+      setDraft("")
+      await postGovSearch(item.govKind, item.item)
     } else {
       setDraft("")
       await sendSensorCard(item.sensor)
@@ -389,13 +544,7 @@ export function ChatPanel() {
       return
     }
 
-    if (slash?.type === "gov") {
-      setDraft("")
-      await postGovCard(slash.kind)
-      return
-    }
-
-    if (slash?.type === "sensor" || slash?.type === "menu") {
+    if (slash?.type === "gov" || slash?.type === "sensor" || slash?.type === "menu") {
       // Incomplete command — require an explicit pick from the dropdown.
       return
     }
@@ -415,7 +564,9 @@ export function ChatPanel() {
       ? t("community", "askAiPlaceholder")
       : slash?.type === "sensor"
         ? t("community", "commandSearchPlaceholder")
-        : t("community", "placeholder")
+        : slash?.type === "gov"
+          ? t("community", "govSearchPlaceholder")
+          : t("community", "placeholder")
 
   return (
     <div className="glass-panel flex h-[clamp(24rem,70vh,42rem)] flex-col overflow-hidden">
@@ -460,14 +611,54 @@ export function ChatPanel() {
               <ChatCommandMenu<MenuItem>
                 anchorRef={inputRef}
                 items={menuItems}
-                getKey={(item) => (item.kind === "command" ? item.command.token : item.sensor.id)}
+                getKey={(item) =>
+                  item.kind === "command"
+                    ? item.command.token
+                    : item.kind === "sensor"
+                      ? item.sensor.id
+                      : item.kind === "govopt"
+                        ? `${item.govKind}:${item.opt}`
+                        : `${item.govKind}:${JSON.stringify(govResultDisplay(item.govKind, item.item, locale))}`
+                }
                 highlightedIndex={clampedIndex}
                 onHover={setHighlightedIndex}
                 onSelect={selectMenuItem}
-                emptyMessage={slash?.type === "sensor" ? t("sensor", "noMatch") : undefined}
+                emptyMessage={
+                  slash?.type === "sensor"
+                    ? t("sensor", "noMatch")
+                    : slash?.type === "gov"
+                      ? govSearching
+                        ? t("common", "loading")
+                        : t("community", "govSearchNoMatch")
+                      : undefined
+                }
                 renderItem={(item) =>
                   item.kind === "command" ? (
                     <CommandMenuRow command={item.command} />
+                  ) : item.kind === "govopt" ? (
+                    <>
+                      {item.opt === "highest" ? (
+                        <TrendingUp className="h-4 w-4 shrink-0" />
+                      ) : (
+                        <LocateFixed className="h-4 w-4 shrink-0" />
+                      )}
+                      <span className="font-medium">
+                        {item.opt === "highest" ? t("community", "govOptHighest") : t("gov", "localToggle")}
+                      </span>
+                    </>
+                  ) : item.kind === "govresult" ? (
+                    (() => {
+                      const d = govResultDisplay(item.govKind, item.item, locale)
+                      return (
+                        <>
+                          <span className="flex min-w-0 flex-1 flex-col">
+                            <span className="truncate">{d.title}</span>
+                            <span className="truncate text-xs text-ink-soft">{d.sub}</span>
+                          </span>
+                          {d.value && <span className="shrink-0 font-mono text-xs text-ink-soft">{d.value}</span>}
+                        </>
+                      )
+                    })()
                   ) : (
                     <>
                       <span
@@ -505,7 +696,7 @@ export function ChatPanel() {
             />
             <button
               type="submit"
-              disabled={!draft.trim() || slash?.type === "sensor" || slash?.type === "menu"}
+              disabled={!draft.trim() || slash?.type === "sensor" || slash?.type === "menu" || slash?.type === "gov"}
               className="glass-panel-strong flex h-10 w-10 items-center justify-center text-accent transition-transform duration-300 ease-glass hover:scale-105 disabled:opacity-50"
               aria-label={t("community", "send")}
             >

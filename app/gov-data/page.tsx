@@ -1,10 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { CloudRain, CloudSun, Droplets, ExternalLink, Landmark, Megaphone, ShieldAlert, Waves } from "lucide-react"
+import { CloudRain, CloudSun, Droplets, ExternalLink, Landmark, LocateFixed, Megaphone, RotateCw, ShieldAlert, Waves } from "lucide-react"
 import { Header } from "@/components/header"
 import { useGovData } from "@/hooks/use-gov-data"
+import { useGeolocation } from "@/hooks/use-geolocation"
+import { useNearbyGovStations } from "@/hooks/use-nearby-gov-stations"
 import { useLanguage } from "@/hooks/use-language"
+import { cn } from "@/lib/utils"
 import type { GovAnnouncement } from "@/lib/gov/tmd-news"
 import type { GovDailyForecast } from "@/lib/gov/tmd-forecast"
 import type { GovRiverSituation, GovWarningAlert } from "@/lib/gov/thaiwater"
@@ -120,28 +123,38 @@ function ForecastBody({ forecast }: { forecast: GovDailyForecast }) {
   )
 }
 
-function RiverBody({ situation }: { situation: GovRiverSituation }) {
+function RiverBody({ situation, provinceFilter }: { situation: GovRiverSituation; provinceFilter?: string }) {
   const { t, locale } = useLanguage()
+
+  // Filtered mode lists only the viewer's province; the nationwide summary
+  // chips would contradict that list, so they're hidden there.
+  const critical = provinceFilter
+    ? situation.critical.filter((s) => s.province.th === provinceFilter)
+    : situation.critical
 
   return (
     <div>
-      <div className="mb-3 flex flex-wrap gap-2">
-        <span className="glass-panel-strong px-3 py-1.5 text-xs font-medium text-status-danger">
-          {t("gov", "riverOverflow")}: {situation.overflowCount}
-        </span>
-        <span className="glass-panel-strong px-3 py-1.5 text-xs font-medium text-status-warning">
-          {t("gov", "riverHigh")}: {situation.highCount}
-        </span>
-        <span className="glass-panel-strong px-3 py-1.5 text-xs font-medium text-ink-soft">
-          {t("gov", "riverStationsTotal")}: {situation.totalStations}
-        </span>
-      </div>
+      {!provinceFilter && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          <span className="glass-panel-strong px-3 py-1.5 text-xs font-medium text-status-danger">
+            {t("gov", "riverOverflow")}: {situation.overflowCount}
+          </span>
+          <span className="glass-panel-strong px-3 py-1.5 text-xs font-medium text-status-warning">
+            {t("gov", "riverHigh")}: {situation.highCount}
+          </span>
+          <span className="glass-panel-strong px-3 py-1.5 text-xs font-medium text-ink-soft">
+            {t("gov", "riverStationsTotal")}: {situation.totalStations}
+          </span>
+        </div>
+      )}
 
-      {situation.critical.length === 0 ? (
-        <p className="py-4 text-center text-sm text-status-normal">{t("gov", "riverAllNormal")}</p>
+      {critical.length === 0 ? (
+        <p className="py-4 text-center text-sm text-status-normal">
+          {provinceFilter ? t("gov", "localRiverNone") : t("gov", "riverAllNormal")}
+        </p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {situation.critical.map((s, i) => {
+          {critical.map((s, i) => {
             const overflowing = s.situationLevel >= RIVER_OVERFLOW_LEVEL
             return (
               <li key={`${s.stationName}-${i}`} className="glass-panel-strong flex items-center gap-3 p-3">
@@ -189,20 +202,28 @@ function warningPeriodLabel(periodType: string, locale: string): string {
 
 const WARNINGS_COLLAPSED_COUNT = 6
 
-function WarningsBody({ alerts }: { alerts: GovWarningAlert[] }) {
+function WarningsBody({ alerts, provinceFilter }: { alerts: GovWarningAlert[]; provinceFilter?: string }) {
   const { t, locale } = useLanguage()
   const [showAll, setShowAll] = useState(false)
   const [showRaw, setShowRaw] = useState(false)
 
-  const flashFloodCount = alerts.filter((a) => a.flashFloodRisk).length
-  const veryHeavyCount = alerts.filter((a) => a.veryHeavy).length
+  // Unparseable alerts can't be attributed to a province, so filtered mode
+  // leaves them out rather than showing possibly-irrelevant ones.
+  const scoped = provinceFilter ? alerts.filter((a) => a.parsed && a.province === provinceFilter) : alerts
+
+  const flashFloodCount = scoped.filter((a) => a.flashFloodRisk).length
+  const veryHeavyCount = scoped.filter((a) => a.veryHeavy).length
   // Most urgent first: flash-flood risk, then very heavy rain — the feed is
   // already newest-first, which stable sort preserves within each tier.
-  const sorted = [...alerts].sort(
+  const sorted = [...scoped].sort(
     (a, b) =>
       Number(b.flashFloodRisk) - Number(a.flashFloodRisk) || Number(b.veryHeavy) - Number(a.veryHeavy),
   )
   const visible = showAll ? sorted : sorted.slice(0, WARNINGS_COLLAPSED_COUNT)
+
+  if (provinceFilter && scoped.length === 0) {
+    return <p className="py-4 text-center text-sm text-status-normal">{t("gov", "localNoWarnings")}</p>
+  }
 
   return (
     <div>
@@ -214,7 +235,7 @@ function WarningsBody({ alerts }: { alerts: GovWarningAlert[] }) {
           {t("gov", "rainVeryHeavy")}: {veryHeavyCount}
         </span>
         <span className="glass-panel-strong px-3 py-1.5 text-xs font-medium text-ink-soft">
-          {t("gov", "warnTotal")}: {alerts.length}
+          {t("gov", "warnTotal")}: {scoped.length}
         </span>
       </div>
 
@@ -394,6 +415,20 @@ export default function GovDataPage() {
   const { t, locale } = useLanguage()
   const { data, loading, error } = useGovData()
 
+  // ── "Based on my location": GPS → nearest HII station → its province is
+  // treated as the viewer's. Rainfall switches to a near-you list; river and
+  // flood alerts filter to that province. TMD text and RID reservoirs stay
+  // national — they have no useful per-province granularity. Location is
+  // only resolved (and the GPS permission prompt shown) once toggled on. ──
+  const [localMode, setLocalMode] = useState(false)
+  const { location, status: geoStatus, retry: retryGeo } = useGeolocation(localMode)
+  const { stations: nearbyStations, loading: nearbyLoading } = useNearbyGovStations(localMode ? location : null)
+  const userProvince = localMode && nearbyStations.length > 0 ? nearbyStations[0].province : null
+  const localActive = localMode && userProvince !== null
+  // The nearby hook only trusts real GPS fixes — an IP-derived location can
+  // point at the wrong province entirely, so treat it the same as "denied".
+  const needsGps = localMode && geoStatus !== "resolving" && location?.source !== "gps"
+
   const emptyNote = (text: string) => <p className="py-4 text-center text-sm text-ink-soft">{text}</p>
   const sectionError = emptyNote(t("gov", "sectionError"))
 
@@ -403,15 +438,72 @@ export default function GovDataPage() {
 
       <div className="mx-auto flex max-w-4xl flex-col gap-4 px-4 pt-4 sm:px-6">
         <div className="glass-panel animate-fade-in-up p-5">
-          <div className="flex items-center gap-2.5">
-            <span className="glass-panel-strong flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
-              <Landmark className="h-5 w-5 text-accent" />
-            </span>
-            <div>
-              <h1 className="text-lg font-semibold tracking-tight">{t("gov", "title")}</h1>
-              <p className="text-sm text-ink-soft">{t("gov", "subtitle")}</p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="glass-panel-strong flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
+                <Landmark className="h-5 w-5 text-accent" />
+              </span>
+              <div className="min-w-0">
+                <h1 className="text-lg font-semibold tracking-tight">{t("gov", "title")}</h1>
+                <p className="text-sm text-ink-soft">{t("gov", "subtitle")}</p>
+              </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setLocalMode((v) => !v)}
+              aria-pressed={localMode}
+              className={cn(
+                "glass-panel-strong glass-interactive flex shrink-0 items-center gap-2 px-3 py-2 text-xs font-medium",
+                localMode ? "text-accent" : "text-ink-soft",
+              )}
+            >
+              <LocateFixed className="h-4 w-4" />
+              {t("gov", "localToggle")}
+              <span
+                aria-hidden
+                className={cn(
+                  "relative h-4 w-7 shrink-0 rounded-full transition-colors duration-200",
+                  localMode ? "bg-accent/70" : "bg-surface-strong",
+                )}
+              >
+                <span
+                  className={cn(
+                    "absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-all duration-200",
+                    localMode ? "left-3.5" : "left-0.5",
+                  )}
+                />
+              </span>
+            </button>
           </div>
+
+          {localMode && (
+            <div className="mt-3 text-xs">
+              {needsGps ? (
+                <span className="flex flex-wrap items-center gap-2 text-status-warning">
+                  {t("gov", "nearbyNeedsGps")}
+                  <button
+                    type="button"
+                    onClick={retryGeo}
+                    className="glass-panel-strong glass-interactive px-2.5 py-1 font-medium"
+                  >
+                    {t("gov", "nearbyEnableGps")}
+                  </button>
+                </span>
+              ) : localActive ? (
+                <span className="flex items-center gap-1.5 text-accent">
+                  <LocateFixed className="h-3.5 w-3.5" />
+                  {t("gov", "localFilteredTo")} {locale === "th" ? `จ.${userProvince.th}` : userProvince.en}
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 text-ink-soft">
+                  <RotateCw className="h-3.5 w-3.5 animate-spin" />
+                  {t("location", "resolving")}
+                </span>
+              )}
+            </div>
+          )}
+
           {data && (
             <p className="mt-3 text-xs text-ink-soft">
               {t("status", "lastUpdated")}:{" "}
@@ -474,10 +566,48 @@ export default function GovDataPage() {
                 <div className="animate-fade-in-up delay-150">
                   <SectionShell
                     icon={<CloudRain className="h-4 w-4 text-accent" />}
-                    title={t("gov", "rainfallTitle")}
+                    title={localActive ? t("gov", "nearbyTitle") : t("gov", "rainfallTitle")}
                     description={t("gov", "rainfallDesc")}
                   >
-                    {data.rainfall === null ? (
+                    {localActive ? (
+                      nearbyLoading && nearbyStations.length === 0 ? (
+                        emptyNote(t("common", "loading"))
+                      ) : nearbyStations.length === 0 ? (
+                        emptyNote(t("status", "noData"))
+                      ) : (
+                        <ol className="flex flex-col gap-2">
+                          {nearbyStations.map((s, i) => {
+                            const veryHeavy = s.rain24h > RAIN_VERY_HEAVY_MM
+                            const heavy = s.rain24h > RAIN_HEAVY_MM
+                            return (
+                              <li key={`${s.stationName}-${i}`} className="glass-panel-strong flex items-center gap-3 p-3">
+                                <span className="w-6 shrink-0 text-center text-sm font-semibold text-ink-soft">{i + 1}</span>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-medium">
+                                    {t("gov", "rainfallStation")}{s.stationName ? ` ${s.stationName}` : ""}
+                                  </p>
+                                  <p className="truncate text-xs text-ink-soft">
+                                    {locale === "th" ? `${s.amphoe.th} · ${s.province.th}` : `${s.amphoe.en} · ${s.province.en}`}
+                                  </p>
+                                </div>
+                                <div className="shrink-0 text-right">
+                                  <p
+                                    className={`text-sm font-semibold ${
+                                      veryHeavy ? "text-status-danger" : heavy ? "text-status-warning" : "text-accent"
+                                    }`}
+                                  >
+                                    {s.rain24h.toFixed(1)} {t("gov", "mm")}
+                                  </p>
+                                  <p className="text-[10px] text-ink-soft">
+                                    {s.distanceKm.toFixed(1)} {t("gov", "kmAway")}
+                                  </p>
+                                </div>
+                              </li>
+                            )
+                          })}
+                        </ol>
+                      )
+                    ) : data.rainfall === null ? (
                       sectionError
                     ) : data.rainfall.length === 0 ? (
                       emptyNote(t("status", "noData"))
@@ -527,7 +657,11 @@ export default function GovDataPage() {
                     title={t("gov", "riverTitle")}
                     description={t("gov", "riverDesc")}
                   >
-                    {data.riverSituation === null ? sectionError : <RiverBody situation={data.riverSituation} />}
+                    {data.riverSituation === null ? (
+                      sectionError
+                    ) : (
+                      <RiverBody situation={data.riverSituation} provinceFilter={localActive ? userProvince.th : undefined} />
+                    )}
                   </SectionShell>
                 </div>
 
@@ -542,7 +676,7 @@ export default function GovDataPage() {
                     ) : data.waterWarnings.length === 0 ? (
                       emptyNote(t("gov", "noWarnings"))
                     ) : (
-                      <WarningsBody alerts={data.waterWarnings} />
+                      <WarningsBody alerts={data.waterWarnings} provinceFilter={localActive ? userProvince.th : undefined} />
                     )}
                   </SectionShell>
                 </div>

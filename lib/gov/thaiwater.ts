@@ -70,6 +70,9 @@ interface RawRainStation {
 
 const THAIWATER_BASE = "https://api-v3.thaiwater.net/api/v1/thaiwater30/public"
 
+/** Cap for name-search results (community chat gov commands). */
+const SEARCH_LIMIT = 10
+
 /** TMD 24h rainfall intensity criteria: heavy = 35.1–90 mm, very heavy > 90.
  * Shared by every UI that color-codes rain amounts. */
 export const RAIN_HEAVY_MM = 35
@@ -169,6 +172,23 @@ export async function fetchTopRainfall(): Promise<GovRainStation[]> {
     .map(toGovRainStation)
 }
 
+/** Rain stations matched by station/amphoe/province name (Thai or English),
+ * wettest first — backs the chat `/rainfall <name>` search. Server-side
+ * because only the server has the full (cached) multi-MB feed. */
+export async function searchRainStations(query: string): Promise<GovRainStation[]> {
+  const q = query.toLowerCase()
+  const stations = await fetchRainFeed()
+  return stations
+    .map(toGovRainStation)
+    .filter((s) =>
+      [s.stationName, s.amphoe.th, s.amphoe.en, s.province.th, s.province.en].some((v) =>
+        v.toLowerCase().includes(q),
+      ),
+    )
+    .sort((a, b) => b.rain24h - a.rain24h)
+    .slice(0, SEARCH_LIMIT)
+}
+
 // ─── River water levels (waterlevel_load) ──────────────────────────────────
 
 /** ThaiWater's official 5-step situation scale for river stations:
@@ -212,33 +232,41 @@ function toNumber(value: string | number | null | undefined): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-export async function fetchRiverSituation(): Promise<GovRiverSituation> {
+async function fetchRiverFeed(): Promise<RawRiverStation[]> {
   const response = await fetch(`${THAIWATER_BASE}/waterlevel_load`, {
     next: { revalidate: SITE_CONFIG.fetch.govRevalidateSeconds },
   })
   if (!response.ok) throw new Error(`ThaiWater waterlevel API error: ${response.status}`)
 
   const json = (await response.json()) as { waterlevel_data?: { data?: RawRiverStation[] } }
-  const stations = (json.waterlevel_data?.data ?? []).filter((s) => typeof s.situation_level === "number")
+  return (json.waterlevel_data?.data ?? []).filter((s) => typeof s.situation_level === "number")
+}
+
+function toGovRiverStation(s: RawRiverStation): GovRiverStation {
+  return {
+    stationName: s.station?.tele_station_name?.th ?? s.station?.tele_station_name?.en ?? "",
+    river: s.river_name ?? "",
+    province: {
+      th: s.geocode?.province_name?.th ?? "",
+      en: s.geocode?.province_name?.en ?? s.geocode?.province_name?.th ?? "",
+    },
+    amphoe: {
+      th: s.geocode?.amphoe_name?.th ?? "",
+      en: s.geocode?.amphoe_name?.en ?? s.geocode?.amphoe_name?.th ?? "",
+    },
+    waterlevelMsl: toNumber(s.waterlevel_msl),
+    storagePercent: toNumber(s.storage_percent),
+    situationLevel: s.situation_level as number,
+    datetime: s.waterlevel_datetime,
+  }
+}
+
+export async function fetchRiverSituation(): Promise<GovRiverSituation> {
+  const stations = await fetchRiverFeed()
 
   const critical = stations
     .filter((s) => (s.situation_level as number) >= RIVER_HIGH_LEVEL)
-    .map((s) => ({
-      stationName: s.station?.tele_station_name?.th ?? s.station?.tele_station_name?.en ?? "",
-      river: s.river_name ?? "",
-      province: {
-        th: s.geocode?.province_name?.th ?? "",
-        en: s.geocode?.province_name?.en ?? s.geocode?.province_name?.th ?? "",
-      },
-      amphoe: {
-        th: s.geocode?.amphoe_name?.th ?? "",
-        en: s.geocode?.amphoe_name?.en ?? s.geocode?.amphoe_name?.th ?? "",
-      },
-      waterlevelMsl: toNumber(s.waterlevel_msl),
-      storagePercent: toNumber(s.storage_percent),
-      situationLevel: s.situation_level as number,
-      datetime: s.waterlevel_datetime,
-    }))
+    .map(toGovRiverStation)
     .sort((a, b) => b.situationLevel - a.situationLevel || (b.storagePercent ?? 0) - (a.storagePercent ?? 0))
     .slice(0, SITE_CONFIG.fetch.govRiverStations)
 
@@ -248,6 +276,42 @@ export async function fetchRiverSituation(): Promise<GovRiverSituation> {
     highCount: stations.filter((s) => s.situation_level === RIVER_HIGH_LEVEL).length,
     critical,
   }
+}
+
+/** River stations matched by station/river/amphoe/province name — includes
+ * normal-level stations (unlike the situation summary, which only lists
+ * high/overflowing ones), worst first. */
+export async function searchRiverStations(query: string): Promise<GovRiverStation[]> {
+  const q = query.toLowerCase()
+  const stations = await fetchRiverFeed()
+  return stations
+    .map(toGovRiverStation)
+    .filter((s) =>
+      [s.stationName, s.river, s.amphoe.th, s.amphoe.en, s.province.th, s.province.en].some((v) =>
+        v.toLowerCase().includes(q),
+      ),
+    )
+    .sort((a, b) => b.situationLevel - a.situationLevel || (b.storagePercent ?? 0) - (a.storagePercent ?? 0))
+    .slice(0, SEARCH_LIMIT)
+}
+
+/** Current alerts matched by station/tambon/amphoe/province name, most
+ * urgent first. Unparseable alerts are skipped — they can't be attributed
+ * to a place. */
+export async function searchWarningAlerts(query: string): Promise<GovWarningAlert[]> {
+  const q = query.toLowerCase()
+  const alerts = await fetchGovWarnings()
+  return alerts
+    .filter(
+      (a) =>
+        a.parsed &&
+        [a.station, a.tambon, a.amphoe, a.province].some((v) => v.toLowerCase().includes(q)),
+    )
+    .sort(
+      (a, b) =>
+        Number(b.flashFloodRisk) - Number(a.flashFloodRisk) || Number(b.veryHeavy) - Number(a.veryHeavy),
+    )
+    .slice(0, SEARCH_LIMIT)
 }
 
 /** Nearest reporting HII stations to a point — powers the "stations near you"

@@ -87,6 +87,23 @@ async function fetchRidFeed(): Promise<{ date?: string; data?: RawRegionGroup[] 
   throw lastError
 }
 
+function flattenReservoirs(json: { data?: RawRegionGroup[] }): GovReservoir[] {
+  return (json.data ?? []).flatMap((group) =>
+    (group.reservoir ?? [])
+      .filter((r) => typeof r.percent_storage === "number" && typeof r.storage === "number")
+      .map((r) => ({
+        id: r.id,
+        name: r.name,
+        region: { th: group.region, en: REGION_EN[group.region] ?? group.region },
+        capacity: r.storage as number,
+        volume: r.volume ?? 0,
+        percentStorage: r.percent_storage as number,
+        inflow: r.inflow,
+        outflow: r.outflow,
+      })),
+  )
+}
+
 /** Last successful parse, served when every retry fails — reservoir data is
  * daily, so a stale copy beats an empty section. (Per-instance memory: lost
  * on restart/cold start, which just falls back to the error state.) */
@@ -101,20 +118,7 @@ export async function fetchReservoirSituation(): Promise<GovReservoirSituation> 
     throw err
   }
 
-  const reservoirs: GovReservoir[] = (json.data ?? []).flatMap((group) =>
-    (group.reservoir ?? [])
-      .filter((r) => typeof r.percent_storage === "number" && typeof r.storage === "number")
-      .map((r) => ({
-        id: r.id,
-        name: r.name,
-        region: { th: group.region, en: REGION_EN[group.region] ?? group.region },
-        capacity: r.storage as number,
-        volume: r.volume ?? 0,
-        percentStorage: r.percent_storage as number,
-        inflow: r.inflow,
-        outflow: r.outflow,
-      })),
-  )
+  const reservoirs = flattenReservoirs(json)
 
   const situation: GovReservoirSituation = {
     date: json.date ?? "",
@@ -129,4 +133,16 @@ export async function fetchReservoirSituation(): Promise<GovReservoirSituation> 
   }
   lastGood = situation
   return situation
+}
+
+/** All ~460 reservoirs matched by name or region, fullest first — backs the
+ * chat `/reservoir <name>` search (the shared payload only carries the top
+ * few, so search has to happen here against the full cached feed). */
+export async function searchReservoirs(query: string): Promise<GovReservoir[]> {
+  const q = query.toLowerCase()
+  const json = await fetchRidFeed()
+  return flattenReservoirs(json)
+    .filter((r) => [r.name, r.region.th, r.region.en].some((v) => v.toLowerCase().includes(q)))
+    .sort((a, b) => b.percentStorage - a.percentStorage)
+    .slice(0, 10)
 }
