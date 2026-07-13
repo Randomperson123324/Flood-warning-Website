@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { Send, X, ArrowDown, Gauge, Bot, LoaderCircle, LocateFixed, TrendingUp } from "lucide-react"
+import { Send, X, ArrowDown, Gauge, Bot, LoaderCircle, LocateFixed, Search, TrendingUp } from "lucide-react"
 import { useLanguage } from "@/hooks/use-language"
 import { useAuth } from "@/hooks/use-auth"
 import { useCommunityChat } from "@/hooks/use-community-chat"
@@ -89,7 +89,7 @@ type GovSearchResult = GovRainStation | GovRiverStation | GovWarningAlert | GovR
 type MenuItem =
   | { kind: "command"; command: SlashCommand }
   | { kind: "sensor"; sensor: Sensor }
-  | { kind: "govopt"; govKind: GovCommandKind; opt: "highest" | "local" }
+  | { kind: "govopt"; govKind: GovCommandKind; opt: "highest" | "local" | "search" }
   | { kind: "govresult"; govKind: GovCommandKind; item: GovSearchResult }
 
 /** Display strings for a search-result menu row (also used as its key). */
@@ -464,6 +464,7 @@ export function ChatPanel() {
         const opts: MenuItem[] = [{ kind: "govopt", govKind: slash.kind, opt: "highest" }]
         // Reservoirs only have region granularity — "near me" would mislead.
         if (slash.kind !== "reservoir") opts.push({ kind: "govopt", govKind: slash.kind, opt: "local" })
+        opts.push({ kind: "govopt", govKind: slash.kind, opt: "search" })
         return opts
       }
       return govResults.map((item) => ({ kind: "govresult" as const, govKind: slash.kind, item }))
@@ -501,6 +502,11 @@ export function ChatPanel() {
       setDraft(`${item.command.token} `)
       inputRef.current?.focus()
     } else if (item.kind === "govopt") {
+      if (item.opt === "search") {
+        // Not a posting action — just hand focus back so they type the name.
+        inputRef.current?.focus()
+        return
+      }
       setDraft("")
       if (item.opt === "highest") await postGovHighest(item.govKind)
       else await postGovLocal(item.govKind)
@@ -623,7 +629,6 @@ export function ChatPanel() {
                 highlightedIndex={clampedIndex}
                 onHover={setHighlightedIndex}
                 onSelect={selectMenuItem}
-                header={slash?.type === "gov" && !slash.query.trim() ? t("community", "govSearchHint") : undefined}
                 emptyMessage={
                   slash?.type === "sensor"
                     ? t("sensor", "noMatch")
@@ -640,11 +645,22 @@ export function ChatPanel() {
                     <>
                       {item.opt === "highest" ? (
                         <TrendingUp className="h-4 w-4 shrink-0" />
-                      ) : (
+                      ) : item.opt === "local" ? (
                         <LocateFixed className="h-4 w-4 shrink-0" />
+                      ) : (
+                        <Search className="h-4 w-4 shrink-0" />
                       )}
-                      <span className="font-medium">
-                        {item.opt === "highest" ? t("community", "govOptHighest") : t("gov", "localToggle")}
+                      <span className="flex flex-col">
+                        <span className="font-medium">
+                          {item.opt === "highest"
+                            ? t("community", "govOptHighest")
+                            : item.opt === "local"
+                              ? t("gov", "localToggle")
+                              : t("community", "govOptSearch")}
+                        </span>
+                        {item.opt === "search" && (
+                          <span className="text-xs text-ink-soft">{t("community", "govOptSearchDesc")}</span>
+                        )}
                       </span>
                     </>
                   ) : item.kind === "govresult" ? (
