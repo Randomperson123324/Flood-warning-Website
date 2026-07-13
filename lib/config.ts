@@ -36,6 +36,8 @@ export const SITE_CONFIG = {
     govNearbyStations: num(process.env.GOV_NEARBY_STATIONS, 5),
     // Max river stations listed in the "high/overflowing" list on /gov-data.
     govRiverStations: num(process.env.GOV_RIVER_STATIONS, 8),
+    // Max reservoirs listed in the RID "fullest reservoirs" list on /gov-data.
+    govReservoirTop: num(process.env.GOV_RESERVOIR_TOP, 8),
     aiAnalysisIntervalMs: num(process.env.NEXT_PUBLIC_AI_ANALYSIS_INTERVAL_MS, 300_000),
     // Shared by both TMD and Open-Meteo providers — keep it one number so the
     // two sources can never silently drift apart on how many hours they return.

@@ -1,14 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import { CloudRain, CloudSun, ExternalLink, Landmark, Megaphone, ShieldAlert, Waves } from "lucide-react"
+import { CloudRain, CloudSun, Droplets, ExternalLink, Landmark, Megaphone, ShieldAlert, Waves } from "lucide-react"
 import { Header } from "@/components/header"
 import { useGovData } from "@/hooks/use-gov-data"
 import { useLanguage } from "@/hooks/use-language"
 import type { GovAnnouncement } from "@/lib/gov/tmd-news"
 import type { GovDailyForecast } from "@/lib/gov/tmd-forecast"
-import type { GovRiverSituation } from "@/lib/gov/thaiwater"
+import type { GovRiverSituation, GovWarningAlert } from "@/lib/gov/thaiwater"
 import { RAIN_HEAVY_MM, RAIN_VERY_HEAVY_MM, RIVER_OVERFLOW_LEVEL } from "@/lib/gov/thaiwater"
+import type { GovReservoirSituation } from "@/lib/gov/rid-reservoir"
+import { RESERVOIR_HIGH_PERCENT, RESERVOIR_OVER_PERCENT } from "@/lib/gov/rid-reservoir"
 
 /** Feed timestamps look like "2026-07-10 16:13:15" (Thai local time, no zone). */
 function formatFeedDate(value: string, locale: string): string {
@@ -171,21 +173,201 @@ function RiverBody({ situation }: { situation: GovRiverSituation }) {
   )
 }
 
+/** Measurement windows the feed uses, e.g. "1ชม." (1 hr), "สะสม" (running
+ * total since 07:00), "3วัน", "วานนี้". Anything new falls through as-is. */
+function warningPeriodLabel(periodType: string, locale: string): string {
+  const map: Record<string, { th: string; en: string }> = {
+    "1ชม.": { th: "ฝน 1 ชม.", en: "1-hr rain" },
+    สะสม: { th: "ฝนสะสม", en: "Accumulated" },
+    "3วัน": { th: "ฝน 3 วัน", en: "3-day rain" },
+    วานนี้: { th: "ฝนเมื่อวาน", en: "Yesterday" },
+  }
+  const label = map[periodType]
+  if (!label) return `ฝน${periodType}`
+  return locale === "th" ? label.th : label.en
+}
+
+const WARNINGS_COLLAPSED_COUNT = 6
+
+function WarningsBody({ alerts }: { alerts: GovWarningAlert[] }) {
+  const { t, locale } = useLanguage()
+  const [showAll, setShowAll] = useState(false)
+  const [showRaw, setShowRaw] = useState(false)
+
+  const flashFloodCount = alerts.filter((a) => a.flashFloodRisk).length
+  const veryHeavyCount = alerts.filter((a) => a.veryHeavy).length
+  // Most urgent first: flash-flood risk, then very heavy rain — the feed is
+  // already newest-first, which stable sort preserves within each tier.
+  const sorted = [...alerts].sort(
+    (a, b) =>
+      Number(b.flashFloodRisk) - Number(a.flashFloodRisk) || Number(b.veryHeavy) - Number(a.veryHeavy),
+  )
+  const visible = showAll ? sorted : sorted.slice(0, WARNINGS_COLLAPSED_COUNT)
+
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap gap-2">
+        <span className="glass-panel-strong px-3 py-1.5 text-xs font-medium text-status-danger">
+          {t("gov", "warnFlashFlood")}: {flashFloodCount}
+        </span>
+        <span className="glass-panel-strong px-3 py-1.5 text-xs font-medium text-status-warning">
+          {t("gov", "rainVeryHeavy")}: {veryHeavyCount}
+        </span>
+        <span className="glass-panel-strong px-3 py-1.5 text-xs font-medium text-ink-soft">
+          {t("gov", "warnTotal")}: {alerts.length}
+        </span>
+      </div>
+
+      <ul className="flex flex-col gap-2">
+        {visible.map((a, i) =>
+          showRaw || !a.parsed ? (
+            <li key={i} className="glass-panel-strong flex flex-col gap-1 p-3">
+              <span className="text-xs font-medium text-status-warning">{formatFeedDate(a.datetime, locale)}</span>
+              <span className="text-sm leading-relaxed">{a.raw}</span>
+            </li>
+          ) : (
+            <li key={i} className="glass-panel-strong flex items-center gap-3 p-3" title={a.periodRange}>
+              {a.flashFloodRisk ? (
+                <ShieldAlert className="h-4 w-4 shrink-0 text-status-danger" />
+              ) : (
+                <CloudRain className={`h-4 w-4 shrink-0 ${a.veryHeavy ? "text-status-danger" : "text-status-warning"}`} />
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{a.station}</p>
+                <p className="truncate text-xs text-ink-soft">
+                  {`อ.${a.amphoe} · จ.${a.province} · ${formatFeedDate(a.datetime, locale)}`}
+                </p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p
+                  className={`text-sm font-semibold ${
+                    a.flashFloodRisk || a.veryHeavy ? "text-status-danger" : "text-status-warning"
+                  }`}
+                >
+                  {a.amountMm.toFixed(1)} {t("gov", "mm")}
+                </p>
+                <p
+                  className={`text-[10px] font-medium ${
+                    a.flashFloodRisk ? "text-status-danger" : "text-ink-soft"
+                  }`}
+                >
+                  {a.flashFloodRisk
+                    ? t("gov", "warnFlashFlood")
+                    : warningPeriodLabel(a.periodType, locale)}
+                </p>
+              </div>
+            </li>
+          ),
+        )}
+      </ul>
+
+      <div className="mt-3 flex flex-wrap gap-4">
+        {sorted.length > WARNINGS_COLLAPSED_COUNT && (
+          <button
+            type="button"
+            onClick={() => setShowAll((v) => !v)}
+            className="text-xs font-medium text-accent hover:underline"
+          >
+            {showAll ? t("tmdWarning", "seeLess") : `${t("gov", "showAll")} (${sorted.length})`}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setShowRaw((v) => !v)}
+          className="text-xs font-medium text-accent hover:underline"
+        >
+          {showRaw ? t("gov", "viewSummary") : t("gov", "viewRaw")}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function ReservoirBody({ situation }: { situation: GovReservoirSituation }) {
+  const { t, locale } = useLanguage()
+
+  const dataDate = situation.date
+    ? new Date(`${situation.date}T00:00:00`).toLocaleDateString(locale === "th" ? "th-TH" : "en-US", {
+        day: "numeric",
+        month: "short",
+      })
+    : ""
+
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap gap-2">
+        <span className="glass-panel-strong px-3 py-1.5 text-xs font-medium text-status-danger">
+          {t("gov", "reservoirOverCapacity")}: {situation.overCapacityCount}
+        </span>
+        <span className="glass-panel-strong px-3 py-1.5 text-xs font-medium text-status-warning">
+          {t("gov", "reservoirHigh")}: {situation.highCount}
+        </span>
+        <span className="glass-panel-strong px-3 py-1.5 text-xs font-medium text-ink-soft">
+          {t("gov", "reservoirTotal")}: {situation.totalReservoirs}
+        </span>
+      </div>
+
+      {dataDate && (
+        <p className="mb-2 text-xs text-ink-soft">
+          {t("gov", "reservoirDataDate")} {dataDate} · {t("gov", "reservoirTop")}
+        </p>
+      )}
+
+      <ul className="flex flex-col gap-2">
+        {situation.top.map((r) => {
+          const over = r.percentStorage > RESERVOIR_OVER_PERCENT
+          const high = r.percentStorage >= RESERVOIR_HIGH_PERCENT
+          return (
+            <li key={r.id} className="glass-panel-strong flex items-center gap-3 p-3">
+              <Droplets
+                className={`h-4 w-4 shrink-0 ${over ? "text-status-danger" : high ? "text-status-warning" : "text-accent"}`}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{r.name}</p>
+                <p className="truncate text-xs text-ink-soft">
+                  {locale === "th" ? r.region.th : r.region.en}
+                  {r.inflow !== null && ` · ${t("gov", "reservoirInflow")} ${r.inflow.toFixed(2)}`}
+                  {r.outflow !== null && ` · ${t("gov", "reservoirOutflow")} ${r.outflow.toFixed(2)}`}
+                </p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p
+                  className={`text-sm font-semibold ${
+                    over ? "text-status-danger" : high ? "text-status-warning" : "text-accent"
+                  }`}
+                >
+                  {r.percentStorage.toFixed(0)}%
+                </p>
+                <p className="text-[10px] text-ink-soft">
+                  {r.volume.toFixed(0)} / {r.capacity.toFixed(0)} {t("gov", "mcm")}
+                </p>
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}
+
 function SectionShell({
   icon,
   title,
+  description,
   children,
 }: {
   icon: React.ReactNode
   title: string
+  description?: string
   children: React.ReactNode
 }) {
   return (
     <section className="glass-panel p-5">
-      <div className="mb-4 flex items-center gap-2">
+      <div className={description ? "mb-1.5 flex items-center gap-2" : "mb-4 flex items-center gap-2"}>
         {icon}
         <h2 className="text-sm font-semibold">{title}</h2>
       </div>
+      {description && <p className="mb-4 text-xs leading-relaxed text-ink-soft">{description}</p>}
       {children}
     </section>
   )
@@ -261,6 +443,7 @@ export default function GovDataPage() {
                   <SectionShell
                     icon={<Megaphone className="h-4 w-4 text-accent" />}
                     title={t("gov", "announcementsTitle")}
+                    description={t("gov", "announcementsDesc")}
                   >
                     {data.announcements === null ? (
                       sectionError
@@ -277,7 +460,11 @@ export default function GovDataPage() {
                 </div>
 
                 <div className="animate-fade-in-up delay-100">
-                  <SectionShell icon={<CloudSun className="h-4 w-4 text-accent" />} title={t("gov", "forecastTitle")}>
+                  <SectionShell
+                    icon={<CloudSun className="h-4 w-4 text-accent" />}
+                    title={t("gov", "forecastTitle")}
+                    description={t("gov", "forecastDesc")}
+                  >
                     {data.forecast === null ? sectionError : <ForecastBody forecast={data.forecast} />}
                   </SectionShell>
                 </div>
@@ -286,36 +473,10 @@ export default function GovDataPage() {
               <AgencyGroup title={t("gov", "hiiGroup")}>
                 <div className="animate-fade-in-up delay-150">
                   <SectionShell
-                    icon={<ShieldAlert className="h-4 w-4 text-status-warning" />}
-                    title={t("gov", "warningsTitle")}
+                    icon={<CloudRain className="h-4 w-4 text-accent" />}
+                    title={t("gov", "rainfallTitle")}
+                    description={t("gov", "rainfallDesc")}
                   >
-                    {data.waterWarnings === null ? (
-                      sectionError
-                    ) : data.waterWarnings.length === 0 ? (
-                      emptyNote(t("gov", "noWarnings"))
-                    ) : (
-                      <ul className="flex flex-col gap-2">
-                        {data.waterWarnings.map((w, i) => (
-                          <li key={i} className="glass-panel-strong flex flex-col gap-1 p-3">
-                            <span className="text-xs font-medium text-status-warning">
-                              {formatFeedDate(w.datetime, locale)}
-                            </span>
-                            <span className="text-sm leading-relaxed">{w.message}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </SectionShell>
-                </div>
-
-                <div className="animate-fade-in-up delay-200">
-                  <SectionShell icon={<Waves className="h-4 w-4 text-accent" />} title={t("gov", "riverTitle")}>
-                    {data.riverSituation === null ? sectionError : <RiverBody situation={data.riverSituation} />}
-                  </SectionShell>
-                </div>
-
-                <div className="animate-fade-in-up delay-300">
-                  <SectionShell icon={<CloudRain className="h-4 w-4 text-accent" />} title={t("gov", "rainfallTitle")}>
                     {data.rainfall === null ? (
                       sectionError
                     ) : data.rainfall.length === 0 ? (
@@ -357,6 +518,44 @@ export default function GovDataPage() {
                         })}
                       </ol>
                     )}
+                  </SectionShell>
+                </div>
+
+                <div className="animate-fade-in-up delay-200">
+                  <SectionShell
+                    icon={<Waves className="h-4 w-4 text-accent" />}
+                    title={t("gov", "riverTitle")}
+                    description={t("gov", "riverDesc")}
+                  >
+                    {data.riverSituation === null ? sectionError : <RiverBody situation={data.riverSituation} />}
+                  </SectionShell>
+                </div>
+
+                <div className="animate-fade-in-up delay-300">
+                  <SectionShell
+                    icon={<ShieldAlert className="h-4 w-4 text-status-warning" />}
+                    title={t("gov", "warningsTitle")}
+                    description={t("gov", "warningsDesc")}
+                  >
+                    {data.waterWarnings === null ? (
+                      sectionError
+                    ) : data.waterWarnings.length === 0 ? (
+                      emptyNote(t("gov", "noWarnings"))
+                    ) : (
+                      <WarningsBody alerts={data.waterWarnings} />
+                    )}
+                  </SectionShell>
+                </div>
+              </AgencyGroup>
+
+              <AgencyGroup title={t("gov", "ridGroup")}>
+                <div className="animate-fade-in-up delay-300">
+                  <SectionShell
+                    icon={<Droplets className="h-4 w-4 text-accent" />}
+                    title={t("gov", "reservoirTitle")}
+                    description={t("gov", "reservoirDesc")}
+                  >
+                    {data.reservoirs === null ? sectionError : <ReservoirBody situation={data.reservoirs} />}
                   </SectionShell>
                 </div>
               </AgencyGroup>

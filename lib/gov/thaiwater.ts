@@ -17,6 +17,31 @@ export interface GovWarningMessage {
   message: string
 }
 
+/** One parsed alert from the warning feed. Each feed entry's `message` is a
+ * batch of alerts separated by blank lines, each following the grammar
+ * "[เสี่ยงเกิดน้ำท่วมฉับพลัน] ฝนตกหนัก(มาก) สถานี<station> ต.<tambon> อ.<amphoe>
+ * จ.<province> ฝน<window>[<range>] <amount> มม." — parsed here so the UI can
+ * show scannable cards instead of raw text walls. */
+export interface GovWarningAlert {
+  datetime: string
+  flashFloodRisk: boolean
+  veryHeavy: boolean
+  station: string
+  tambon: string
+  amphoe: string
+  province: string
+  /** Measurement window, e.g. "1ชม.", "สะสม", "3วัน", "วานนี้". */
+  periodType: string
+  /** The window's time range as printed in the feed, e.g. "13กค69 09-10น.". */
+  periodRange: string
+  amountMm: number
+  /** The original feed segment — the UI's "raw text" view, and the only
+   * readable form when `parsed` is false. */
+  raw: string
+  /** False when the segment didn't match the grammar (fields above are empty). */
+  parsed: boolean
+}
+
 export interface GovRainStation {
   stationName: string
   province: { th: string; en: string }
@@ -50,14 +75,59 @@ const THAIWATER_BASE = "https://api-v3.thaiwater.net/api/v1/thaiwater30/public"
 export const RAIN_HEAVY_MM = 35
 export const RAIN_VERY_HEAVY_MM = 90
 
-export async function fetchGovWarnings(): Promise<GovWarningMessage[]> {
+const WARNING_ALERT_RE =
+  /^(?:\[(.+?)\]\s*)?(ฝนตกหนักมาก|ฝนตกหนัก)\s+สถานี(.+?)\s+ต\.(\S+)\s+อ\.(\S+)\s+จ\.(\S+)\s+ฝน(.+?)\[(.+?)\]\s*([\d.]+)\s*มม/
+
+function parseWarningAlert(segment: string, datetime: string): GovWarningAlert {
+  const m = segment.match(WARNING_ALERT_RE)
+  if (!m) {
+    return {
+      datetime,
+      flashFloodRisk: false,
+      veryHeavy: false,
+      station: "",
+      tambon: "",
+      amphoe: "",
+      province: "",
+      periodType: "",
+      periodRange: "",
+      amountMm: 0,
+      raw: segment,
+      parsed: false,
+    }
+  }
+  return {
+    datetime,
+    flashFloodRisk: Boolean(m[1]),
+    veryHeavy: m[2] === "ฝนตกหนักมาก",
+    station: m[3],
+    tambon: m[4],
+    amphoe: m[5],
+    province: m[6],
+    periodType: m[7],
+    periodRange: m[8],
+    amountMm: Number(m[9]),
+    raw: segment,
+    parsed: true,
+  }
+}
+
+export async function fetchGovWarnings(): Promise<GovWarningAlert[]> {
   const response = await fetch(`${THAIWATER_BASE}/warning`, {
     next: { revalidate: SITE_CONFIG.fetch.govRevalidateSeconds },
   })
   if (!response.ok) throw new Error(`ThaiWater warning API error: ${response.status}`)
 
   const json = (await response.json()) as { data?: GovWarningMessage[] }
-  return (json.data ?? []).filter((w) => w.message)
+  return (json.data ?? [])
+    .filter((w) => w.message)
+    .flatMap((w) =>
+      w.message
+        .split(/\n{2,}/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((segment) => parseWarningAlert(segment, w.datetime)),
+    )
 }
 
 async function fetchRainFeed(): Promise<RawRainStation[]> {
