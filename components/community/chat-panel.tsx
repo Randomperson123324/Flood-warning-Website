@@ -242,6 +242,7 @@ export function ChatPanel() {
             <GovInfoCard
               kind={message.gov_kind}
               data={cardData}
+              snapshot={message.gov_payload != null}
               username={message.users?.username}
               time={
                 message.created_at

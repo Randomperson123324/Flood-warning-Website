@@ -1,6 +1,6 @@
 "use client"
 
-import { CloudRain, CloudSun, Droplets, LoaderCircle, Megaphone, ShieldAlert, Waves, X } from "lucide-react"
+import { Clock, CloudRain, CloudSun, Droplets, LoaderCircle, Megaphone, ShieldAlert, Waves, X } from "lucide-react"
 import { useLanguage } from "@/hooks/use-language"
 import { ReactionBar } from "@/components/community/reaction-bar"
 import { RAIN_HEAVY_MM, RAIN_VERY_HEAVY_MM, RIVER_OVERFLOW_LEVEL } from "@/lib/gov/thaiwater"
@@ -56,6 +56,9 @@ interface GovInfoCardProps {
   kind: GovCommandKind
   /** Shared payload from the panel-level useGovData() — cards never fetch. */
   data: GovDataPayload | null
+  /** True when `data` is the snapshot persisted with the message — shows
+   * the "data as of when this was sent" footnote. */
+  snapshot?: boolean
   username?: string
   time?: string
   isMine?: boolean
@@ -315,7 +318,7 @@ function CardBody({ kind, data }: { kind: GovCommandKind; data: GovDataPayload }
  * commands — same inline-card pattern as `/sensor`. `data` is normally the
  * snapshot persisted with the message (figures from when the command was
  * typed); legacy snapshot-less cards get the panel-level live payload. */
-export function GovInfoCard({ kind, data, username, time, isMine, onDismiss, reactions, onToggleReaction }: GovInfoCardProps) {
+export function GovInfoCard({ kind, data, snapshot, username, time, isMine, onDismiss, reactions, onToggleReaction }: GovInfoCardProps) {
   const { t } = useLanguage()
   const { token, icon: Icon, titleKey } = GOV_COMMANDS[kind]
 
@@ -350,6 +353,16 @@ export function GovInfoCard({ kind, data, username, time, isMine, onDismiss, rea
           </div>
         ) : (
           <CardBody kind={kind} data={data} />
+        )}
+
+        {snapshot && (
+          <div className="flex items-center gap-1.5 border-t border-border/10 pt-2.5 text-xs text-ink-soft">
+            <Clock className="h-3.5 w-3.5 shrink-0" />
+            <span>
+              {t("gov", "snapshotNote")}
+              {time ? ` · ${time}` : ""}
+            </span>
+          </div>
         )}
       </div>
 

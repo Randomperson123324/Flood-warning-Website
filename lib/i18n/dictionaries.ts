@@ -74,6 +74,7 @@ export const dictionary = {
     showAll: { th: "ดูทั้งหมด", en: "Show all" },
     viewRaw: { th: "ดูข้อความต้นฉบับ", en: "View raw text" },
     viewSummary: { th: "ดูแบบสรุป", en: "View summary" },
+    snapshotNote: { th: "ข้อมูล ณ เวลาที่ส่งคำสั่ง", en: "Data as of when this was sent" },
     rainfallTitle: { th: "ปริมาณฝนสะสม 24 ชม. สูงสุดทั่วประเทศ", en: "Highest 24-hour rainfall nationwide" },
     rainfallStation: { th: "สถานี", en: "Station" },
     rainHeavy: { th: "ฝนหนัก", en: "Heavy" },
