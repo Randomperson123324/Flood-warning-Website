@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, CloudRain, CloudSun, Droplets, LoaderCircle, LocateFixed, Megaphone, Search, ShieldAlert, Waves, X } from "lucide-react"
+import { Clock, CloudRain, Droplets, LoaderCircle, LocateFixed, Megaphone, Search, ShieldAlert, Waves, X } from "lucide-react"
 import { useLanguage } from "@/hooks/use-language"
 import { ReactionBar } from "@/components/community/reaction-bar"
 import { RAIN_HEAVY_MM, RAIN_VERY_HEAVY_MM, RIVER_HIGH_LEVEL, RIVER_OVERFLOW_LEVEL } from "@/lib/gov/thaiwater"
@@ -19,7 +19,6 @@ export const GOV_COMMANDS: Record<
   { token: string; icon: typeof Megaphone; titleKey: keyof (typeof dictionary)["gov"] }
 > = {
   tmdwarning: { token: "/tmdwarning", icon: Megaphone, titleKey: "announcementsTitle" },
-  tmdforecast: { token: "/tmdforecast", icon: CloudSun, titleKey: "forecastTitle" },
   rainfall: { token: "/rainfall", icon: CloudRain, titleKey: "rainfallTitle" },
   river: { token: "/river", icon: Waves, titleKey: "riverTitle" },
   floodalert: { token: "/floodalert", icon: ShieldAlert, titleKey: "warningsTitle" },
@@ -30,7 +29,6 @@ export const GOV_COMMANDS: Record<
  * exactly that section into `messages.gov_payload` at post time. */
 export const GOV_KIND_TO_FIELD: Record<GovCommandKind, keyof Omit<GovDataPayload, "timestamp">> = {
   tmdwarning: "announcements",
-  tmdforecast: "forecast",
   rainfall: "rainfall",
   river: "riverSituation",
   floodalert: "waterWarnings",
@@ -166,17 +164,6 @@ function CardBody({ kind, data, mode }: { kind: GovCommandKind; data: GovDataPay
           )
         })}
       </ul>
-    )
-  }
-
-  if (kind === "tmdforecast") {
-    if (data.forecast === null) return sectionError
-    const overall = locale === "en" && data.forecast.overall.en ? data.forecast.overall.en : data.forecast.overall.th
-    return (
-      <div>
-        {data.forecast.issuedText && <p className="mb-1.5 text-xs text-ink-soft">{data.forecast.issuedText}</p>}
-        <p className="line-clamp-6 whitespace-pre-line text-sm leading-relaxed">{overall}</p>
-      </div>
     )
   }
 

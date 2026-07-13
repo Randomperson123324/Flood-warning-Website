@@ -143,8 +143,9 @@ export interface TMDWarning {
 // ─── Community (Phase 2) ────────────────────────────────────────────────────
 
 /** Which Government Data Center card a `/`-command chat message shows —
- * mirrors the sections on /gov-data. */
-export type GovCommandKind = "tmdwarning" | "tmdforecast" | "rainfall" | "river" | "floodalert" | "reservoir"
+ * mirrors the sections on /gov-data (minus the forecast, which is long-form
+ * text that doesn't work as a chat card). */
+export type GovCommandKind = "tmdwarning" | "rainfall" | "river" | "floodalert" | "reservoir"
 
 export interface ChatMessage {
   id: string

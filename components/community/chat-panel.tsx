@@ -51,6 +51,10 @@ type SlashCommand = { token: string; key: "sensor" | "ai" | GovCommandKind }
 
 const GOV_KINDS = Object.keys(GOV_COMMANDS) as GovCommandKind[]
 
+/** Gov commands with a scope menu (highest / near me / search). /tmdwarning
+ * is national text with nothing to scope — it posts directly. */
+const GOV_SCOPED_KINDS = GOV_KINDS.filter((kind) => kind !== "tmdwarning")
+
 const SLASH_COMMANDS: SlashCommand[] = [
   { token: "/sensor", key: "sensor" },
   { token: "/AI", key: "ai" },
@@ -74,7 +78,7 @@ function parseSlash(draft: string): SlashState {
   // "/rainfallsearch" etc. — the dedicated search form the "Search by name…"
   // menu option fills in. Recognized with or without a trailing space so the
   // menu doesn't collapse mid-typing.
-  const searchKind = GOV_KINDS.find((kind) => `${kind}search` === cmd)
+  const searchKind = GOV_SCOPED_KINDS.find((kind) => `${kind}search` === cmd)
   if (searchKind) return { type: "gov", kind: searchKind, query: rest, search: true }
 
   if (spaceIdx === -1) {
@@ -85,7 +89,7 @@ function parseSlash(draft: string): SlashState {
   if (cmd === "sensor") return { type: "sensor", query: rest }
   if (cmd === "ai") return { type: "ai", question: rest }
   // Gov commands open a scope menu: highest / near me / search by name.
-  const govKind = GOV_KINDS.find((kind) => kind === cmd)
+  const govKind = GOV_SCOPED_KINDS.find((kind) => kind === cmd)
   if (govKind) return { type: "gov", kind: govKind, query: rest, search: false }
   return null
 }
@@ -504,8 +508,14 @@ export function ChatPanel() {
 
   async function selectMenuItem(item: MenuItem) {
     if (item.kind === "command") {
-      // Every command takes a second step now — /sensor and gov commands
-      // open their scope/search menus, /AI awaits a question.
+      if (item.command.key === "tmdwarning") {
+        // National announcements have no scope to pick — post directly.
+        setDraft("")
+        await postGovHighest("tmdwarning")
+        return
+      }
+      // Every other command takes a second step — /sensor and scoped gov
+      // commands open their menus, /AI awaits a question.
       setDraft(`${item.command.token} `)
       inputRef.current?.focus()
     } else if (item.kind === "govopt") {
