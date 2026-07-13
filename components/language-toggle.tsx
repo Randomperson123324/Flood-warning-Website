@@ -9,9 +9,10 @@ interface LanguageToggleProps {
   align?: "left" | "right"
   direction?: "down" | "up"
   fullWidth?: boolean
+  hideLabel?: boolean
 }
 
-export function LanguageToggle({ align, direction, fullWidth }: LanguageToggleProps = {}) {
+export function LanguageToggle({ align, direction, fullWidth, hideLabel }: LanguageToggleProps = {}) {
   const { locale, setLocale } = useLanguage()
 
   return (
@@ -20,6 +21,7 @@ export function LanguageToggle({ align, direction, fullWidth }: LanguageTogglePr
       onChange={setLocale}
       ariaLabel="Language"
       hideLabelOnMobile
+      hideLabel={hideLabel}
       align={align}
       direction={direction}
       fullWidth={fullWidth}

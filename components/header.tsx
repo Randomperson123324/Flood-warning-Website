@@ -102,11 +102,12 @@ export function Header() {
 
           {/* Bottom of the sidebar, so the menus open upward and to the right
               (align="left") — downward/right-aligned would run off-screen here.
-              Theme is icon-only: with both labels shown side by side,
-              "System" doesn't fit in half the sidebar width. */}
+              Both are icon-only: side by side, labels like "System" don't fit
+              in half the sidebar width, and one labeled + one icon-only
+              looked mismatched. */}
           <div className="flex items-center gap-2">
             <div className="min-w-0 flex-1">
-              <LanguageToggle align="left" direction="up" fullWidth />
+              <LanguageToggle align="left" direction="up" fullWidth hideLabel />
             </div>
             <div className="min-w-0 flex-1">
               <ThemeToggle align="left" direction="up" fullWidth hideLabel />
