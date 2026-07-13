@@ -19,6 +19,7 @@ export function LanguageToggle({ align, direction, fullWidth }: LanguageTogglePr
       value={locale}
       onChange={setLocale}
       ariaLabel="Language"
+      hideLabelOnMobile
       align={align}
       direction={direction}
       fullWidth={fullWidth}
