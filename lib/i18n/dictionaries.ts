@@ -150,6 +150,10 @@ export const dictionary = {
     enableGps: { th: "เปิดสิทธิ์ GPS เพื่อความแม่นยำ", en: "Enable GPS for better accuracy" },
     retry: { th: "ลองอีกครั้ง", en: "Retry" },
   },
+  footer: {
+    dataSources: { th: "แหล่งข้อมูลของเรา", en: "We get data from" },
+    others: { th: "ลิงก์อื่น ๆ", en: "Others" },
+  },
   status: {
     normal: { th: "ปกติ", en: "Normal" },
     warning: { th: "เฝ้าระวัง", en: "Warning" },

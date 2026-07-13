@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { CloudRain, CloudSun, Droplets, ExternalLink, Landmark, LocateFixed, Megaphone, RotateCw, ShieldAlert, Waves } from "lucide-react"
 import { Header } from "@/components/header"
+import { SiteFooter } from "@/components/site-footer"
 import { useGovData } from "@/hooks/use-gov-data"
 import { useGeolocation } from "@/hooks/use-geolocation"
 import { useNearbyGovStations } from "@/hooks/use-nearby-gov-stations"
@@ -697,6 +698,8 @@ export default function GovDataPage() {
           )
         )}
       </div>
+
+      <SiteFooter />
     </main>
   )
 }
