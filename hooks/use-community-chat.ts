@@ -19,7 +19,7 @@ interface UseCommunityChatResult {
   sendMessage: (params: SendMessageParams) => Promise<{ error: string | null }>
   sendAIExchange: (params: { question: string; answer: string }) => Promise<{ error: string | null }>
   sendSensorCard: (sensor: Sensor) => Promise<{ error: string | null }>
-  sendGovCard: (kind: GovCommandKind) => Promise<{ error: string | null }>
+  sendGovCard: (kind: GovCommandKind, payload: unknown) => Promise<{ error: string | null }>
 }
 
 export function useCommunityChat(): UseCommunityChatResult {
@@ -126,9 +126,9 @@ export function useCommunityChat(): UseCommunityChatResult {
     return { error: insertError ? insertError.message : null }
   }
 
-  /** Like `/sensor`, only the card KIND is persisted — data renders live
-   * from the shared /api/gov cache, so old cards show current figures. */
-  async function sendGovCard(kind: GovCommandKind): Promise<{ error: string | null }> {
+  /** Persists the card kind PLUS a snapshot of that section's data, so the
+   * card permanently shows the figures from the moment it was posted. */
+  async function sendGovCard(kind: GovCommandKind, payload: unknown): Promise<{ error: string | null }> {
     if (!supabase) return { error: "Supabase is not configured" }
     if (!user) return { error: "not_authenticated" }
 
@@ -137,6 +137,7 @@ export function useCommunityChat(): UseCommunityChatResult {
       type: "gov",
       content: `/${kind}`,
       gov_kind: kind,
+      gov_payload: payload ?? null,
     })
 
     return { error: insertError ? insertError.message : null }

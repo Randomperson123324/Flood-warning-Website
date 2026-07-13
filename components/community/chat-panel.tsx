@@ -20,7 +20,8 @@ import { cn } from "@/lib/utils"
 import { MessageItem } from "@/components/community/message-item"
 import { ChatCommandMenu } from "@/components/community/chat-command-menu"
 import { SensorInfoCard } from "@/components/community/sensor-info-card"
-import { GovInfoCard, GOV_COMMANDS } from "@/components/community/gov-info-card"
+import { GovInfoCard, GOV_COMMANDS, GOV_KIND_TO_FIELD, EMPTY_GOV_PAYLOAD } from "@/components/community/gov-info-card"
+import type { GovDataPayload } from "@/app/api/gov/route"
 import { AIExchangeMessage, type AIExchange } from "@/components/community/ai-exchange-message"
 import type { AIContext, ChatMessage, GovCommandKind, Sensor, WarningSeverity } from "@/types"
 
@@ -108,12 +109,28 @@ export function ChatPanel() {
   const messageIds = useMemo(() => messages.map((m) => m.id), [messages])
   const { byMessage, toggleReaction } = useMessageReactions(messageIds)
 
-  // ── Gov commands: ONE shared payload for every gov card in the feed, and
-  // nothing is fetched until a gov card actually exists. The server route
-  // additionally caches upstream agency responses, so posting the same
-  // command repeatedly never re-hits TMD/HII/RID. ──
-  const hasGovCards = useMemo(() => messages.some((m) => m.type === "gov"), [messages])
-  const { data: govData } = useGovData(hasGovCards)
+  // ── Gov commands: cards render the snapshot persisted with the message
+  // (data from when the command was typed). The live feed is only fetched
+  // for legacy snapshot-less cards, and the server route caches upstream
+  // agency responses, so gov commands never hammer TMD/HII/RID. ──
+  const hasLegacyGovCards = useMemo(() => messages.some((m) => m.type === "gov" && m.gov_payload == null), [messages])
+  const { data: govData } = useGovData(hasLegacyGovCards)
+
+  // Snapshot source for a NEW gov card: reuse the already-loaded payload if
+  // there is one, otherwise a one-off request (cheap — served from the
+  // route's 15-min upstream cache, not from the agencies).
+  async function postGovCard(kind: GovCommandKind) {
+    let payload: GovDataPayload | null = govData
+    if (!payload) {
+      try {
+        const res = await fetch("/api/gov", { cache: "no-store" })
+        payload = res.ok ? ((await res.json()) as GovDataPayload) : null
+      } catch {
+        payload = null
+      }
+    }
+    await sendGovCard(kind, payload ? payload[GOV_KIND_TO_FIELD[kind]] : null)
+  }
 
   // ── /sensor: live sensor directory for autocomplete + inline info cards ──
   const { sensors, recommendedSensor } = useSensors(null)
@@ -214,12 +231,17 @@ export function ChatPanel() {
 
       if (message.type === "gov") {
         if (!message.gov_kind || !(message.gov_kind in GOV_COMMANDS)) continue
+        // Snapshot from post time when present; legacy cards fall back to live data.
+        const cardData =
+          message.gov_payload != null
+            ? ({ ...EMPTY_GOV_PAYLOAD, [GOV_KIND_TO_FIELD[message.gov_kind]]: message.gov_payload } as GovDataPayload)
+            : govData
         items.push({
           id: message.id,
           node: (
             <GovInfoCard
               kind={message.gov_kind}
-              data={govData}
+              data={cardData}
               username={message.users?.username}
               time={
                 message.created_at
@@ -327,7 +349,7 @@ export function ChatPanel() {
       } else {
         // Gov commands take no argument — picking one posts the card.
         setDraft("")
-        await sendGovCard(item.command.key)
+        await postGovCard(item.command.key)
       }
     } else {
       setDraft("")
@@ -368,7 +390,7 @@ export function ChatPanel() {
 
     if (slash?.type === "gov") {
       setDraft("")
-      await sendGovCard(slash.kind)
+      await postGovCard(slash.kind)
       return
     }
 

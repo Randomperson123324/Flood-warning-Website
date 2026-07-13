@@ -25,6 +25,29 @@ export const GOV_COMMANDS: Record<
   reservoir: { token: "/reservoir", icon: Droplets, titleKey: "reservoirTitle" },
 }
 
+/** Which GovDataPayload field each command's card reads — used to snapshot
+ * exactly that section into `messages.gov_payload` at post time. */
+export const GOV_KIND_TO_FIELD: Record<GovCommandKind, keyof Omit<GovDataPayload, "timestamp">> = {
+  tmdwarning: "announcements",
+  tmdforecast: "forecast",
+  rainfall: "rainfall",
+  river: "riverSituation",
+  floodalert: "waterWarnings",
+  reservoir: "reservoirs",
+}
+
+/** All-sections-failed payload — spread a snapshot's section over it to
+ * render a persisted card without any live data. */
+export const EMPTY_GOV_PAYLOAD: GovDataPayload = {
+  announcements: null,
+  forecast: null,
+  waterWarnings: null,
+  riverSituation: null,
+  rainfall: null,
+  reservoirs: null,
+  timestamp: "",
+}
+
 /** How many list rows a chat card shows — cards are conversation inserts,
  * not the full /gov-data page, so keep them glanceable. */
 const CARD_MAX_ROWS = 4
@@ -288,10 +311,10 @@ function CardBody({ kind, data }: { kind: GovCommandKind; data: GovDataPayload }
   )
 }
 
-/** Read-only Government Data Center snapshot summoned by the gov `/` chat
- * commands — same inline-card pattern as `/sensor`. The card itself is
- * data-free in Supabase; it renders from the panel-level shared gov payload
- * so posting one costs no extra upstream fetches. */
+/** Read-only Government Data Center card summoned by the gov `/` chat
+ * commands — same inline-card pattern as `/sensor`. `data` is normally the
+ * snapshot persisted with the message (figures from when the command was
+ * typed); legacy snapshot-less cards get the panel-level live payload. */
 export function GovInfoCard({ kind, data, username, time, isMine, onDismiss, reactions, onToggleReaction }: GovInfoCardProps) {
   const { t } = useLanguage()
   const { token, icon: Icon, titleKey } = GOV_COMMANDS[kind]

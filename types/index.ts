@@ -163,6 +163,9 @@ export interface ChatMessage {
   ai_answer: string | null
   sensor_id: string | null
   gov_kind: GovCommandKind | null
+  /** Snapshot of the gov section's data at post time (shape depends on
+   * `gov_kind`) — null on legacy cards, which render live data instead. */
+  gov_payload: unknown
 }
 
 export interface MessageReaction {

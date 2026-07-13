@@ -13,10 +13,10 @@ interface UseGovDataResult {
 /** Government Data Center feeds (TMD + ThaiWater + RID), polled on a slow
  * cadence — the server caches upstream responses so this is cheap to refresh.
  *
- * Pass `enabled: false` to defer fetching entirely (the community chat does
- * this until a gov card is actually on screen, so opening the chat doesn't
- * pull the feeds for nothing). One instance serves every card — individual
- * cards never fetch. */
+ * Pass `enabled: false` to defer fetching entirely (the community chat only
+ * enables this for legacy snapshot-less gov cards, so opening the chat
+ * doesn't pull the feeds for nothing). One instance serves every card —
+ * individual cards never fetch. */
 export function useGovData(enabled = true): UseGovDataResult {
   const [data, setData] = useState<GovDataPayload | null>(null)
   const [loading, setLoading] = useState(true)
