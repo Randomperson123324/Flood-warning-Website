@@ -55,7 +55,7 @@ export function SiteFooter() {
   const { t, locale } = useLanguage()
 
   return (
-    <footer className="mx-auto max-w-4xl px-4 pt-4 sm:px-6">
+    <footer className="mx-auto max-w-6xl px-4 pt-4 sm:px-6">
       <div className="glass-panel flex flex-col gap-5 p-5">
         <div>
           <h2 className="text-sm font-semibold tracking-tight">{t("footer", "dataSources")}</h2>

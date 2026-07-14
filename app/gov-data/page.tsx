@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { CloudRain, CloudSun, Droplets, ExternalLink, Landmark, LocateFixed, Megaphone, RotateCw, ShieldAlert, Waves } from "lucide-react"
+import { useEffect, useState } from "react"
+import { ChevronDown, CloudRain, CloudSun, Droplets, ExternalLink, Globe, Landmark, LocateFixed, Megaphone, RotateCw, ShieldAlert, Waves } from "lucide-react"
 import { Header } from "@/components/header"
 import { SiteFooter } from "@/components/site-footer"
 import { useGovData } from "@/hooks/use-gov-data"
@@ -27,6 +27,63 @@ function formatFeedDate(value: string, locale: string): string {
     hour: "2-digit",
     minute: "2-digit",
   })
+}
+
+/** Shared list row for every station/reservoir list on this page.
+ *
+ * Desktop (sm+): marker + name + value on the top line, the location detail
+ * on its own full-width line beneath — always visible.
+ * Mobile: compact single line (name truncated) with a chevron; tapping the
+ * row expands it, un-truncating the name and revealing the detail line, so
+ * every piece of data stays reachable without cramming the small screen. */
+function DataRow({
+  marker,
+  title,
+  subtitle,
+  value,
+  valueClass,
+  label,
+  labelClass,
+  tooltip,
+}: {
+  marker: React.ReactNode
+  title: string
+  subtitle?: string
+  value: string
+  valueClass: string
+  label?: string
+  labelClass?: string
+  tooltip?: string
+}) {
+  const [expanded, setExpanded] = useState(false)
+
+  return (
+    <li
+      className="glass-panel-strong cursor-pointer p-3 sm:cursor-auto"
+      title={tooltip}
+      onClick={() => setExpanded((v) => !v)}
+      aria-expanded={expanded}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-2.5">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center">{marker}</span>
+          <p className={`min-w-0 pt-px text-sm font-medium ${expanded ? "" : "truncate sm:whitespace-normal"}`}>{title}</p>
+        </div>
+        <div className="flex shrink-0 items-start gap-1.5">
+          <div className="text-right">
+            <p className={`text-sm font-semibold ${valueClass}`}>{value}</p>
+            {label && <p className={`text-[10px] font-medium ${labelClass ?? "text-ink-soft"}`}>{label}</p>}
+          </div>
+          <ChevronDown
+            className={`mt-1 h-3.5 w-3.5 shrink-0 text-ink-soft transition-transform duration-200 sm:hidden ${expanded ? "rotate-180" : ""}`}
+          />
+        </div>
+      </div>
+      {subtitle && (
+        <p className={`mt-0.5 pl-[30px] text-xs text-ink-soft ${expanded ? "" : "hidden sm:block"}`}>{subtitle}</p>
+      )}
+    </li>
+  )
 }
 
 function AnnouncementCard({ announcement }: { announcement: GovAnnouncement }) {
@@ -158,27 +215,24 @@ function RiverBody({ situation, provinceFilter }: { situation: GovRiverSituation
           {critical.map((s, i) => {
             const overflowing = s.situationLevel >= RIVER_OVERFLOW_LEVEL
             return (
-              <li key={`${s.stationName}-${i}`} className="glass-panel-strong flex items-center gap-3 p-3">
-                <Waves className={`h-4 w-4 shrink-0 ${overflowing ? "text-status-danger" : "text-status-warning"}`} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{s.stationName}</p>
-                  <p className="truncate text-xs text-ink-soft">
-                    {[s.river, locale === "th" ? s.amphoe.th : s.amphoe.en, locale === "th" ? s.province.th : s.province.en]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className={`text-sm font-semibold ${overflowing ? "text-status-danger" : "text-status-warning"}`}>
-                    {overflowing ? t("gov", "riverOverflow") : t("gov", "riverHigh")}
-                  </p>
-                  <p className="text-[10px] text-ink-soft">
-                    {s.waterlevelMsl !== null && `${s.waterlevelMsl.toFixed(2)} ${t("gov", "msl")}`}
-                    {s.waterlevelMsl !== null && s.storagePercent !== null && " · "}
-                    {s.storagePercent !== null && `${s.storagePercent.toFixed(0)}% ${t("gov", "riverBank")}`}
-                  </p>
-                </div>
-              </li>
+              <DataRow
+                key={`${s.stationName}-${i}`}
+                marker={<Waves className={`h-4 w-4 ${overflowing ? "text-status-danger" : "text-status-warning"}`} />}
+                title={s.stationName}
+                subtitle={[s.river, locale === "th" ? s.amphoe.th : s.amphoe.en, locale === "th" ? s.province.th : s.province.en]
+                  .filter(Boolean)
+                  .join(" · ")}
+                value={overflowing ? t("gov", "riverOverflow") : t("gov", "riverHigh")}
+                valueClass={overflowing ? "text-status-danger" : "text-status-warning"}
+                label={
+                  [
+                    s.waterlevelMsl !== null ? `${s.waterlevelMsl.toFixed(2)} ${t("gov", "msl")}` : null,
+                    s.storagePercent !== null ? `${s.storagePercent.toFixed(0)}% ${t("gov", "riverBank")}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || undefined
+                }
+              />
             )
           })}
         </ul>
@@ -248,37 +302,23 @@ function WarningsBody({ alerts, provinceFilter }: { alerts: GovWarningAlert[]; p
               <span className="text-sm leading-relaxed">{a.raw}</span>
             </li>
           ) : (
-            <li key={i} className="glass-panel-strong flex items-center gap-3 p-3" title={a.periodRange}>
-              {a.flashFloodRisk ? (
-                <ShieldAlert className="h-4 w-4 shrink-0 text-status-danger" />
-              ) : (
-                <CloudRain className={`h-4 w-4 shrink-0 ${a.veryHeavy ? "text-status-danger" : "text-status-warning"}`} />
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{a.station}</p>
-                <p className="truncate text-xs text-ink-soft">
-                  {`อ.${a.amphoe} · จ.${a.province} · ${formatFeedDate(a.datetime, locale)}`}
-                </p>
-              </div>
-              <div className="shrink-0 text-right">
-                <p
-                  className={`text-sm font-semibold ${
-                    a.flashFloodRisk || a.veryHeavy ? "text-status-danger" : "text-status-warning"
-                  }`}
-                >
-                  {a.amountMm.toFixed(1)} {t("gov", "mm")}
-                </p>
-                <p
-                  className={`text-[10px] font-medium ${
-                    a.flashFloodRisk ? "text-status-danger" : "text-ink-soft"
-                  }`}
-                >
-                  {a.flashFloodRisk
-                    ? t("gov", "warnFlashFlood")
-                    : warningPeriodLabel(a.periodType, locale)}
-                </p>
-              </div>
-            </li>
+            <DataRow
+              key={i}
+              tooltip={a.periodRange}
+              marker={
+                a.flashFloodRisk ? (
+                  <ShieldAlert className="h-4 w-4 text-status-danger" />
+                ) : (
+                  <CloudRain className={`h-4 w-4 ${a.veryHeavy ? "text-status-danger" : "text-status-warning"}`} />
+                )
+              }
+              title={a.station}
+              subtitle={`อ.${a.amphoe} · จ.${a.province} · ${formatFeedDate(a.datetime, locale)}`}
+              value={`${a.amountMm.toFixed(1)} ${t("gov", "mm")}`}
+              valueClass={a.flashFloodRisk || a.veryHeavy ? "text-status-danger" : "text-status-warning"}
+              label={a.flashFloodRisk ? t("gov", "warnFlashFlood") : warningPeriodLabel(a.periodType, locale)}
+              labelClass={a.flashFloodRisk ? "text-status-danger" : undefined}
+            />
           ),
         )}
       </ul>
@@ -340,31 +380,21 @@ function ReservoirBody({ situation }: { situation: GovReservoirSituation }) {
           const over = r.percentStorage > RESERVOIR_OVER_PERCENT
           const high = r.percentStorage >= RESERVOIR_HIGH_PERCENT
           return (
-            <li key={r.id} className="glass-panel-strong flex items-center gap-3 p-3">
-              <Droplets
-                className={`h-4 w-4 shrink-0 ${over ? "text-status-danger" : high ? "text-status-warning" : "text-accent"}`}
-              />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{r.name}</p>
-                <p className="truncate text-xs text-ink-soft">
-                  {locale === "th" ? r.region.th : r.region.en}
-                  {r.inflow !== null && ` · ${t("gov", "reservoirInflow")} ${r.inflow.toFixed(2)}`}
-                  {r.outflow !== null && ` · ${t("gov", "reservoirOutflow")} ${r.outflow.toFixed(2)}`}
-                </p>
-              </div>
-              <div className="shrink-0 text-right">
-                <p
-                  className={`text-sm font-semibold ${
-                    over ? "text-status-danger" : high ? "text-status-warning" : "text-accent"
-                  }`}
-                >
-                  {r.percentStorage.toFixed(0)}%
-                </p>
-                <p className="text-[10px] text-ink-soft">
-                  {r.volume.toFixed(0)} / {r.capacity.toFixed(0)} {t("gov", "mcm")}
-                </p>
-              </div>
-            </li>
+            <DataRow
+              key={r.id}
+              marker={
+                <Droplets className={`h-4 w-4 ${over ? "text-status-danger" : high ? "text-status-warning" : "text-accent"}`} />
+              }
+              title={r.name}
+              subtitle={
+                (locale === "th" ? r.region.th : r.region.en) +
+                (r.inflow !== null ? ` · ${t("gov", "reservoirInflow")} ${r.inflow.toFixed(2)}` : "") +
+                (r.outflow !== null ? ` · ${t("gov", "reservoirOutflow")} ${r.outflow.toFixed(2)}` : "")
+              }
+              value={`${r.percentStorage.toFixed(0)}%`}
+              valueClass={over ? "text-status-danger" : high ? "text-status-warning" : "text-accent"}
+              label={`${r.volume.toFixed(0)} / ${r.capacity.toFixed(0)} ${t("gov", "mcm")}`}
+            />
           )
         })}
       </ul>
@@ -373,21 +403,41 @@ function ReservoirBody({ situation }: { situation: GovReservoirSituation }) {
 }
 
 function SectionShell({
+  id,
   icon,
   title,
+  source,
   description,
+  tone,
   children,
 }: {
+  /** Anchor for the overview tiles and the sticky section nav. */
+  id: string
   icon: React.ReactNode
   title: string
+  /** Owning agency, shown as a small caption — replaces the old big
+   * per-agency group headers. */
+  source: string
   description?: string
+  /** Set when the section holds red-tier data right now — adds a pulsing
+   * dot so a scan of the page mirrors the overview tiles. */
+  tone?: "danger" | "warning"
   children: React.ReactNode
 }) {
   return (
-    <section className="glass-panel p-5">
+    // scroll-mt clears the sticky mobile top bar + section nav (lg has no
+    // top bar, only the nav).
+    <section id={id} className="glass-panel scroll-mt-40 p-5 lg:scroll-mt-20">
       <div className={description ? "mb-1.5 flex items-center gap-2" : "mb-4 flex items-center gap-2"}>
         {icon}
         <h2 className="text-sm font-semibold">{title}</h2>
+        {tone && (
+          <span
+            aria-hidden
+            className={`h-2 w-2 shrink-0 animate-pulse rounded-full ${tone === "danger" ? "bg-status-danger" : "bg-status-warning"}`}
+          />
+        )}
+        <span className="ml-auto shrink-0 text-[10px] font-medium tracking-wide text-ink-soft">{source}</span>
       </div>
       {description && <p className="mb-4 text-xs leading-relaxed text-ink-soft">{description}</p>}
       {children}
@@ -395,21 +445,60 @@ function SectionShell({
   )
 }
 
-/* Sections are grouped per agency under one heading, so individual sections
-   no longer repeat where their data comes from. */
-function AgencyGroup({ title, children }: { title: string; children: React.ReactNode }) {
+/** One KPI tile in the overview strip. Stat-tile contract: sentence-case
+ * label, semibold value (status-colored, but never color alone — the icon
+ * and label carry the meaning too). Tapping jumps to the backing section. */
+function OverviewTile({
+  icon,
+  label,
+  value,
+  tone,
+  onClick,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string | null
+  tone: "danger" | "warning" | "normal"
+  onClick: () => void
+}) {
+  const valueClass =
+    value === null
+      ? "text-ink-soft"
+      : tone === "danger"
+        ? "text-status-danger"
+        : tone === "warning"
+          ? "text-status-warning"
+          : "text-status-normal"
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2.5 px-1 pt-2">
-        <span className="glass-panel-strong flex h-7 w-7 shrink-0 items-center justify-center rounded-full">
-          <Landmark className="h-3.5 w-3.5 text-accent" />
-        </span>
-        <h2 className="text-sm font-semibold tracking-tight">{title}</h2>
-        <span className="h-px min-w-4 flex-1 bg-gradient-to-r from-border/40 to-transparent" />
-      </div>
-      {children}
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      className="glass-panel glass-interactive flex flex-col items-start gap-1.5 p-4 text-left"
+    >
+      <span className="flex items-center gap-1.5 text-xs text-ink-soft">
+        {icon}
+        {label}
+      </span>
+      <span className={`text-2xl font-semibold leading-none ${valueClass}`}>{value ?? "–"}</span>
+    </button>
   )
+}
+
+/** Section ids in on-page (mobile single-column) order — drives the sticky
+ * nav chips, the scroll spy, and the overview tile jump targets. */
+const NAV_SECTIONS = [
+  { id: "sec-announcements", labelKey: "navAnnouncements" },
+  { id: "sec-alerts", labelKey: "navAlerts" },
+  { id: "sec-rain", labelKey: "navRain" },
+  { id: "sec-rivers", labelKey: "navRivers" },
+  { id: "sec-forecast", labelKey: "navForecast" },
+  { id: "sec-dams", labelKey: "navDams" },
+] as const
+
+type SectionId = (typeof NAV_SECTIONS)[number]["id"]
+
+function jumpToSection(id: SectionId) {
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })
 }
 
 export default function GovDataPage() {
@@ -433,11 +522,59 @@ export default function GovDataPage() {
   const emptyNote = (text: string) => <p className="py-4 text-center text-sm text-ink-soft">{text}</p>
   const sectionError = emptyNote(t("gov", "sectionError"))
 
+  // ── Overview tiles: red-tier headline numbers, scoped like the sections
+  // (near-me mode recomputes alerts/rivers/rain for the province; reservoirs
+  // only exist at region level, so that tile stays national). null = feed
+  // failed or still resolving → the tile shows "–". ──
+  const scopedAlerts =
+    data?.waterWarnings == null
+      ? null
+      : localActive
+        ? data.waterWarnings.filter((a) => a.parsed && a.province === userProvince.th)
+        : data.waterWarnings
+  const flashFloodCount = scopedAlerts === null ? null : scopedAlerts.filter((a) => a.flashFloodRisk).length
+  const overflowCount =
+    data?.riverSituation == null
+      ? null
+      : localActive
+        ? data.riverSituation.critical.filter(
+            (s) => s.province.th === userProvince.th && s.situationLevel >= RIVER_OVERFLOW_LEVEL,
+          ).length
+        : data.riverSituation.overflowCount
+  const maxRain = localActive
+    ? nearbyStations.length > 0
+      ? Math.max(...nearbyStations.map((s) => s.rain24h))
+      : null
+    : data?.rainfall == null
+      ? null
+      : (data.rainfall[0]?.rain24h ?? 0)
+  const damsOverCount = data?.reservoirs == null ? null : data.reservoirs.overCapacityCount
+
+  // ── Scroll spy for the sticky section nav. ──
+  const [activeSection, setActiveSection] = useState<SectionId>(NAV_SECTIONS[0].id)
+  useEffect(() => {
+    if (loading || !data) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+        if (visible[0]) setActiveSection(visible[0].target.id as SectionId)
+      },
+      { rootMargin: "-25% 0px -65% 0px" },
+    )
+    for (const { id } of NAV_SECTIONS) {
+      const el = document.getElementById(id)
+      if (el) observer.observe(el)
+    }
+    return () => observer.disconnect()
+  }, [loading, data])
+
   return (
     <main className="min-h-dvh pb-16">
       <Header />
 
-      <div className="mx-auto flex max-w-4xl flex-col gap-4 px-4 pt-4 sm:px-6">
+      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 pt-4 sm:px-6">
         <div className="glass-panel animate-fade-in-up p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2.5">
@@ -450,32 +587,34 @@ export default function GovDataPage() {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setLocalMode((v) => !v)}
-              aria-pressed={localMode}
-              className={cn(
-                "glass-panel-strong glass-interactive flex shrink-0 items-center gap-2 px-3 py-2 text-xs font-medium",
-                localMode ? "text-accent" : "text-ink-soft",
-              )}
-            >
-              <LocateFixed className="h-4 w-4" />
-              {t("gov", "localToggle")}
-              <span
-                aria-hidden
+            {/* Scope: nationwide vs. near-me (GPS). Segmented control instead
+                of a toggle so both states are visible and labeled. */}
+            <div className="glass-panel-strong flex shrink-0 items-center gap-0.5 p-1 text-xs font-medium">
+              <button
+                type="button"
+                onClick={() => setLocalMode(false)}
+                aria-pressed={!localMode}
                 className={cn(
-                  "relative h-4 w-7 shrink-0 rounded-full transition-colors duration-200",
-                  localMode ? "bg-accent/70" : "bg-surface-strong",
+                  "flex items-center gap-1.5 rounded-glass-sm px-2.5 py-1.5 transition-colors duration-200",
+                  !localMode ? "bg-accent/10 text-accent" : "text-ink-soft hover:text-ink",
                 )}
               >
-                <span
-                  className={cn(
-                    "absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-all duration-200",
-                    localMode ? "left-3.5" : "left-0.5",
-                  )}
-                />
-              </span>
-            </button>
+                <Globe className="h-3.5 w-3.5" />
+                {t("gov", "scopeNationwide")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setLocalMode(true)}
+                aria-pressed={localMode}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-glass-sm px-2.5 py-1.5 transition-colors duration-200",
+                  localMode ? "bg-accent/10 text-accent" : "text-ink-soft hover:text-ink",
+                )}
+              >
+                <LocateFixed className="h-3.5 w-3.5" />
+                {t("gov", "scopeNearMe")}
+              </button>
+            </div>
           </div>
 
           {localMode && (
@@ -522,54 +661,140 @@ export default function GovDataPage() {
 
         {loading ? (
           <>
-            <div className="glass-panel h-36 animate-pulse" />
-            <div className="glass-panel h-36 animate-pulse" />
-            <div className="glass-panel h-36 animate-pulse" />
-            <div className="glass-panel h-48 animate-pulse" />
-            <div className="glass-panel h-64 animate-pulse" />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="glass-panel h-20 animate-pulse" />
+              <div className="glass-panel h-20 animate-pulse" />
+              <div className="glass-panel h-20 animate-pulse" />
+              <div className="glass-panel h-20 animate-pulse" />
+            </div>
+            <div className="glass-panel h-12 animate-pulse" />
+            <div className="grid items-start gap-4 lg:grid-cols-3">
+              <div className="flex flex-col gap-4 lg:col-span-2">
+                <div className="glass-panel h-48 animate-pulse" />
+                <div className="glass-panel h-72 animate-pulse" />
+                <div className="glass-panel h-72 animate-pulse" />
+              </div>
+              <div className="flex flex-col gap-4">
+                <div className="glass-panel h-48 animate-pulse" />
+                <div className="glass-panel h-72 animate-pulse" />
+              </div>
+            </div>
           </>
         ) : (
           data && (
             <>
-              <AgencyGroup title={t("gov", "tmdGroup")}>
-                <div className="animate-fade-in-up delay-75">
-                  <SectionShell
-                    icon={<Megaphone className="h-4 w-4 text-accent" />}
-                    title={t("gov", "announcementsTitle")}
-                    description={t("gov", "announcementsDesc")}
-                  >
-                    {data.announcements === null ? (
-                      sectionError
-                    ) : data.announcements.length === 0 ? (
-                      emptyNote(t("gov", "noAnnouncements"))
-                    ) : (
-                      <div className="flex flex-col gap-3">
-                        {data.announcements.map((a, i) => (
-                          <AnnouncementCard key={`${a.issueNo}-${i}`} announcement={a} />
-                        ))}
-                      </div>
-                    )}
-                  </SectionShell>
-                </div>
+              {/* ── Overview: the page's headline answer, one tile per
+                  red-tier question. Tap a tile to jump to its section. ── */}
+              <div className="animate-fade-in-up grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <OverviewTile
+                  icon={<ShieldAlert className="h-3.5 w-3.5" />}
+                  label={t("gov", "warnFlashFlood")}
+                  value={flashFloodCount === null ? null : String(flashFloodCount)}
+                  tone={flashFloodCount !== null && flashFloodCount > 0 ? "danger" : "normal"}
+                  onClick={() => jumpToSection("sec-alerts")}
+                />
+                <OverviewTile
+                  icon={<Waves className="h-3.5 w-3.5" />}
+                  label={t("gov", "riverOverflow")}
+                  value={overflowCount === null ? null : String(overflowCount)}
+                  tone={overflowCount !== null && overflowCount > 0 ? "danger" : "normal"}
+                  onClick={() => jumpToSection("sec-rivers")}
+                />
+                <OverviewTile
+                  icon={<Droplets className="h-3.5 w-3.5" />}
+                  label={t("gov", "reservoirOverCapacity")}
+                  value={damsOverCount === null ? null : String(damsOverCount)}
+                  tone={damsOverCount !== null && damsOverCount > 0 ? "danger" : "normal"}
+                  onClick={() => jumpToSection("sec-dams")}
+                />
+                <OverviewTile
+                  icon={<CloudRain className="h-3.5 w-3.5" />}
+                  label={t("gov", "overviewMaxRain")}
+                  value={maxRain === null ? null : `${maxRain.toFixed(0)} ${t("gov", "mm")}`}
+                  tone={maxRain !== null && maxRain > RAIN_VERY_HEAVY_MM ? "danger" : maxRain !== null && maxRain > RAIN_HEAVY_MM ? "warning" : "normal"}
+                  onClick={() => jumpToSection("sec-rain")}
+                />
+              </div>
 
-                <div className="animate-fade-in-up delay-100">
-                  <SectionShell
-                    icon={<CloudSun className="h-4 w-4 text-accent" />}
-                    title={t("gov", "forecastTitle")}
-                    description={t("gov", "forecastDesc")}
-                  >
-                    {data.forecast === null ? sectionError : <ForecastBody forecast={data.forecast} />}
-                  </SectionShell>
+              {/* ── Sticky section nav: sticks below the mobile top bar
+                  (lg has the sidebar instead, so it sticks near the top). ── */}
+              <nav className="sticky top-24 z-30 lg:top-4">
+                <div className="glass-panel flex gap-1 overflow-x-auto p-1.5">
+                  {NAV_SECTIONS.map(({ id, labelKey }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => {
+                        setActiveSection(id)
+                        jumpToSection(id)
+                      }}
+                      className={cn(
+                        "shrink-0 whitespace-nowrap rounded-glass-sm px-3 py-1.5 text-xs font-medium transition-colors duration-200",
+                        activeSection === id ? "glass-panel-strong text-accent" : "text-ink-soft hover:text-ink",
+                      )}
+                    >
+                      {t("gov", labelKey)}
+                    </button>
+                  ))}
                 </div>
-              </AgencyGroup>
+              </nav>
 
-              <AgencyGroup title={t("gov", "hiiGroup")}>
-                <div className="animate-fade-in-up delay-150">
-                  <SectionShell
-                    icon={<CloudRain className="h-4 w-4 text-accent" />}
-                    title={localActive ? t("gov", "nearbyTitle") : t("gov", "rainfallTitle")}
-                    description={t("gov", "rainfallDesc")}
-                  >
+              {/* ── Topic-first, urgency-ordered sections. lg+: warnings and
+                  station lists in the main column, reading material
+                  (forecast, reservoirs) in the side column. ── */}
+              <div className="grid items-start gap-4 lg:grid-cols-3">
+                <div className="flex min-w-0 flex-col gap-4 lg:col-span-2">
+                  <div className="animate-fade-in-up delay-75">
+                    <SectionShell
+                      id="sec-announcements"
+                      source="TMD"
+                      icon={<Megaphone className="h-4 w-4 text-accent" />}
+                      title={t("gov", "announcementsTitle")}
+                      description={t("gov", "announcementsDesc")}
+                      tone={data.announcements && data.announcements.length > 0 ? "warning" : undefined}
+                    >
+                      {data.announcements === null ? (
+                        sectionError
+                      ) : data.announcements.length === 0 ? (
+                        emptyNote(t("gov", "noAnnouncements"))
+                      ) : (
+                        <div className="flex flex-col gap-3">
+                          {data.announcements.map((a, i) => (
+                            <AnnouncementCard key={`${a.issueNo}-${i}`} announcement={a} />
+                          ))}
+                        </div>
+                      )}
+                    </SectionShell>
+                  </div>
+
+                  <div className="animate-fade-in-up delay-100">
+                    <SectionShell
+                      id="sec-alerts"
+                      source="HII"
+                      icon={<ShieldAlert className="h-4 w-4 text-status-warning" />}
+                      title={t("gov", "warningsTitle")}
+                      description={t("gov", "warningsDesc")}
+                      tone={flashFloodCount !== null && flashFloodCount > 0 ? "danger" : undefined}
+                    >
+                      {data.waterWarnings === null ? (
+                        sectionError
+                      ) : data.waterWarnings.length === 0 ? (
+                        emptyNote(t("gov", "noWarnings"))
+                      ) : (
+                        <WarningsBody alerts={data.waterWarnings} provinceFilter={localActive ? userProvince.th : undefined} />
+                      )}
+                    </SectionShell>
+                  </div>
+
+                  <div className="animate-fade-in-up delay-150">
+                    <SectionShell
+                      id="sec-rain"
+                      source="HII"
+                      icon={<CloudRain className="h-4 w-4 text-accent" />}
+                      title={localActive ? t("gov", "nearbyTitle") : t("gov", "rainfallTitle")}
+                      description={t("gov", "rainfallDesc")}
+                      tone={maxRain !== null && maxRain > RAIN_VERY_HEAVY_MM ? "danger" : undefined}
+                    >
                     {localActive ? (
                       nearbyLoading && nearbyStations.length === 0 ? (
                         emptyNote(t("common", "loading"))
@@ -581,29 +806,15 @@ export default function GovDataPage() {
                             const veryHeavy = s.rain24h > RAIN_VERY_HEAVY_MM
                             const heavy = s.rain24h > RAIN_HEAVY_MM
                             return (
-                              <li key={`${s.stationName}-${i}`} className="glass-panel-strong flex items-center gap-3 p-3">
-                                <span className="w-6 shrink-0 text-center text-sm font-semibold text-ink-soft">{i + 1}</span>
-                                <div className="min-w-0 flex-1">
-                                  <p className="truncate text-sm font-medium">
-                                    {t("gov", "rainfallStation")}{s.stationName ? ` ${s.stationName}` : ""}
-                                  </p>
-                                  <p className="truncate text-xs text-ink-soft">
-                                    {locale === "th" ? `${s.amphoe.th} · ${s.province.th}` : `${s.amphoe.en} · ${s.province.en}`}
-                                  </p>
-                                </div>
-                                <div className="shrink-0 text-right">
-                                  <p
-                                    className={`text-sm font-semibold ${
-                                      veryHeavy ? "text-status-danger" : heavy ? "text-status-warning" : "text-accent"
-                                    }`}
-                                  >
-                                    {s.rain24h.toFixed(1)} {t("gov", "mm")}
-                                  </p>
-                                  <p className="text-[10px] text-ink-soft">
-                                    {s.distanceKm.toFixed(1)} {t("gov", "kmAway")}
-                                  </p>
-                                </div>
-                              </li>
+                              <DataRow
+                                key={`${s.stationName}-${i}`}
+                                marker={<span className="text-xs font-semibold text-ink-soft">{i + 1}</span>}
+                                title={`${t("gov", "rainfallStation")}${s.stationName ? ` ${s.stationName}` : ""}`}
+                                subtitle={locale === "th" ? `${s.amphoe.th} · ${s.province.th}` : `${s.amphoe.en} · ${s.province.en}`}
+                                value={`${s.rain24h.toFixed(1)} ${t("gov", "mm")}`}
+                                valueClass={veryHeavy ? "text-status-danger" : heavy ? "text-status-warning" : "text-accent"}
+                                label={`${s.distanceKm.toFixed(1)} ${t("gov", "kmAway")}`}
+                              />
                             )
                           })}
                         </ol>
@@ -618,33 +829,20 @@ export default function GovDataPage() {
                           const veryHeavy = s.rain24h > RAIN_VERY_HEAVY_MM
                           const heavy = s.rain24h > RAIN_HEAVY_MM
                           return (
-                            <li key={`${s.stationName}-${i}`} className="glass-panel-strong flex items-center gap-3 p-3">
-                              <span className="w-6 shrink-0 text-center text-sm font-semibold text-ink-soft">{i + 1}</span>
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-medium">
-                                  {t("gov", "rainfallStation")}{s.stationName ? ` ${s.stationName}` : ""}
-                                </p>
-                                <p className="truncate text-xs text-ink-soft">
-                                  {locale === "th"
-                                    ? `${s.amphoe.th} · ${s.province.th}${s.agency.th ? ` · ${s.agency.th}` : ""}`
-                                    : `${s.amphoe.en} · ${s.province.en}${s.agency.en ? ` · ${s.agency.en}` : ""}`}
-                                </p>
-                              </div>
-                              <div className="shrink-0 text-right">
-                                <p
-                                  className={`text-sm font-semibold ${
-                                    veryHeavy ? "text-status-danger" : heavy ? "text-status-warning" : "text-accent"
-                                  }`}
-                                >
-                                  {s.rain24h.toFixed(1)} {t("gov", "mm")}
-                                </p>
-                                {heavy && (
-                                  <p className={`text-[10px] font-medium ${veryHeavy ? "text-status-danger" : "text-status-warning"}`}>
-                                    {veryHeavy ? t("gov", "rainVeryHeavy") : t("gov", "rainHeavy")}
-                                  </p>
-                                )}
-                              </div>
-                            </li>
+                            <DataRow
+                              key={`${s.stationName}-${i}`}
+                              marker={<span className="text-xs font-semibold text-ink-soft">{i + 1}</span>}
+                              title={`${t("gov", "rainfallStation")}${s.stationName ? ` ${s.stationName}` : ""}`}
+                              subtitle={
+                                locale === "th"
+                                  ? `${s.amphoe.th} · ${s.province.th}${s.agency.th ? ` · ${s.agency.th}` : ""}`
+                                  : `${s.amphoe.en} · ${s.province.en}${s.agency.en ? ` · ${s.agency.en}` : ""}`
+                              }
+                              value={`${s.rain24h.toFixed(1)} ${t("gov", "mm")}`}
+                              valueClass={veryHeavy ? "text-status-danger" : heavy ? "text-status-warning" : "text-accent"}
+                              label={heavy ? (veryHeavy ? t("gov", "rainVeryHeavy") : t("gov", "rainHeavy")) : undefined}
+                              labelClass={veryHeavy ? "text-status-danger" : "text-status-warning"}
+                            />
                           )
                         })}
                       </ol>
@@ -652,48 +850,51 @@ export default function GovDataPage() {
                   </SectionShell>
                 </div>
 
-                <div className="animate-fade-in-up delay-200">
-                  <SectionShell
-                    icon={<Waves className="h-4 w-4 text-accent" />}
-                    title={t("gov", "riverTitle")}
-                    description={t("gov", "riverDesc")}
-                  >
-                    {data.riverSituation === null ? (
-                      sectionError
-                    ) : (
-                      <RiverBody situation={data.riverSituation} provinceFilter={localActive ? userProvince.th : undefined} />
-                    )}
-                  </SectionShell>
+                  <div className="animate-fade-in-up delay-200">
+                    <SectionShell
+                      id="sec-rivers"
+                      source="HII"
+                      icon={<Waves className="h-4 w-4 text-accent" />}
+                      title={t("gov", "riverTitle")}
+                      description={t("gov", "riverDesc")}
+                      tone={overflowCount !== null && overflowCount > 0 ? "danger" : undefined}
+                    >
+                      {data.riverSituation === null ? (
+                        sectionError
+                      ) : (
+                        <RiverBody situation={data.riverSituation} provinceFilter={localActive ? userProvince.th : undefined} />
+                      )}
+                    </SectionShell>
+                  </div>
                 </div>
 
-                <div className="animate-fade-in-up delay-300">
-                  <SectionShell
-                    icon={<ShieldAlert className="h-4 w-4 text-status-warning" />}
-                    title={t("gov", "warningsTitle")}
-                    description={t("gov", "warningsDesc")}
-                  >
-                    {data.waterWarnings === null ? (
-                      sectionError
-                    ) : data.waterWarnings.length === 0 ? (
-                      emptyNote(t("gov", "noWarnings"))
-                    ) : (
-                      <WarningsBody alerts={data.waterWarnings} provinceFilter={localActive ? userProvince.th : undefined} />
-                    )}
-                  </SectionShell>
-                </div>
-              </AgencyGroup>
+                <div className="flex min-w-0 flex-col gap-4">
+                  <div className="animate-fade-in-up delay-100">
+                    <SectionShell
+                      id="sec-forecast"
+                      source="TMD"
+                      icon={<CloudSun className="h-4 w-4 text-accent" />}
+                      title={t("gov", "forecastTitle")}
+                      description={t("gov", "forecastDesc")}
+                    >
+                      {data.forecast === null ? sectionError : <ForecastBody forecast={data.forecast} />}
+                    </SectionShell>
+                  </div>
 
-              <AgencyGroup title={t("gov", "ridGroup")}>
-                <div className="animate-fade-in-up delay-300">
-                  <SectionShell
-                    icon={<Droplets className="h-4 w-4 text-accent" />}
-                    title={t("gov", "reservoirTitle")}
-                    description={t("gov", "reservoirDesc")}
-                  >
-                    {data.reservoirs === null ? sectionError : <ReservoirBody situation={data.reservoirs} />}
-                  </SectionShell>
+                  <div className="animate-fade-in-up delay-200">
+                    <SectionShell
+                      id="sec-dams"
+                      source="RID"
+                      icon={<Droplets className="h-4 w-4 text-accent" />}
+                      title={t("gov", "reservoirTitle")}
+                      description={t("gov", "reservoirDesc")}
+                      tone={damsOverCount !== null && damsOverCount > 0 ? "danger" : undefined}
+                    >
+                      {data.reservoirs === null ? sectionError : <ReservoirBody situation={data.reservoirs} />}
+                    </SectionShell>
+                  </div>
                 </div>
-              </AgencyGroup>
+              </div>
             </>
           )
         )}
