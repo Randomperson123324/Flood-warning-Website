@@ -6,12 +6,13 @@
 // เป็น dynamic import ข้างใน engine.ts อยู่แล้ว จะโหลดก็ต่อเมื่อใช้โหมด local จริง
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
-import { DEFAULT_LOCAL_MODEL_ID, LOCAL_MODELS } from "@/lib/ai/local/models"
+import { DEFAULT_LOCAL_MODEL_ID, getLocalModelInfo, variantIds, type LocalModelInfo } from "@/lib/ai/local/models"
 import {
   deleteModel as deleteModelFromCache,
   getEngine,
   hasModelCached,
   isWebGPUAvailable,
+  resolveModelId,
 } from "@/lib/ai/local/engine"
 
 const ENGINE_KEY = "streeflood:ai-engine"
@@ -29,6 +30,8 @@ export interface AIEngineStatus {
 interface AIEngineContextValue {
   engine: AIEngineKind
   localModelId: string
+  /** ข้อมูลโมเดลที่จะใช้จริงบนเครื่องนี้ (อาจเป็นรุ่น q4f32 ถ้า GPU ไม่มี shader-f16) */
+  localModel: LocalModelInfo
   status: AIEngineStatus
   webgpuSupported: boolean | null
   setEngine: (next: AIEngineKind) => void
@@ -41,7 +44,7 @@ const AIEngineContext = createContext<AIEngineContextValue | null>(null)
 
 export function AIEngineProvider({ children }: { children: ReactNode }) {
   const [engine, setEngineState] = useState<AIEngineKind>("cloud")
-  const [localModelId] = useState(DEFAULT_LOCAL_MODEL_ID)
+  const [localModelId, setLocalModelId] = useState(DEFAULT_LOCAL_MODEL_ID)
   const [status, setStatus] = useState<AIEngineStatus>({ phase: "idle" })
   const [webgpuSupported, setWebgpuSupported] = useState<boolean | null>(null)
   // กัน loadModel ซ้อนกัน (เช่น กดโหลดใน popover พร้อมกับส่งข้อความแรก)
@@ -50,7 +53,13 @@ export function AIEngineProvider({ children }: { children: ReactNode }) {
   const checkCache = useCallback(async () => {
     try {
       const cached = await hasModelCached(localModelId)
-      setStatus((prev) => (prev.phase === "idle" && cached ? { phase: "cached" } : prev))
+      // เช็คสองทาง: id อาจเพิ่งสลับเป็นรุ่น q4f32 (GPU ไม่มี shader-f16)
+      // ทำให้สถานะ cached ของรุ่นเดิมใช้ไม่ได้แล้ว
+      setStatus((prev) => {
+        if (prev.phase === "idle" && cached) return { phase: "cached" }
+        if (prev.phase === "cached" && !cached) return { phase: "idle" }
+        return prev
+      })
     } catch {
       // เช็ค cache ไม่ได้ไม่ใช่เรื่องใหญ่ — ปล่อยเป็น idle
     }
@@ -62,11 +71,17 @@ export function AIEngineProvider({ children }: { children: ReactNode }) {
     const stored = window.localStorage.getItem(ENGINE_KEY) as AIEngineKind | null
     // เคยเลือก local ไว้แต่เบราว์เซอร์ตอนนี้ไม่มี WebGPU (เปลี่ยนเครื่อง/เบราว์เซอร์)
     // → ถอยกลับ cloud เงียบๆ ให้ใช้งานต่อได้
-    if (stored === "local" && supported) {
-      setEngineState("local")
-      void checkCache()
+    if (stored === "local" && supported) setEngineState("local")
+    // GPU ไม่มี shader-f16 → ใช้รุ่น q4f32 (getEngine กันซ้ำอีกชั้น แต่ state ต้องตรง
+    // เพื่อให้ sizeText/เช็ค cache ชี้รุ่นที่จะโหลดจริง)
+    if (supported) {
+      void resolveModelId(DEFAULT_LOCAL_MODEL_ID).then(setLocalModelId)
     }
-  }, [checkCache])
+  }, [])
+
+  useEffect(() => {
+    if (engine === "local") void checkCache()
+  }, [engine, checkCache])
 
   const setEngine = useCallback(
     (next: AIEngineKind) => {
@@ -74,9 +89,8 @@ export function AIEngineProvider({ children }: { children: ReactNode }) {
       setEngineState(next)
       window.localStorage.setItem(ENGINE_KEY, next)
       window.localStorage.setItem(MODEL_KEY, localModelId)
-      if (next === "local") void checkCache()
     },
-    [localModelId, checkCache],
+    [localModelId],
   )
 
   const loadModel = useCallback(
@@ -106,13 +120,18 @@ export function AIEngineProvider({ children }: { children: ReactNode }) {
   )
 
   const removeModel = useCallback(async () => {
-    await deleteModelFromCache(localModelId)
+    // ลบทุก variant (f16/f32) — เครื่องที่สลับรุ่น fallback อาจมีไฟล์รุ่นเดิมค้างอยู่
+    for (const id of variantIds(localModelId)) {
+      await deleteModelFromCache(id)
+    }
     setStatus({ phase: "idle" })
   }, [localModelId])
 
+  const localModel = getLocalModelInfo(localModelId)
+
   const value = useMemo<AIEngineContextValue>(
-    () => ({ engine, localModelId, status, webgpuSupported, setEngine, loadModel, removeModel }),
-    [engine, localModelId, status, webgpuSupported, setEngine, loadModel, removeModel],
+    () => ({ engine, localModelId, localModel, status, webgpuSupported, setEngine, loadModel, removeModel }),
+    [engine, localModelId, localModel, status, webgpuSupported, setEngine, loadModel, removeModel],
   )
 
   return <AIEngineContext.Provider value={value}>{children}</AIEngineContext.Provider>
@@ -123,5 +142,3 @@ export function useAIEngine(): AIEngineContextValue {
   if (!ctx) throw new Error("useAIEngine must be used within AIEngineProvider")
   return ctx
 }
-
-export { LOCAL_MODELS }

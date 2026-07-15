@@ -5,6 +5,7 @@
 // (~5 MB) หลุดเข้า initial bundle ของผู้ใช้ที่เลือก cloud AI และไม่โดน SSR แตะเลย
 
 import type { AIContext } from "@/types"
+import { F32_FALLBACKS } from "./models"
 
 type WebLLM = typeof import("@mlc-ai/web-llm")
 type Engine = import("@mlc-ai/web-llm").WebWorkerMLCEngine
@@ -36,10 +37,37 @@ export function isWebGPUAvailable(): boolean {
   return typeof navigator !== "undefined" && !!(navigator as Navigator & { gpu?: unknown }).gpu
 }
 
+let f16SupportPromise: Promise<boolean> | null = null
+
+// GPU/driver บางตัวไม่มี WebGPU feature "shader-f16" — โมเดล q4f16 จะ compile shader
+// ไม่ผ่าน (GPUValidationError: extension 'f16' is not allowed) หลังดาวน์โหลดเสร็จ
+export function supportsShaderF16(): Promise<boolean> {
+  f16SupportPromise ??= (async () => {
+    try {
+      type GPULike = { requestAdapter(): Promise<{ features: ReadonlySet<string> } | null> }
+      const gpu = (navigator as Navigator & { gpu?: GPULike }).gpu
+      const adapter = await gpu?.requestAdapter()
+      return adapter?.features.has("shader-f16") ?? false
+    } catch {
+      return false
+    }
+  })()
+  return f16SupportPromise
+}
+
+// สลับไปรุ่น q4f32 อัตโนมัติถ้าเครื่องไม่รองรับ f16 — เรียกที่นี่ (จุดเดียวก่อนสร้าง engine)
+// กันเคส caller ส่ง id รุ่น f16 มาก่อนที่ตัวตรวจฝั่ง UI จะ resolve ทัน
+export async function resolveModelId(modelId: string): Promise<string> {
+  const fallback = F32_FALLBACKS[modelId]
+  if (!fallback) return modelId
+  return (await supportsShaderF16()) ? modelId : fallback.id
+}
+
 export async function getEngine(
-  modelId: string,
+  requestedModelId: string,
   onProgress?: (progress: number, text: string) => void,
 ): Promise<Engine> {
+  const modelId = await resolveModelId(requestedModelId)
   const webllm = await loadWebLLM()
 
   if (enginePromise) {

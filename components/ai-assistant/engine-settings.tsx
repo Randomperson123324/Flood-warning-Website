@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Check, Cloud, Cpu, LoaderCircle, Settings2, Trash2 } from "lucide-react"
-import { LOCAL_MODELS, useAIEngine } from "@/hooks/use-ai-engine"
+import { useAIEngine } from "@/hooks/use-ai-engine"
 import { useLanguage } from "@/hooks/use-language"
 import { getStorageEstimate } from "@/lib/ai/local/engine"
 import { cn } from "@/lib/utils"
@@ -18,13 +18,13 @@ function formatBytes(bytes: number): string {
 
 export function EngineSettings({ direction = "down" }: { direction?: "down" | "up" }) {
   const { t } = useLanguage()
-  const { engine, status, webgpuSupported, setEngine, loadModel, removeModel } = useAIEngine()
+  const { engine, localModel, status, webgpuSupported, setEngine, loadModel, removeModel } = useAIEngine()
   const [open, setOpen] = useState(false)
   const [deleteArmed, setDeleteArmed] = useState(false)
   const [storage, setStorage] = useState<{ usage: number; quota: number } | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
 
-  const model = LOCAL_MODELS[0]
+  const model = localModel
 
   useEffect(() => {
     if (!open) return
