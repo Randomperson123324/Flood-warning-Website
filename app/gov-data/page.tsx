@@ -426,9 +426,8 @@ function SectionShell({
 }) {
   return (
     // scroll-mt clears the sticky mobile top bar + section nav (lg has no
-    // top bar, only the nav). h-full so cards stretch flush to their bento
-    // grid tracks.
-    <section id={id} className="glass-panel h-full scroll-mt-40 p-5 lg:scroll-mt-20">
+    // top bar, only the nav).
+    <section id={id} className="glass-panel scroll-mt-40 p-5 lg:scroll-mt-20">
       <div className={description ? "mb-1.5 flex items-center gap-2" : "mb-4 flex items-center gap-2"}>
         {icon}
         <h2 className="text-sm font-semibold">{title}</h2>
@@ -474,7 +473,7 @@ function OverviewTile({
     <button
       type="button"
       onClick={onClick}
-      className="glass-panel glass-interactive flex h-full w-full flex-col items-start justify-between gap-1.5 p-4 text-left"
+      className="glass-panel glass-interactive flex flex-col items-start gap-1.5 p-4 text-left"
     >
       <span className="flex items-center gap-1.5 text-xs text-ink-soft">
         {icon}
@@ -662,21 +661,61 @@ export default function GovDataPage() {
 
         {loading ? (
           <>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="glass-panel h-20 animate-pulse" />
+              <div className="glass-panel h-20 animate-pulse" />
+              <div className="glass-panel h-20 animate-pulse" />
+              <div className="glass-panel h-20 animate-pulse" />
+            </div>
             <div className="glass-panel h-12 animate-pulse" />
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-12 lg:gap-4">
-              <div className="glass-panel col-span-2 h-48 animate-pulse lg:col-span-5 lg:row-span-2 lg:h-auto" />
-              <div className="glass-panel h-24 animate-pulse lg:col-span-3" />
-              <div className="glass-panel h-24 animate-pulse lg:col-span-4" />
-              <div className="glass-panel h-24 animate-pulse lg:col-span-3" />
-              <div className="glass-panel h-24 animate-pulse lg:col-span-4" />
-              <div className="glass-panel col-span-2 h-72 animate-pulse lg:col-span-7 lg:row-span-2" />
-              <div className="glass-panel col-span-2 h-72 animate-pulse lg:col-span-5 lg:row-span-2" />
-              <div className="glass-panel col-span-2 h-64 animate-pulse lg:col-span-7" />
+            <div className="grid items-start gap-4 lg:grid-cols-3">
+              <div className="flex flex-col gap-4 lg:col-span-2">
+                <div className="glass-panel h-48 animate-pulse" />
+                <div className="glass-panel h-72 animate-pulse" />
+                <div className="glass-panel h-72 animate-pulse" />
+              </div>
+              <div className="flex flex-col gap-4">
+                <div className="glass-panel h-48 animate-pulse" />
+                <div className="glass-panel h-72 animate-pulse" />
+              </div>
             </div>
           </>
         ) : (
           data && (
             <>
+              {/* ── Overview: the page's headline answer, one tile per
+                  red-tier question. Tap a tile to jump to its section. ── */}
+              <div className="animate-fade-in-up grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <OverviewTile
+                  icon={<ShieldAlert className="h-3.5 w-3.5" />}
+                  label={t("gov", "warnFlashFlood")}
+                  value={flashFloodCount === null ? null : String(flashFloodCount)}
+                  tone={flashFloodCount !== null && flashFloodCount > 0 ? "danger" : "normal"}
+                  onClick={() => jumpToSection("sec-alerts")}
+                />
+                <OverviewTile
+                  icon={<Waves className="h-3.5 w-3.5" />}
+                  label={t("gov", "riverOverflow")}
+                  value={overflowCount === null ? null : String(overflowCount)}
+                  tone={overflowCount !== null && overflowCount > 0 ? "danger" : "normal"}
+                  onClick={() => jumpToSection("sec-rivers")}
+                />
+                <OverviewTile
+                  icon={<Droplets className="h-3.5 w-3.5" />}
+                  label={t("gov", "reservoirOverCapacity")}
+                  value={damsOverCount === null ? null : String(damsOverCount)}
+                  tone={damsOverCount !== null && damsOverCount > 0 ? "danger" : "normal"}
+                  onClick={() => jumpToSection("sec-dams")}
+                />
+                <OverviewTile
+                  icon={<CloudRain className="h-3.5 w-3.5" />}
+                  label={t("gov", "overviewMaxRain")}
+                  value={maxRain === null ? null : `${maxRain.toFixed(0)} ${t("gov", "mm")}`}
+                  tone={maxRain !== null && maxRain > RAIN_VERY_HEAVY_MM ? "danger" : maxRain !== null && maxRain > RAIN_HEAVY_MM ? "warning" : "normal"}
+                  onClick={() => jumpToSection("sec-rain")}
+                />
+              </div>
+
               {/* ── Sticky section nav: sticks below the mobile top bar
                   (lg has the sidebar instead, so it sticks near the top). ── */}
               <nav className="sticky top-24 z-30 lg:top-4">
@@ -700,49 +739,12 @@ export default function GovDataPage() {
                 </div>
               </nav>
 
-              {/* ── Bento mosaic: the overview tiles and section cards share
-                  one asymmetric 12-col grid on lg+ — tiles pack 2×2 around
-                  the announcements card, sections take varied spans below.
-                  Under lg it collapses to 2-up tiles + full-width cards. ── */}
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-12 lg:gap-4">
-                <div className="animate-fade-in-up lg:col-span-3 lg:col-start-6 lg:row-start-1">
-                <OverviewTile
-                  icon={<ShieldAlert className="h-3.5 w-3.5" />}
-                  label={t("gov", "warnFlashFlood")}
-                  value={flashFloodCount === null ? null : String(flashFloodCount)}
-                  tone={flashFloodCount !== null && flashFloodCount > 0 ? "danger" : "normal"}
-                  onClick={() => jumpToSection("sec-alerts")}
-                />
-                </div>
-                <div className="animate-fade-in-up delay-75 lg:col-span-4 lg:col-start-9 lg:row-start-1">
-                <OverviewTile
-                  icon={<Waves className="h-3.5 w-3.5" />}
-                  label={t("gov", "riverOverflow")}
-                  value={overflowCount === null ? null : String(overflowCount)}
-                  tone={overflowCount !== null && overflowCount > 0 ? "danger" : "normal"}
-                  onClick={() => jumpToSection("sec-rivers")}
-                />
-                </div>
-                <div className="animate-fade-in-up delay-100 lg:col-span-3 lg:col-start-6 lg:row-start-2">
-                <OverviewTile
-                  icon={<Droplets className="h-3.5 w-3.5" />}
-                  label={t("gov", "reservoirOverCapacity")}
-                  value={damsOverCount === null ? null : String(damsOverCount)}
-                  tone={damsOverCount !== null && damsOverCount > 0 ? "danger" : "normal"}
-                  onClick={() => jumpToSection("sec-dams")}
-                />
-                </div>
-                <div className="animate-fade-in-up delay-150 lg:col-span-4 lg:col-start-9 lg:row-start-2">
-                <OverviewTile
-                  icon={<CloudRain className="h-3.5 w-3.5" />}
-                  label={t("gov", "overviewMaxRain")}
-                  value={maxRain === null ? null : `${maxRain.toFixed(0)} ${t("gov", "mm")}`}
-                  tone={maxRain !== null && maxRain > RAIN_VERY_HEAVY_MM ? "danger" : maxRain !== null && maxRain > RAIN_HEAVY_MM ? "warning" : "normal"}
-                  onClick={() => jumpToSection("sec-rain")}
-                />
-                </div>
-
-                  <div className="col-span-2 min-w-0 animate-fade-in-up delay-75 lg:col-span-5 lg:col-start-1 lg:row-span-2 lg:row-start-1">
+              {/* ── Topic-first, urgency-ordered sections. lg+: warnings and
+                  station lists in the main column, reading material
+                  (forecast, reservoirs) in the side column. ── */}
+              <div className="grid items-start gap-4 lg:grid-cols-3">
+                <div className="flex min-w-0 flex-col gap-4 lg:col-span-2">
+                  <div className="animate-fade-in-up delay-75">
                     <SectionShell
                       id="sec-announcements"
                       source="TMD"
@@ -765,7 +767,7 @@ export default function GovDataPage() {
                     </SectionShell>
                   </div>
 
-                  <div className="col-span-2 min-w-0 animate-fade-in-up delay-100 lg:col-span-7 lg:row-span-2">
+                  <div className="animate-fade-in-up delay-100">
                     <SectionShell
                       id="sec-alerts"
                       source="HII"
@@ -784,7 +786,7 @@ export default function GovDataPage() {
                     </SectionShell>
                   </div>
 
-                  <div className="col-span-2 min-w-0 animate-fade-in-up delay-150 lg:col-span-5 lg:row-span-2">
+                  <div className="animate-fade-in-up delay-150">
                     <SectionShell
                       id="sec-rain"
                       source="HII"
@@ -848,7 +850,7 @@ export default function GovDataPage() {
                   </SectionShell>
                 </div>
 
-                  <div className="col-span-2 min-w-0 animate-fade-in-up delay-200 lg:col-span-7">
+                  <div className="animate-fade-in-up delay-200">
                     <SectionShell
                       id="sec-rivers"
                       source="HII"
@@ -864,8 +866,10 @@ export default function GovDataPage() {
                       )}
                     </SectionShell>
                   </div>
+                </div>
 
-                  <div className="col-span-2 min-w-0 animate-fade-in-up delay-100 lg:col-span-5 lg:row-span-2">
+                <div className="flex min-w-0 flex-col gap-4">
+                  <div className="animate-fade-in-up delay-100">
                     <SectionShell
                       id="sec-forecast"
                       source="TMD"
@@ -877,7 +881,7 @@ export default function GovDataPage() {
                     </SectionShell>
                   </div>
 
-                  <div className="col-span-2 min-w-0 animate-fade-in-up delay-200 lg:col-span-7">
+                  <div className="animate-fade-in-up delay-200">
                     <SectionShell
                       id="sec-dams"
                       source="RID"
@@ -889,6 +893,7 @@ export default function GovDataPage() {
                       {data.reservoirs === null ? sectionError : <ReservoirBody situation={data.reservoirs} />}
                     </SectionShell>
                   </div>
+                </div>
               </div>
             </>
           )
