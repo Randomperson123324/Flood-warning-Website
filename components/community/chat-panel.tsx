@@ -27,6 +27,7 @@ import { RIVER_HIGH_LEVEL, RIVER_OVERFLOW_LEVEL } from "@/lib/gov/thaiwater"
 import type { GovNearbyStation, GovRainStation, GovRiverStation, GovWarningAlert } from "@/lib/gov/thaiwater"
 import type { GovReservoir } from "@/lib/gov/rid-reservoir"
 import { AIExchangeMessage, type AIExchange } from "@/components/community/ai-exchange-message"
+import { EngineSettings } from "@/components/ai-assistant/engine-settings"
 import type { AIContext, ChatMessage, GovCommandKind, Sensor, WarningSeverity } from "@/types"
 
 const SEVERITY_DOT_CLASS: Record<WarningSeverity, string> = {
@@ -732,6 +733,7 @@ export function ChatPanel() {
               className="glass-panel-strong flex-1 px-3.5 py-2.5 text-sm outline-none"
               maxLength={500}
             />
+            {slash?.type === "ai" && <EngineSettings direction="up" />}
             <button
               type="submit"
               disabled={!draft.trim() || slash?.type === "sensor" || slash?.type === "menu" || slash?.type === "gov"}

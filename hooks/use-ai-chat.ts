@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { SITE_CONFIG } from "@/lib/config"
+import { useAIEngine, type AIEngineKind } from "@/hooks/use-ai-engine"
+import { useLanguage } from "@/hooks/use-language"
+import { streamLocalReply } from "@/lib/ai/local/engine"
 import type { AIContext, WeatherData } from "@/types"
 
 interface ChatMessage {
@@ -12,6 +15,8 @@ interface ChatMessage {
   // ข้อความสถานะชั่วคราวตอน AI กำลังเรียก tool อยู่ (เช่น "🔧 กำลังตรวจสอบสภาพอากาศ...")
   // จะถูกเคลียร์ทิ้งทันทีที่มีเนื้อหาจริง (message.delta) เข้ามา
   toolStatus?: string
+  // ข้อความ assistant นี้สร้างด้วย engine ไหน — ไว้ติดป้าย "บนเครื่อง"
+  engine?: AIEngineKind
 }
 
 interface StreamHandlers {
@@ -74,6 +79,8 @@ async function streamAIReply(
 }
 
 export function useAIChat(context: AIContext, isOpen: boolean) {
+  const { engine, localModelId, status: engineStatus, loadModel } = useAIEngine()
+  const { t } = useLanguage()
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
   const [autoAnalysis, setAutoAnalysis] = useState("")
   const [analysisStatus, setAnalysisStatus] = useState("")
@@ -83,8 +90,34 @@ export function useAIChat(context: AIContext, isOpen: boolean) {
   const lastLevelRef = useRef(context.currentLevel)
   const contextRef = useRef(context)
   contextRef.current = context
+  // ให้ callback ที่สร้างครั้งเดียว (runAutoAnalysis) เห็นค่า engine ปัจจุบันเสมอ
+  const engineRef = useRef({ engine, localModelId, phase: engineStatus.phase, loadModel, t })
+  engineRef.current = { engine, localModelId, phase: engineStatus.phase, loadModel, t }
+
+  // เลือกเส้นทางตาม engine ที่ผู้ใช้ตั้งไว้: cloud → SSE ผ่าน /api/ai,
+  // local → WebLLM ในเบราว์เซอร์ (โหลดโมเดลก่อนถ้ายังไม่พร้อม โดยโชว์ % ผ่าน toolStatus)
+  const streamReply = useCallback(
+    async (messages: { role: "user" | "assistant"; content: string }[], handlers: StreamHandlers) => {
+      const { engine: kind, localModelId: modelId, loadModel: load, t: translate } = engineRef.current
+      if (kind !== "local") return streamAIReply(messages, contextRef.current, handlers)
+
+      await load((pct) => handlers.onToolCall?.(`${translate("ai", "loadingModelStatus")} ${pct}%`))
+      return streamLocalReply(messages, contextRef.current, handlers, {
+        modelId,
+        labels: {
+          fetchingContext: translate("ai", "fetchingContext"),
+          loadingModel: translate("ai", "loadingModelStatus"),
+        },
+      })
+    },
+    [],
+  )
 
   const runAutoAnalysis = useCallback(async () => {
+    // โหมด on-device: วิเคราะห์อัตโนมัติเฉพาะตอนโมเดลโหลดพร้อมแล้วเท่านั้น —
+    // ห้ามเป็นตัวจุดชนวนดาวน์โหลดโมเดล ~2.5 GB หรือปลุก GPU เองเงียบๆ
+    if (engineRef.current.engine === "local" && engineRef.current.phase !== "ready") return
+
     const now = Date.now()
     if (now - lastAnalysisRef.current < 120_000) return
     lastAnalysisRef.current = now
@@ -93,9 +126,8 @@ export function useAIChat(context: AIContext, isOpen: boolean) {
     setAutoAnalysis("")
     setAnalysisStatus("")
     try {
-      await streamAIReply(
+      await streamReply(
         [{ role: "user", content: "วิเคราะห์สถานการณ์น้ำปัจจุบันแบบสรุปสั้น ไม่เกิน 3 ประเด็น" }],
-        contextRef.current,
         {
           onContent: (partial) => {
             setAnalysisStatus("")
@@ -110,7 +142,7 @@ export function useAIChat(context: AIContext, isOpen: boolean) {
       setIsAnalyzing(false)
       setAnalysisStatus("")
     }
-  }, [])
+  }, [streamReply])
 
   const sendMessage = async (userMessage: string, onComplete?: (finalText: string) => void) => {
     if (isSending || !userMessage.trim()) return
@@ -121,13 +153,14 @@ export function useAIChat(context: AIContext, isOpen: boolean) {
     setChatHistory((prev) => [...prev, userMsg, loadingMsg])
     setIsSending(true)
 
+    const activeEngine = engineRef.current.engine
     try {
       const history = [...chatHistory, userMsg].map((m) => ({ role: m.role, content: m.content }))
-      const finalText = await streamAIReply(history, contextRef.current, {
+      const finalText = await streamReply(history, {
         onContent: (partial) => {
           setChatHistory((prev) => [
             ...prev.slice(0, -1),
-            { role: "assistant", content: partial, timestamp: new Date(), isLoading: false },
+            { role: "assistant", content: partial, timestamp: new Date(), isLoading: false, engine: activeEngine },
           ])
         },
         onToolCall: (label) => {
@@ -141,7 +174,12 @@ export function useAIChat(context: AIContext, isOpen: boolean) {
     } catch {
       setChatHistory((prev) => [
         ...prev.slice(0, -1),
-        { role: "assistant", content: "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง", timestamp: new Date() },
+        {
+          role: "assistant",
+          content:
+            activeEngine === "local" ? engineRef.current.t("ai", "localLoadError") : "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
+          timestamp: new Date(),
+        },
       ])
     } finally {
       setIsSending(false)
@@ -167,9 +205,12 @@ export function useAIChat(context: AIContext, isOpen: boolean) {
       lastLevelRef.current = context.currentLevel
       runAutoAnalysis()
     }
+    // โหมด on-device ไม่ตั้ง interval วิเคราะห์อัตโนมัติ — generation หนึ่งครั้ง
+    // กิน GPU/แบตจริงจัง ไม่เหมาะกับการรันเบื้องหลังทุกๆ ไม่กี่นาที
+    if (engine === "local") return
     const interval = setInterval(runAutoAnalysis, SITE_CONFIG.fetch.aiAnalysisIntervalMs)
     return () => clearInterval(interval)
-  }, [context.currentLevel, runAutoAnalysis, isOpen])
+  }, [context.currentLevel, runAutoAnalysis, isOpen, engine])
 
   return { chatHistory, autoAnalysis, analysisStatus, isAnalyzing, isSending, sendMessage, clearHistory }
 }

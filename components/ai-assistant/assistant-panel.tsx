@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Bot, LoaderCircle, Send, Trash2, X } from "lucide-react"
+import { Bot, Cpu, LoaderCircle, Send, Trash2, X } from "lucide-react"
 import { useLanguage } from "@/hooks/use-language"
 import { useAIChat } from "@/hooks/use-ai-chat"
 import { MarkdownMessage } from "@/components/ai-assistant/markdown-message"
+import { EngineSettings } from "@/components/ai-assistant/engine-settings"
 import { cn } from "@/lib/utils"
 import type { AIContext } from "@/types"
 
@@ -42,6 +43,7 @@ export function AssistantPanel({ context, open, onClose }: AssistantPanelProps) 
       <div className="flex items-center gap-2 border-b border-border/10 px-4 py-3">
         <Bot className="h-5 w-5 text-accent" />
         <p className="flex-1 font-medium">{t("ai", "title")}</p>
+        <EngineSettings direction="down" />
         {chatHistory.length > 0 && (
           <button type="button" onClick={clearHistory} title={t("ai", "clear")} className="text-ink-soft hover:text-status-danger">
             <Trash2 className="h-4 w-4" />
@@ -79,7 +81,15 @@ export function AssistantPanel({ context, open, onClose }: AssistantPanelProps) 
                   <LoaderCircle className="h-3.5 w-3.5 animate-spin text-ink-soft" />
                 )
               ) : msg.role === "assistant" ? (
-                <MarkdownMessage content={msg.content} />
+                <>
+                  <MarkdownMessage content={msg.content} />
+                  {msg.engine === "local" && (
+                    <span className="mt-1 flex items-center gap-1 text-[10px] text-ink-soft">
+                      <Cpu className="h-2.5 w-2.5" />
+                      {t("ai", "engineLocalBadge")}
+                    </span>
+                  )}
+                </>
               ) : (
                 <p className="whitespace-pre-wrap break-words text-sm">{msg.content}</p>
               )}

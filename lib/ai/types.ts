@@ -81,3 +81,51 @@ ${sourceList}
 - คำถามทั่วไป (แปลภาษา เขียนบทความ) ไม่ต้องเรียก tool
 `.trim()
 }
+
+/** ข้อมูลสดที่ /api/ai/context ดึงไว้ล่วงหน้าให้โมเดล on-device (ที่ไม่มี tool calling) */
+export interface PrefetchedData {
+  latestReading: unknown
+  weather: unknown
+  tmdWarning: unknown
+}
+
+/** system prompt สำหรับโหมด on-device (WebLLM) — โมเดลเล็กเรียก tool เองไม่ได้
+ * เลยฝังข้อมูลสดที่ดึงไว้แล้วลงไปใน prompt แทน และตัด workflow 8 tool ทิ้ง
+ * (โมเดลเล็กยิ่ง prompt ยาวยิ่งตอบเพี้ยน — เก็บให้สั้นที่สุด) */
+export function buildLocalSystemPrompt(context: AIContext, timestamp: string, fresh: PrefetchedData): string {
+  const trendText =
+    context.trend === "rising"
+      ? "กำลังสูงขึ้น"
+      : context.trend === "falling"
+        ? "กำลังลดลง"
+        : "คงที่"
+
+  const section = (title: string, data: unknown) =>
+    data == null ? `${title}: (ดึงข้อมูลไม่ได้)` : `${title}:\n${JSON.stringify(data)}`
+
+  return `
+คุณคือ AI ผู้ช่วยวิเคราะห์สถานการณ์น้ำท่วม ประจำ ${context.sensorLabel}
+ตอบเป็นภาษาไทย กระชับ ชัดเจน ห้ามแต่งข้อมูล
+
+เวลาปัจจุบัน (server): ${timestamp}
+
+ข้อมูล context เบื้องต้น:
+- ระดับน้ำ: ${context.currentLevel} cm
+- เกณฑ์เตือนภัย: ${context.warningLevel} cm | เกณฑ์อันตราย: ${context.dangerLevel} cm
+- แนวโน้ม: ${trendText} (${context.ratePerHour > 0 ? "+" : ""}${context.ratePerHour.toFixed(2)} cm/ชม.)
+- รายงานน้ำท่วมที่ใช้งานอยู่: ${context.activeFloodReports} รายงาน
+
+ข้อมูลสดที่ดึงมาให้แล้ว — อ้างอิงตามนี้เท่านั้น ห้ามอ้างว่าเรียกเครื่องมือหรือค้นข้อมูลเพิ่มได้:
+
+${section("ค่าที่วัดล่าสุดจาก sensor", fresh.latestReading)}
+
+${section("สภาพอากาศ (ดู field source ว่ามาจาก TMD หรือ Open-Meteo — อ้างตามนั้น)", fresh.weather)}
+
+${section("ประกาศเตือนภัยจากกรมอุตุฯ (hasWarning: false = ไม่มีประกาศ)", fresh.tmdWarning)}
+
+กฎ:
+- ระบุเวลาที่วัดข้อมูลในคำตอบเมื่อเกี่ยวข้อง เช่น "(sensor วัดเมื่อ 21:00 น.)"
+- ถ้าข้อมูลส่วนไหนดึงไม่ได้ ให้บอกตรงๆ ว่าไม่มีข้อมูลส่วนนั้น
+- คำถามทั่วไปที่ไม่เกี่ยวกับน้ำ ตอบได้ตามความรู้ทั่วไป
+`.trim()
+}
