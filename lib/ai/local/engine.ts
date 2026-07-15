@@ -7,18 +7,13 @@
 import type { AIContext } from "@/types"
 import { F32_FALLBACKS } from "./models"
 
+import { buildFallbackSystemPrompt, fetchContextPrompt } from "./shared"
+import type { LocalStreamHandlers, LocalStreamLabels } from "./shared"
+
 type WebLLM = typeof import("@mlc-ai/web-llm")
 type Engine = import("@mlc-ai/web-llm").WebWorkerMLCEngine
 
-export interface LocalStreamHandlers {
-  onContent: (fullTextSoFar: string) => void
-  onToolCall?: (label: string) => void
-}
-
-export interface LocalStreamLabels {
-  fetchingContext: string
-  loadingModel: string
-}
+export type { LocalStreamHandlers, LocalStreamLabels }
 
 let webllmPromise: Promise<WebLLM> | null = null
 let enginePromise: Promise<Engine> | null = null
@@ -145,38 +140,6 @@ function enqueue<T>(fn: () => Promise<T>): Promise<T> {
     () => undefined,
   )
   return run
-}
-
-// prompt สำรองกรณีดึง /api/ai/context ไม่ได้ (เช่น offline) — ใช้ข้อมูล AIContext
-// ที่มีอยู่แล้วฝั่ง client เพื่อให้โหมด on-device ยังตอบได้แม้ไม่มีเน็ต
-function buildFallbackSystemPrompt(context: AIContext): string {
-  const trendText =
-    context.trend === "rising" ? "กำลังสูงขึ้น" : context.trend === "falling" ? "กำลังลดลง" : "คงที่"
-  return `
-คุณคือ AI ผู้ช่วยวิเคราะห์สถานการณ์น้ำท่วม ประจำ ${context.sensorLabel}
-ตอบเป็นภาษาไทย กระชับ ชัดเจน ห้ามแต่งข้อมูล
-
-ขณะนี้ดึงข้อมูลสดจากเซิร์ฟเวอร์ไม่ได้ (อาจ offline) — ใช้ได้เฉพาะข้อมูลด้านล่างนี้
-และต้องแจ้งผู้ใช้ว่าข้อมูลอาจไม่ใช่ค่าล่าสุด:
-- ระดับน้ำ: ${context.currentLevel} cm
-- เกณฑ์เตือนภัย: ${context.warningLevel} cm | เกณฑ์อันตราย: ${context.dangerLevel} cm
-- แนวโน้ม: ${trendText} (${context.ratePerHour > 0 ? "+" : ""}${context.ratePerHour.toFixed(2)} cm/ชม.)
-- รายงานน้ำท่วมที่ใช้งานอยู่: ${context.activeFloodReports} รายงาน
-
-ห้ามอ้างว่าเรียกเครื่องมือหรือค้นข้อมูลเพิ่มได้
-`.trim()
-}
-
-async function fetchContextPrompt(context: AIContext): Promise<string> {
-  const res = await fetch("/api/ai/context", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ context }),
-  })
-  if (!res.ok) throw new Error(`context API error: ${res.status}`)
-  const data = (await res.json()) as { systemPrompt?: string }
-  if (!data.systemPrompt) throw new Error("context API returned no prompt")
-  return data.systemPrompt
 }
 
 // คู่แฝดของ streamAIReply ใน hooks/use-ai-chat.ts — สัญญา callback เดียวกันเป๊ะ

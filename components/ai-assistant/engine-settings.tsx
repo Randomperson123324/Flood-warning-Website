@@ -4,7 +4,7 @@
 // แผง AI ลอย (assistant-panel) และช่องแชทชุมชนตอนพิมพ์ /AI (chat-panel)
 
 import { useEffect, useRef, useState } from "react"
-import { Check, Cloud, Cpu, LoaderCircle, Settings2, Trash2 } from "lucide-react"
+import { Check, Cloud, Cpu, LoaderCircle, MemoryStick, Settings2, TriangleAlert, Trash2, Zap } from "lucide-react"
 import { useAIEngine } from "@/hooks/use-ai-engine"
 import { useLanguage } from "@/hooks/use-language"
 import { getStorageEstimate } from "@/lib/ai/local/engine"
@@ -18,8 +18,20 @@ function formatBytes(bytes: number): string {
 
 export function EngineSettings({ direction = "down" }: { direction?: "down" | "up" }) {
   const { t } = useLanguage()
-  const { engine, localModel, localModels, status, webgpuSupported, setEngine, setLocalModel, loadModel, removeModel } =
-    useAIEngine()
+  const {
+    engine,
+    localBackend,
+    localModel,
+    localModels,
+    status,
+    webgpuSupported,
+    cpuMultithread,
+    setEngine,
+    setLocalBackend,
+    setLocalModel,
+    loadModel,
+    removeModel,
+  } = useAIEngine()
   const [open, setOpen] = useState(false)
   const [deleteArmed, setDeleteArmed] = useState(false)
   const [storage, setStorage] = useState<{ usage: number; quota: number } | null>(null)
@@ -92,26 +104,70 @@ export function EngineSettings({ direction = "down" }: { direction?: "down" | "u
             <button
               type="button"
               onClick={() => setEngine("local")}
-              disabled={webgpuSupported === false}
               className={cn(
                 "flex w-full items-start gap-2.5 rounded-lg border p-2.5 text-left transition-colors",
                 engine === "local" ? "border-accent/60 bg-accent/10" : "border-border/10 hover:border-border/30",
-                webgpuSupported === false && "cursor-not-allowed opacity-50",
               )}
             >
               <Cpu className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
               <span className="min-w-0">
                 <span className="block text-sm font-medium">{t("ai", "engineLocal")}</span>
-                <span className="block text-xs text-ink-soft">
-                  {webgpuSupported === false ? t("ai", "webgpuUnsupported") : t("ai", "engineLocalDesc")}
-                </span>
+                <span className="block text-xs text-ink-soft">{t("ai", "engineLocalDesc")}</span>
               </span>
               {engine === "local" && <Check className="ml-auto h-4 w-4 shrink-0 text-accent" />}
             </button>
           </div>
 
-          {/* เลือกโมเดล — โชว์ variant ที่เครื่องนี้จะใช้จริง (f16/f32) */}
+          {/* เลือกเส้นทางของโหมดบนเครื่อง: GPU (เร็ว ต้องมี VRAM) หรือ CPU (ช้า แต่ใช้ RAM ทำงานได้ทุกเครื่อง) */}
           {engine === "local" && (
+            <div className="space-y-1.5">
+              {(
+                [
+                  { key: "gpu", icon: Zap, label: "backendGpu", desc: "backendGpuDesc" },
+                  { key: "cpu", icon: MemoryStick, label: "backendCpu", desc: "backendCpuDesc" },
+                ] as const
+              ).map(({ key, icon: Icon, label, desc }) => {
+                const unavailable = key === "gpu" && webgpuSupported === false
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => {
+                      setLocalBackend(key)
+                      setDeleteArmed(false)
+                    }}
+                    disabled={unavailable || status.phase === "downloading"}
+                    className={cn(
+                      "flex w-full items-start gap-2.5 rounded-lg border p-2 text-left transition-colors",
+                      localBackend === key
+                        ? "border-accent/60 bg-accent/10"
+                        : "border-border/10 hover:border-border/30",
+                      (unavailable || status.phase === "downloading") && "cursor-not-allowed opacity-50",
+                    )}
+                  >
+                    <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium">{t("ai", label)}</span>
+                      <span className="block text-xs text-ink-soft">
+                        {unavailable ? t("ai", "webgpuUnsupported") : t("ai", desc)}
+                      </span>
+                    </span>
+                    {localBackend === key && <Check className="ml-auto h-4 w-4 shrink-0 text-accent" />}
+                  </button>
+                )
+              })}
+              {localBackend === "cpu" && !cpuMultithread && (
+                <p className="flex items-start gap-1.5 px-1 text-[11px] text-status-warning">
+                  <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" />
+                  {t("ai", "backendCpuSlow")}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* เลือกโมเดล — โชว์ variant ที่เครื่องนี้จะใช้จริง (f16/f32)
+              โหมด CPU มีโมเดลตัวเดียว ไม่ต้องโชว์ตัวเลือก (กล่องสถานะด้านล่างบอกชื่ออยู่แล้ว) */}
+          {engine === "local" && localModels.length > 1 && (
             <div className="space-y-1.5">
               {localModels.map((m) => (
                 <button

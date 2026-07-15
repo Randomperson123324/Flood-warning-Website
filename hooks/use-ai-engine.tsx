@@ -22,11 +22,21 @@ import {
   isWebGPUAvailable,
   supportsShaderF16,
 } from "@/lib/ai/local/engine"
+import {
+  deleteCpuModel,
+  getCpuEngine,
+  hasCpuModelCached,
+  isCpuMultithreadAvailable,
+} from "@/lib/ai/local/cpu-engine"
+import { CPU_MODEL } from "@/lib/ai/local/shared"
 
 const ENGINE_KEY = "streeflood:ai-engine"
 const MODEL_KEY = "streeflood:ai-local-model"
+const BACKEND_KEY = "streeflood:ai-local-backend"
 
 export type AIEngineKind = "cloud" | "local"
+/** เส้นทางของโหมด on-device: gpu = WebLLM/WebGPU | cpu = wllama/WebAssembly (ใช้ RAM) */
+export type LocalBackend = "gpu" | "cpu"
 
 export interface AIEngineStatus {
   // idle = ยังไม่มีโมเดลในเครื่อง | cached = ดาวน์โหลดไว้แล้วแต่ยังไม่โหลดเข้า GPU
@@ -37,6 +47,8 @@ export interface AIEngineStatus {
 
 interface AIEngineContextValue {
   engine: AIEngineKind
+  /** เส้นทางที่ใช้เมื่อ engine = local */
+  localBackend: LocalBackend
   localModelId: string
   /** ข้อมูลโมเดลที่เลือกอยู่ ตาม variant ที่จะใช้จริงบนเครื่องนี้ (q4f32 ถ้า GPU ไม่มี shader-f16) */
   localModel: LocalModelInfo
@@ -44,10 +56,13 @@ interface AIEngineContextValue {
   localModels: LocalModelInfo[]
   status: AIEngineStatus
   webgpuSupported: boolean | null
+  /** true = หน้านี้ cross-origin isolated → โหมด CPU รัน multi-thread (เร็วกว่า) */
+  cpuMultithread: boolean
   setEngine: (next: AIEngineKind) => void
+  setLocalBackend: (next: LocalBackend) => void
   /** เปลี่ยนโมเดล (รับ id ของ variant ไหนก็ได้) — ไม่มีผลระหว่างดาวน์โหลด */
   setLocalModel: (id: string) => void
-  /** โหลดโมเดลเข้า GPU (ดาวน์โหลดก่อนถ้ายังไม่มีในเครื่อง) — เจ้าของ state ความคืบหน้า */
+  /** โหลดโมเดลเข้าเครื่อง (ดาวน์โหลดก่อนถ้ายังไม่มี) — เจ้าของ state ความคืบหน้า */
   loadModel: (onProgress?: (pct: number) => void) => Promise<void>
   removeModel: () => Promise<void>
 }
@@ -56,27 +71,46 @@ const AIEngineContext = createContext<AIEngineContextValue | null>(null)
 
 export function AIEngineProvider({ children }: { children: ReactNode }) {
   const [engine, setEngineState] = useState<AIEngineKind>("cloud")
+  const [localBackend, setLocalBackendState] = useState<LocalBackend>("gpu")
   // เก็บเป็น id หลัก (รุ่น f16) เสมอ — variant จริงที่ใช้คำนวณจาก f16Ok ด้านล่าง
   const [selectedId, setSelectedId] = useState(DEFAULT_LOCAL_MODEL_ID)
   const [f16Ok, setF16Ok] = useState<boolean | null>(null)
   const [status, setStatus] = useState<AIEngineStatus>({ phase: "idle" })
   const [webgpuSupported, setWebgpuSupported] = useState<boolean | null>(null)
+  const [cpuMultithread, setCpuMultithread] = useState(false)
   // กัน loadModel ซ้อนกัน (เช่น กดโหลดใน popover พร้อมกับส่งข้อความแรก)
   const loadPromiseRef = useRef<Promise<void> | null>(null)
 
   // GPU ไม่มี shader-f16 → ชี้ทุกอย่างไปรุ่น q4f32 (getEngine กันซ้ำอีกชั้น แต่ state
   // ต้องตรงเพื่อให้ sizeText/เช็ค cache ชี้รุ่นที่จะโหลดจริง)
-  const localModelId = f16Ok === false ? (F32_FALLBACKS[selectedId]?.id ?? selectedId) : selectedId
-  const localModel = getLocalModelInfo(localModelId)
+  const gpuModelId = f16Ok === false ? (F32_FALLBACKS[selectedId]?.id ?? selectedId) : selectedId
+  // โหมด CPU ตรึงโมเดลตัวเดียว (Qwen3 1.7B GGUF) — ใช้ url เป็น id
+  const localModelId = localBackend === "cpu" ? CPU_MODEL.url : gpuModelId
+  const cpuModelInfo: LocalModelInfo = useMemo(
+    () => ({
+      id: CPU_MODEL.url,
+      label: CPU_MODEL.label,
+      sizeText: CPU_MODEL.sizeText,
+      vramMB: 0,
+      descKey: "modelDescCpu",
+    }),
+    [],
+  )
+  const localModel = localBackend === "cpu" ? cpuModelInfo : getLocalModelInfo(gpuModelId)
   const localModels = useMemo(
-    () => (f16Ok === false ? LOCAL_MODELS.map((m) => F32_FALLBACKS[m.id] ?? m) : LOCAL_MODELS),
-    [f16Ok],
+    () =>
+      localBackend === "cpu"
+        ? [cpuModelInfo]
+        : f16Ok === false
+          ? LOCAL_MODELS.map((m) => F32_FALLBACKS[m.id] ?? m)
+          : LOCAL_MODELS,
+    [localBackend, cpuModelInfo, f16Ok],
   )
 
   const checkCache = useCallback(async () => {
     try {
-      const cached = await hasModelCached(localModelId)
-      // เช็คสองทาง: id อาจเพิ่งสลับเป็นรุ่น q4f32 (GPU ไม่มี shader-f16)
+      const cached = localBackend === "cpu" ? await hasCpuModelCached() : await hasModelCached(gpuModelId)
+      // เช็คสองทาง: id อาจเพิ่งสลับ (backend เปลี่ยน หรือ q4f16→q4f32)
       // ทำให้สถานะ cached ของรุ่นเดิมใช้ไม่ได้แล้ว
       setStatus((prev) => {
         if (prev.phase === "idle" && cached) return { phase: "cached" }
@@ -86,15 +120,21 @@ export function AIEngineProvider({ children }: { children: ReactNode }) {
     } catch {
       // เช็ค cache ไม่ได้ไม่ใช่เรื่องใหญ่ — ปล่อยเป็น idle
     }
-  }, [localModelId])
+  }, [localBackend, gpuModelId])
 
   useEffect(() => {
     const supported = isWebGPUAvailable()
     setWebgpuSupported(supported)
-    const stored = window.localStorage.getItem(ENGINE_KEY) as AIEngineKind | null
-    // เคยเลือก local ไว้แต่เบราว์เซอร์ตอนนี้ไม่มี WebGPU (เปลี่ยนเครื่อง/เบราว์เซอร์)
-    // → ถอยกลับ cloud เงียบๆ ให้ใช้งานต่อได้
-    if (stored === "local" && supported) setEngineState("local")
+    setCpuMultithread(isCpuMultithreadAvailable())
+
+    const storedBackend = window.localStorage.getItem(BACKEND_KEY) as LocalBackend | null
+    // ไม่มี WebGPU → เส้นทาง CPU เท่านั้นที่ใช้ได้ บังคับไว้เลย
+    const backend: LocalBackend = !supported ? "cpu" : storedBackend === "cpu" ? "cpu" : "gpu"
+    setLocalBackendState(backend)
+
+    // โหมด local ใช้ได้เสมอแล้ว เพราะเส้นทาง CPU ไม่ต้องพึ่ง GPU
+    if (window.localStorage.getItem(ENGINE_KEY) === "local") setEngineState("local")
+
     const storedModel = window.localStorage.getItem(MODEL_KEY)
     if (storedModel) {
       const canonical = canonicalModelId(storedModel)
@@ -103,14 +143,33 @@ export function AIEngineProvider({ children }: { children: ReactNode }) {
     if (supported) void supportsShaderF16().then(setF16Ok)
   }, [])
 
+  // GPU ที่ไม่มี shader-f16 = การ์ดรุ่นเก่า (เช่น Radeon 530) ซึ่งมักมี VRAM ~2 GB
+  // แต่รุ่น q4f32 ที่จำเป็นต้องใช้แทนกลับกิน VRAM มากกว่าเดิม (4.3 GB) → โหลดไม่ขึ้น
+  // และ WebGPU จะพ่นข้อความมั่วออกมาเงียบๆ แทนที่จะ error → ตั้งต้นเป็น CPU ปลอดภัยกว่า
+  // (ผู้ใช้ที่เคยเลือกเองไว้แล้ว ให้เคารพค่าที่เลือก)
+  useEffect(() => {
+    if (f16Ok !== false) return
+    if (window.localStorage.getItem(BACKEND_KEY)) return
+    setLocalBackendState("cpu")
+  }, [f16Ok])
+
   useEffect(() => {
     if (engine === "local") void checkCache()
   }, [engine, checkCache])
 
   const setEngine = useCallback((next: AIEngineKind) => {
-    if (next === "local" && !isWebGPUAvailable()) return
     setEngineState(next)
     window.localStorage.setItem(ENGINE_KEY, next)
+  }, [])
+
+  const setLocalBackend = useCallback((next: LocalBackend) => {
+    // ระหว่างดาวน์โหลด/โหลดโมเดลห้ามสลับ — progress ที่โชว์อยู่จะชี้ผิดเส้นทาง
+    if (loadPromiseRef.current) return
+    if (next === "gpu" && !isWebGPUAvailable()) return
+    setLocalBackendState(next)
+    window.localStorage.setItem(BACKEND_KEY, next)
+    // เอนจินคนละตัว คนละโมเดล — สถานะเดิมใช้ต่อไม่ได้ (checkCache จะอัปเดตให้เอง)
+    setStatus({ phase: "idle" })
   }, [])
 
   const setLocalModel = useCallback((id: string) => {
@@ -130,12 +189,17 @@ export function AIEngineProvider({ children }: { children: ReactNode }) {
 
       const run = (async () => {
         setStatus((prev) => (prev.phase === "ready" ? prev : { phase: "downloading", progress: 0 }))
+        const onLoadProgress = (progress: number) => {
+          const pct = Math.round(progress * 100)
+          setStatus({ phase: "downloading", progress: pct })
+          onProgress?.(pct)
+        }
         try {
-          await getEngine(localModelId, (progress) => {
-            const pct = Math.round(progress * 100)
-            setStatus({ phase: "downloading", progress: pct })
-            onProgress?.(pct)
-          })
+          if (localBackend === "cpu") {
+            await getCpuEngine(onLoadProgress)
+          } else {
+            await getEngine(gpuModelId, onLoadProgress)
+          }
           setStatus({ phase: "ready" })
         } catch (err) {
           setStatus({ phase: "error", message: err instanceof Error ? err.message : String(err) })
@@ -147,38 +211,48 @@ export function AIEngineProvider({ children }: { children: ReactNode }) {
       loadPromiseRef.current = run
       return run
     },
-    [localModelId],
+    [localBackend, gpuModelId],
   )
 
   const removeModel = useCallback(async () => {
-    // ลบทุก variant (f16/f32) — เครื่องที่สลับรุ่น fallback อาจมีไฟล์รุ่นเดิมค้างอยู่
-    for (const id of variantIds(localModelId)) {
-      await deleteModelFromCache(id)
+    if (localBackend === "cpu") {
+      await deleteCpuModel()
+    } else {
+      // ลบทุก variant (f16/f32) — เครื่องที่สลับรุ่น fallback อาจมีไฟล์รุ่นเดิมค้างอยู่
+      for (const id of variantIds(gpuModelId)) {
+        await deleteModelFromCache(id)
+      }
     }
     setStatus({ phase: "idle" })
-  }, [localModelId])
+  }, [localBackend, gpuModelId])
 
   const value = useMemo<AIEngineContextValue>(
     () => ({
       engine,
+      localBackend,
       localModelId,
       localModel,
       localModels,
       status,
       webgpuSupported,
+      cpuMultithread,
       setEngine,
+      setLocalBackend,
       setLocalModel,
       loadModel,
       removeModel,
     }),
     [
       engine,
+      localBackend,
       localModelId,
       localModel,
       localModels,
       status,
       webgpuSupported,
+      cpuMultithread,
       setEngine,
+      setLocalBackend,
       setLocalModel,
       loadModel,
       removeModel,

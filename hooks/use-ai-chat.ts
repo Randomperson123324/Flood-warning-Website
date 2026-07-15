@@ -5,6 +5,7 @@ import { SITE_CONFIG } from "@/lib/config"
 import { useAIEngine, type AIEngineKind } from "@/hooks/use-ai-engine"
 import { useLanguage } from "@/hooks/use-language"
 import { streamLocalReply } from "@/lib/ai/local/engine"
+import { streamCpuReply } from "@/lib/ai/local/cpu-engine"
 import type { AIContext, WeatherData } from "@/types"
 
 interface ChatMessage {
@@ -79,7 +80,7 @@ async function streamAIReply(
 }
 
 export function useAIChat(context: AIContext, isOpen: boolean) {
-  const { engine, localModelId, status: engineStatus, loadModel } = useAIEngine()
+  const { engine, localBackend, localModelId, status: engineStatus, loadModel } = useAIEngine()
   const { t } = useLanguage()
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
   const [autoAnalysis, setAutoAnalysis] = useState("")
@@ -91,24 +92,28 @@ export function useAIChat(context: AIContext, isOpen: boolean) {
   const contextRef = useRef(context)
   contextRef.current = context
   // ให้ callback ที่สร้างครั้งเดียว (runAutoAnalysis) เห็นค่า engine ปัจจุบันเสมอ
-  const engineRef = useRef({ engine, localModelId, phase: engineStatus.phase, loadModel, t })
-  engineRef.current = { engine, localModelId, phase: engineStatus.phase, loadModel, t }
+  const engineRef = useRef({ engine, localBackend, localModelId, phase: engineStatus.phase, loadModel, t })
+  engineRef.current = { engine, localBackend, localModelId, phase: engineStatus.phase, loadModel, t }
 
   // เลือกเส้นทางตาม engine ที่ผู้ใช้ตั้งไว้: cloud → SSE ผ่าน /api/ai,
-  // local → WebLLM ในเบราว์เซอร์ (โหลดโมเดลก่อนถ้ายังไม่พร้อม โดยโชว์ % ผ่าน toolStatus)
+  // local → รันในเบราว์เซอร์ (GPU ผ่าน WebLLM หรือ CPU ผ่าน wllama ตาม localBackend)
+  // โหลดโมเดลก่อนถ้ายังไม่พร้อม โดยโชว์ % ผ่าน toolStatus
   const streamReply = useCallback(
     async (messages: { role: "user" | "assistant"; content: string }[], handlers: StreamHandlers) => {
-      const { engine: kind, localModelId: modelId, loadModel: load, t: translate } = engineRef.current
+      const { engine: kind, localBackend: backend, localModelId: modelId, loadModel: load, t: translate } =
+        engineRef.current
       if (kind !== "local") return streamAIReply(messages, contextRef.current, handlers)
 
       await load((pct) => handlers.onToolCall?.(`${translate("ai", "loadingModelStatus")} ${pct}%`))
-      return streamLocalReply(messages, contextRef.current, handlers, {
-        modelId,
-        labels: {
-          fetchingContext: translate("ai", "fetchingContext"),
-          loadingModel: translate("ai", "loadingModelStatus"),
-        },
-      })
+      const labels = {
+        fetchingContext: translate("ai", "fetchingContext"),
+        loadingModel: translate("ai", "loadingModelStatus"),
+        thinking: translate("ai", "thinking"),
+      }
+      if (backend === "cpu") {
+        return streamCpuReply(messages, contextRef.current, handlers, { labels })
+      }
+      return streamLocalReply(messages, contextRef.current, handlers, { modelId, labels })
     },
     [],
   )

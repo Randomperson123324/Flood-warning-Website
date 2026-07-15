@@ -8,7 +8,7 @@ export interface LocalModelInfo {
   sizeText: string
   vramMB: number
   /** key คำอธิบายสั้นในหมวด ai ของ dictionaries.ts */
-  descKey: "modelDescQuality" | "modelDescLight"
+  descKey: "modelDescQuality" | "modelDescLight" | "modelDescCpu"
 }
 
 export const LOCAL_MODELS: LocalModelInfo[] = [

@@ -3,15 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "npm run copy-wllama && next dev",
+    "build": "npm run copy-wllama && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "copy-wllama": "node scripts/copy-wllama-wasm.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.10.0",
     "@mlc-ai/web-llm": "^0.2.84",
     "@supabase/supabase-js": "^2.57.4",
+    "@wllama/wllama": "^3.5.1",
     "clsx": "^2.1.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.454.0",
