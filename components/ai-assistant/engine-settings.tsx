@@ -18,7 +18,8 @@ function formatBytes(bytes: number): string {
 
 export function EngineSettings({ direction = "down" }: { direction?: "down" | "up" }) {
   const { t } = useLanguage()
-  const { engine, localModel, status, webgpuSupported, setEngine, loadModel, removeModel } = useAIEngine()
+  const { engine, localModel, localModels, status, webgpuSupported, setEngine, setLocalModel, loadModel, removeModel } =
+    useAIEngine()
   const [open, setOpen] = useState(false)
   const [deleteArmed, setDeleteArmed] = useState(false)
   const [storage, setStorage] = useState<{ usage: number; quota: number } | null>(null)
@@ -108,6 +109,36 @@ export function EngineSettings({ direction = "down" }: { direction?: "down" | "u
               {engine === "local" && <Check className="ml-auto h-4 w-4 shrink-0 text-accent" />}
             </button>
           </div>
+
+          {/* เลือกโมเดล — โชว์ variant ที่เครื่องนี้จะใช้จริง (f16/f32) */}
+          {engine === "local" && (
+            <div className="space-y-1.5">
+              {localModels.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => {
+                    setLocalModel(m.id)
+                    setDeleteArmed(false)
+                  }}
+                  disabled={status.phase === "downloading"}
+                  className={cn(
+                    "flex w-full items-center gap-2.5 rounded-lg border p-2 text-left transition-colors",
+                    m.id === model.id ? "border-accent/60 bg-accent/10" : "border-border/10 hover:border-border/30",
+                    status.phase === "downloading" && "cursor-not-allowed opacity-50",
+                  )}
+                >
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium">
+                      {m.label} <span className="text-xs font-normal text-ink-soft">{m.sizeText}</span>
+                    </span>
+                    <span className="block text-xs text-ink-soft">{t("ai", m.descKey)}</span>
+                  </span>
+                  {m.id === model.id && <Check className="ml-auto h-4 w-4 shrink-0 text-accent" />}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* สถานะโมเดลบนเครื่อง — โชว์เมื่อเลือกโหมด local */}
           {engine === "local" && (

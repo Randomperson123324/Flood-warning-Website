@@ -332,6 +332,8 @@ export const dictionary = {
     engineLocal: { th: "AI บนเครื่อง", en: "On-device AI" },
     engineLocalDesc: { th: "รันในเบราว์เซอร์ของคุณ — เป็นส่วนตัว ใช้งานออฟไลน์ได้เมื่อดาวน์โหลดโมเดลแล้ว", en: "Runs in your browser — private, works offline once the model is downloaded" },
     engineLocalBadge: { th: "บนเครื่อง", en: "on-device" },
+    modelDescQuality: { th: "คุณภาพสูงสุด — เหมาะกับเครื่องแรง", en: "Best quality — for capable GPUs" },
+    modelDescLight: { th: "เบาและเร็ว — เหมาะกับเครื่องทั่วไป", en: "Light and fast — for everyday machines" },
     modelCached: { th: "มีในเครื่องแล้ว", en: "Downloaded" },
     modelReady: { th: "พร้อมใช้งาน", en: "Ready" },
     downloadModel: { th: "ดาวน์โหลดโมเดล", en: "Download model" },

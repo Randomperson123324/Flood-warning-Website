@@ -73,8 +73,11 @@ export async function getEngine(
   if (enginePromise) {
     const engine = await enginePromise
     if (loadedModelId !== modelId) {
-      loadedModelId = modelId
+      // อัปเดต loadedModelId หลัง reload สำเร็จเท่านั้น — ถ้า reload ล้ม (เช่น VRAM
+      // ไม่พอสำหรับโมเดลใหม่) ครั้งถัดไปต้องลอง reload ใหม่ ไม่ใช่คืน engine ค้างสภาพ
+      loadedModelId = null
       await engine.reload(modelId)
+      loadedModelId = modelId
     }
     return engine
   }

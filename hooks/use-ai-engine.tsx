@@ -6,13 +6,21 @@
 // เป็น dynamic import ข้างใน engine.ts อยู่แล้ว จะโหลดก็ต่อเมื่อใช้โหมด local จริง
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
-import { DEFAULT_LOCAL_MODEL_ID, getLocalModelInfo, variantIds, type LocalModelInfo } from "@/lib/ai/local/models"
+import {
+  DEFAULT_LOCAL_MODEL_ID,
+  F32_FALLBACKS,
+  LOCAL_MODELS,
+  canonicalModelId,
+  getLocalModelInfo,
+  variantIds,
+  type LocalModelInfo,
+} from "@/lib/ai/local/models"
 import {
   deleteModel as deleteModelFromCache,
   getEngine,
   hasModelCached,
   isWebGPUAvailable,
-  resolveModelId,
+  supportsShaderF16,
 } from "@/lib/ai/local/engine"
 
 const ENGINE_KEY = "streeflood:ai-engine"
@@ -30,11 +38,15 @@ export interface AIEngineStatus {
 interface AIEngineContextValue {
   engine: AIEngineKind
   localModelId: string
-  /** ข้อมูลโมเดลที่จะใช้จริงบนเครื่องนี้ (อาจเป็นรุ่น q4f32 ถ้า GPU ไม่มี shader-f16) */
+  /** ข้อมูลโมเดลที่เลือกอยู่ ตาม variant ที่จะใช้จริงบนเครื่องนี้ (q4f32 ถ้า GPU ไม่มี shader-f16) */
   localModel: LocalModelInfo
+  /** รายชื่อโมเดลให้เลือก แสดง variant ที่เครื่องนี้จะใช้จริง */
+  localModels: LocalModelInfo[]
   status: AIEngineStatus
   webgpuSupported: boolean | null
   setEngine: (next: AIEngineKind) => void
+  /** เปลี่ยนโมเดล (รับ id ของ variant ไหนก็ได้) — ไม่มีผลระหว่างดาวน์โหลด */
+  setLocalModel: (id: string) => void
   /** โหลดโมเดลเข้า GPU (ดาวน์โหลดก่อนถ้ายังไม่มีในเครื่อง) — เจ้าของ state ความคืบหน้า */
   loadModel: (onProgress?: (pct: number) => void) => Promise<void>
   removeModel: () => Promise<void>
@@ -44,11 +56,22 @@ const AIEngineContext = createContext<AIEngineContextValue | null>(null)
 
 export function AIEngineProvider({ children }: { children: ReactNode }) {
   const [engine, setEngineState] = useState<AIEngineKind>("cloud")
-  const [localModelId, setLocalModelId] = useState(DEFAULT_LOCAL_MODEL_ID)
+  // เก็บเป็น id หลัก (รุ่น f16) เสมอ — variant จริงที่ใช้คำนวณจาก f16Ok ด้านล่าง
+  const [selectedId, setSelectedId] = useState(DEFAULT_LOCAL_MODEL_ID)
+  const [f16Ok, setF16Ok] = useState<boolean | null>(null)
   const [status, setStatus] = useState<AIEngineStatus>({ phase: "idle" })
   const [webgpuSupported, setWebgpuSupported] = useState<boolean | null>(null)
   // กัน loadModel ซ้อนกัน (เช่น กดโหลดใน popover พร้อมกับส่งข้อความแรก)
   const loadPromiseRef = useRef<Promise<void> | null>(null)
+
+  // GPU ไม่มี shader-f16 → ชี้ทุกอย่างไปรุ่น q4f32 (getEngine กันซ้ำอีกชั้น แต่ state
+  // ต้องตรงเพื่อให้ sizeText/เช็ค cache ชี้รุ่นที่จะโหลดจริง)
+  const localModelId = f16Ok === false ? (F32_FALLBACKS[selectedId]?.id ?? selectedId) : selectedId
+  const localModel = getLocalModelInfo(localModelId)
+  const localModels = useMemo(
+    () => (f16Ok === false ? LOCAL_MODELS.map((m) => F32_FALLBACKS[m.id] ?? m) : LOCAL_MODELS),
+    [f16Ok],
+  )
 
   const checkCache = useCallback(async () => {
     try {
@@ -72,26 +95,34 @@ export function AIEngineProvider({ children }: { children: ReactNode }) {
     // เคยเลือก local ไว้แต่เบราว์เซอร์ตอนนี้ไม่มี WebGPU (เปลี่ยนเครื่อง/เบราว์เซอร์)
     // → ถอยกลับ cloud เงียบๆ ให้ใช้งานต่อได้
     if (stored === "local" && supported) setEngineState("local")
-    // GPU ไม่มี shader-f16 → ใช้รุ่น q4f32 (getEngine กันซ้ำอีกชั้น แต่ state ต้องตรง
-    // เพื่อให้ sizeText/เช็ค cache ชี้รุ่นที่จะโหลดจริง)
-    if (supported) {
-      void resolveModelId(DEFAULT_LOCAL_MODEL_ID).then(setLocalModelId)
+    const storedModel = window.localStorage.getItem(MODEL_KEY)
+    if (storedModel) {
+      const canonical = canonicalModelId(storedModel)
+      if (LOCAL_MODELS.some((m) => m.id === canonical)) setSelectedId(canonical)
     }
+    if (supported) void supportsShaderF16().then(setF16Ok)
   }, [])
 
   useEffect(() => {
     if (engine === "local") void checkCache()
   }, [engine, checkCache])
 
-  const setEngine = useCallback(
-    (next: AIEngineKind) => {
-      if (next === "local" && !isWebGPUAvailable()) return
-      setEngineState(next)
-      window.localStorage.setItem(ENGINE_KEY, next)
-      window.localStorage.setItem(MODEL_KEY, localModelId)
-    },
-    [localModelId],
-  )
+  const setEngine = useCallback((next: AIEngineKind) => {
+    if (next === "local" && !isWebGPUAvailable()) return
+    setEngineState(next)
+    window.localStorage.setItem(ENGINE_KEY, next)
+  }, [])
+
+  const setLocalModel = useCallback((id: string) => {
+    // ระหว่างดาวน์โหลด/โหลดเข้า GPU ห้ามสลับ — progress ที่โชว์อยู่จะชี้ผิดโมเดล
+    if (loadPromiseRef.current) return
+    const canonical = canonicalModelId(id)
+    if (!LOCAL_MODELS.some((m) => m.id === canonical)) return
+    setSelectedId(canonical)
+    window.localStorage.setItem(MODEL_KEY, canonical)
+    // เคลียร์สถานะของโมเดลเดิม — checkCache (effect ด้านบน) จะอัปเดตเป็น cached ให้เอง
+    setStatus({ phase: "idle" })
+  }, [])
 
   const loadModel = useCallback(
     (onProgress?: (pct: number) => void) => {
@@ -127,11 +158,31 @@ export function AIEngineProvider({ children }: { children: ReactNode }) {
     setStatus({ phase: "idle" })
   }, [localModelId])
 
-  const localModel = getLocalModelInfo(localModelId)
-
   const value = useMemo<AIEngineContextValue>(
-    () => ({ engine, localModelId, localModel, status, webgpuSupported, setEngine, loadModel, removeModel }),
-    [engine, localModelId, localModel, status, webgpuSupported, setEngine, loadModel, removeModel],
+    () => ({
+      engine,
+      localModelId,
+      localModel,
+      localModels,
+      status,
+      webgpuSupported,
+      setEngine,
+      setLocalModel,
+      loadModel,
+      removeModel,
+    }),
+    [
+      engine,
+      localModelId,
+      localModel,
+      localModels,
+      status,
+      webgpuSupported,
+      setEngine,
+      setLocalModel,
+      loadModel,
+      removeModel,
+    ],
   )
 
   return <AIEngineContext.Provider value={value}>{children}</AIEngineContext.Provider>
