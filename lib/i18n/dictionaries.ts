@@ -340,7 +340,8 @@ export const dictionary = {
     backendCpu: { th: "ซีพียู + RAM", en: "CPU + RAM" },
     backendCpuDesc: { th: "ทำงานได้ทุกเครื่อง แต่ช้ากว่า GPU มาก", en: "Works on any machine, but much slower than GPU" },
     backendCpuSlow: { th: "โหมดช้า (เธรดเดียว) — คำตอบอาจใช้เวลาหลายสิบวินาที", en: "Slow mode (single-thread) — replies may take a while" },
-    thinking: { th: "กำลังคิด", en: "Thinking" },
+    // โชว์ระหว่างรอ token แรก (โมเดลปิด thinking แล้ว — ไม่ได้ "คิด" แต่กำลังพิมพ์คำตอบ)
+    thinking: { th: "กำลังพิมพ์…", en: "Typing…" },
     modelCached: { th: "มีในเครื่องแล้ว", en: "Downloaded" },
     modelReady: { th: "พร้อมใช้งาน", en: "Ready" },
     downloadModel: { th: "ดาวน์โหลดโมเดล", en: "Download model" },
