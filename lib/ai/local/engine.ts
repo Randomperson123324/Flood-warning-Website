@@ -1,8 +1,18 @@
 "use client"
 
-// จัดการ WebLLM engine ฝั่ง client (singleton) — โหลดโมเดลลง Web Worker ผ่าน WebGPU
+// จัดการ WebLLM engine ฝั่ง client (singleton) — โหลดโมเดลผ่าน WebGPU บน main thread
 // ทุก runtime import ของ @mlc-ai/web-llm เป็น dynamic import เพื่อไม่ให้ไลบรารี
 // (~5 MB) หลุดเข้า initial bundle ของผู้ใช้ที่เลือก cloud AI และไม่โดน SSR แตะเลย
+//
+// ทำไมไม่ใช้ Web Worker: worker ที่โหลดสคริปต์ผ่าน network ต้องให้ response ของสคริปต์
+// ประกาศ COEP เองด้วย (สเปก "check a global object's embedder policy") ไม่งั้นหน้าที่เปิด
+// cross-origin isolation จะสร้าง worker ไม่ได้เลย — และเวลาโดนบล็อก WebLLM จะค้างรอ
+// ข้อความตอบจาก worker ตลอดไป ไม่ throw ทำให้ UI ค้างที่ 0% โดยไม่มี error ให้เห็น
+// main thread ไม่ต้องโหลดสคริปต์ข้ามชั้นแบบนั้น จึงไม่ผูกกับ header ของ host เลย
+// เหมือนเส้นทาง CPU (wllama) ที่สร้าง worker จาก blob URL จึงไม่เคยโดน COEP
+//
+// แลกมาด้วย: inference รันบน main thread — WebGPU เป็น async อยู่แล้วจึงไม่ถึงกับค้าง
+// แต่ระหว่าง generate UI จะกระตุกกว่าตอนใช้ worker
 
 import type { AIContext } from "@/types"
 import { F32_FALLBACKS } from "./models"
@@ -11,14 +21,13 @@ import { buildFallbackSystemPrompt, fetchContextPrompt } from "./shared"
 import type { LocalStreamHandlers, LocalStreamLabels } from "./shared"
 
 type WebLLM = typeof import("@mlc-ai/web-llm")
-type Engine = import("@mlc-ai/web-llm").WebWorkerMLCEngine
+type Engine = import("@mlc-ai/web-llm").MLCEngine
 
 export type { LocalStreamHandlers, LocalStreamLabels }
 
 let webllmPromise: Promise<WebLLM> | null = null
 let enginePromise: Promise<Engine> | null = null
 let loadedModelId: string | null = null
-let worker: Worker | null = null
 // WebLLM รัน generation ได้ทีละงาน — ใช้ promise queue กันกรณี AI chat ลอย
 // กับ community /AI ยิงพร้อมกัน
 let generationQueue: Promise<unknown> = Promise.resolve()
@@ -77,13 +86,8 @@ export async function getEngine(
     return engine
   }
 
-  // ไม่ระบุ type เพราะ webpack เขียนทับให้ตรงกับ chunk ที่มันปล่อยออกมาอยู่แล้ว — Next
-  // ไม่ได้เปิด experiments.outputModule จึงได้ classic worker (bootstrap ด้วย importScripts)
-  // เขียน { type: "module" } ไว้ก็ถูก compile เป็น { type: void 0 } เท่ากัน ไม่มีผลอะไร
-  // ละไว้เลยดีกว่า จะได้ไม่เข้าใจผิดว่าเป็น module worker
-  worker = new Worker(new URL("./webllm.worker.ts", import.meta.url))
   loadedModelId = modelId
-  enginePromise = webllm.CreateWebWorkerMLCEngine(worker, modelId, {
+  enginePromise = webllm.CreateMLCEngine(modelId, {
     initProgressCallback: (report) => onProgress?.(report.progress, report.text),
   })
   try {
@@ -109,8 +113,6 @@ export async function unloadEngine(): Promise<void> {
   } catch {
     // engine ที่ init ไม่สำเร็จ ไม่มีอะไรให้ unload
   }
-  worker?.terminate()
-  worker = null
 }
 
 export async function hasModelCached(modelId: string): Promise<boolean> {

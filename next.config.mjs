@@ -25,17 +25,11 @@ const nextConfig = {
           { key: "Cross-Origin-Embedder-Policy", value: "credentialless" },
         ],
       },
-      // Worker ต้องมี COEP ของตัวเอง ไม่ใช่รับสืบทอดจากหน้าที่สร้างมัน — สเปกบังคับให้
-      // response ของสคริปต์ worker ประกาศ COEP เองด้วย ไม่งั้น Chrome บล็อกตั้งแต่สร้าง
-      // ("the response needs to enable the cross-origin embedder policy")
-      // webllm.worker.ts ถูก webpack แยกเป็น chunk ใน /_next/static/chunks/ โหมด GPU
-      // จึงพังบนหน้าแรกที่เปิด COEP ไว้ ส่วน wllama (CPU) ไม่โดนเพราะสร้าง worker จาก blob
-      //
-      // ใส่ทั้งโฟลเดอร์ปลอดภัย: COEP บน response ที่ไม่ได้กลายเป็น worker/frame ถูกมองข้าม
-      {
-        source: "/_next/static/chunks/:path*",
-        headers: [{ key: "Cross-Origin-Embedder-Policy", value: "credentialless" }],
-      },
+      // ถ้าจะเพิ่ม Web Worker ที่โหลดสคริปต์ผ่าน network บนหน้าที่เปิด COEP ไว้ ต้องส่ง
+      // COEP บน response ของสคริปต์ worker เองด้วย (สเปก "check a global object's
+      // embedder policy" — inherit ไม่พอ same-origin ก็ไม่ได้รับยกเว้น) ไม่งั้น Chrome
+      // บล็อกด้วย CoepFrameResourceNeedsCoepHeader ตั้งแต่ตอนสร้าง
+      // ตอนนี้ไม่มี worker แบบนั้นแล้ว — GPU ใช้ main thread ส่วน wllama สร้างจาก blob URL
     ]
   },
 }
