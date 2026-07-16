@@ -1,4 +1,6 @@
-import Link from "next/link"
+// โลโก้ลิงก์กลับหน้าแรกซึ่งอยู่คนละโซน cross-origin isolation กับหน้า auth —
+// ZoneLink บังคับโหลดเอกสารใหม่ให้ COOP/COEP ของหน้าแรกมีผล (ดู lib/isolation.ts)
+import { ZoneLink as Link } from "@/components/zone-link"
 import { Droplets } from "lucide-react"
 import type { ReactNode } from "react"
 

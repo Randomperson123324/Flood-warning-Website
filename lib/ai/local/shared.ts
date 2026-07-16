@@ -86,21 +86,23 @@ export function splitThinking(text: string): { thinking: string; answer: string;
 
 const PREFILL_RATE_KEY = "streeflood:ai-prefill-rate"
 // ไม่มีเอนจินไหนรายงานความคืบหน้า prefill จริงๆ (WebLLM/wllama ไม่มี event ให้)
-// ค่าตั้งต้นเดาจากสปีดทั่วไป — หลังรันครั้งแรกจะถูกแทนด้วยค่าที่วัดได้จริงของเครื่องนั้น
-const DEFAULT_PREFILL_RATE = { gpu: 200, cpu: 20 } as const
+// ค่าตั้งต้นเดาแบบกดต่ำไว้ก่อน (คืบเร็วกว่าคาดดีกว่าค้าง) — หลังรันครั้งแรก
+// จะถูกแทนด้วยค่าที่วัดได้จริงของเครื่องนั้น
+const DEFAULT_PREFILL_RATE = { gpu: 200, cpu: 10 } as const
 // ภาษาไทย/อังกฤษปนกัน tokenizer ของ Qwen ตกราวๆ 3 ตัวอักษรต่อ token
 const CHARS_PER_TOKEN = 3
 
 /**
  * ประมาณความคืบหน้าช่วง prefill ("กำลังวิเคราะห์พรอมป์ X%") จากขนาดพรอมป์
  * กับอัตรา token/วินาที ที่วัดจากรอบก่อน (เก็บใน localStorage แยกตาม backend)
- * คืนฟังก์ชัน stop — เรียกเมื่อได้ token แรกเพื่อหยุด tick และบันทึกอัตราที่วัดได้จริง
+ * คืนฟังก์ชัน stop — เรียกตอนได้ token แรกเพื่อหยุด tick และบันทึกอัตราที่วัดได้จริง
+ * ถ้าจบโดยไม่เคยได้ token (error/ยกเลิก) ให้เรียก stop(false) จะได้ไม่บันทึกอัตรามั่ว
  */
 export function trackPrefillProgress(opts: {
   promptChars: number
   backend: "gpu" | "cpu"
   onTick: (pct: number) => void
-}): () => void {
+}): (recordRate?: boolean) => void {
   const rateKey = `${PREFILL_RATE_KEY}:${opts.backend}`
   let rate: number = DEFAULT_PREFILL_RATE[opts.backend]
   try {
@@ -116,15 +118,19 @@ export function trackPrefillProgress(opts: {
 
   opts.onTick(0)
   const interval = setInterval(() => {
-    const pct = Math.min(99, Math.round(((Date.now() - startedAt) / expectedMs) * 100))
-    opts.onTick(pct)
+    // เส้นตรงถึง 85% ตามเวลาที่คาด จากนั้นไต่เข้าหา 99 แบบ asymptote — ต่อให้
+    // เครื่องช้ากว่าที่เดาไว้มาก ตัวเลขก็ยังขยับให้เห็นเรื่อยๆ ไม่นิ่งค้างที่ 99
+    const linear = (Date.now() - startedAt) / expectedMs
+    const pct = linear <= 0.85 ? linear * 100 : 85 + 14 * (1 - Math.exp(-(linear - 0.85) / 1.5))
+    opts.onTick(Math.min(99, Math.round(pct)))
   }, 250)
 
   let stopped = false
-  return () => {
+  return (recordRate = true) => {
     if (stopped) return
     stopped = true
     clearInterval(interval)
+    if (!recordRate) return
     const elapsedSec = (Date.now() - startedAt) / 1000
     // เร็วกว่า 0.2 วิ วัดอัตราไม่เที่ยง (โดน cache/พรอมป์สั้น) — ไม่อัปเดตค่า
     if (elapsedSec < 0.2) return

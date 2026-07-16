@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { LoaderCircle } from "lucide-react"
 import { AuthShell, FieldLabel, glassInputClass } from "@/components/auth/auth-shell"
@@ -9,7 +8,6 @@ import { TurnstileWidget } from "@/components/turnstile-widget"
 import { useAuth } from "@/hooks/use-auth"
 
 export default function LoginPage() {
-  const router = useRouter()
   const { signIn } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -35,7 +33,9 @@ export default function LoginPage() {
       setTurnstileReset((n) => n + 1)
       return
     }
-    router.push("/")
+    // โหลดหน้าแรกแบบเต็มเอกสาร (ไม่ใช่ router.push) — หน้าแรกอยู่โซน cross-origin
+    // isolation ต้องได้ header COOP/COEP ของตัวเอง (ดู lib/isolation.ts)
+    window.location.assign("/")
   }
 
   return (

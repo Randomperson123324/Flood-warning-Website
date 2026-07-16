@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
+// ลิงก์นำทางทุกตัวในนี้ข้ามโซน cross-origin isolation ได้ (เช่น / ↔ /community)
+// ZoneLink สลับเป็น <a> โหลดเอกสารใหม่ให้เองเมื่อข้ามโซน — ดู lib/isolation.ts
+import { ZoneLink as Link } from "@/components/zone-link"
 import { usePathname } from "next/navigation"
 import { Bell, Droplets, History, Home, Landmark, LogOut, Menu, MessageCircle, Settings2, User, X } from "lucide-react"
 import { useLanguage } from "@/hooks/use-language"

@@ -204,7 +204,8 @@ export async function streamLocalReply(
       }
       return splitThinking(fullText).answer
     } finally {
-      stopPrefill()
+      // มาถึงตรงนี้โดยยังไม่เคยได้ token (error/ยกเลิก) — หยุด tick เฉยๆ ห้ามบันทึกอัตรา
+      stopPrefill(false)
     }
   })
 }
