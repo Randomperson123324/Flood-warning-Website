@@ -17,7 +17,7 @@
 import type { AIContext } from "@/types"
 import { F32_FALLBACKS } from "./models"
 
-import { buildFallbackSystemPrompt, fetchContextPrompt, splitThinking, trackPrefillProgress } from "./shared"
+import { buildFallbackSystemPrompt, fetchContextPrompt, recordPrefillCalibration, splitThinking, trackPrefillProgress } from "./shared"
 import type { LocalStreamHandlers, LocalStreamLabels } from "./shared"
 
 type WebLLM = typeof import("@mlc-ai/web-llm")
@@ -170,7 +170,9 @@ export async function streamLocalReply(
 
   return enqueue(async () => {
     const promptChars = systemPrompt.length + messages.reduce((n, m) => n + m.content.length, 0)
-    const stopPrefill = trackPrefillProgress({
+    // WebLLM ไม่มี event ความคืบหน้า prefill แบบ wllama — ใช้ตัวประมาณจากคาลิเบรชัน
+    // แล้วค่อยบันทึกสถิติที่ WebLLM วัดจริง (usage.extra) ตอนจบ stream ไว้ใช้รอบหน้า
+    const prefill = trackPrefillProgress({
       promptChars,
       backend: "gpu",
       onTick: (pct) => handlers.onToolCall?.(`${opts.labels.analyzingPrompt} ${pct}%`),
@@ -179,6 +181,7 @@ export async function streamLocalReply(
       const chunks = await engine.chat.completions.create({
         messages: [{ role: "system", content: systemPrompt }, ...messages],
         stream: true,
+        stream_options: { include_usage: true },
         temperature: 0.6,
         // เปิดโหมดคิดต้องเผื่อ budget ให้ reasoning ไม่กิน max_tokens จนคำตอบขาด
         max_tokens: opts.thinking ? 2048 : 1024,
@@ -189,9 +192,21 @@ export async function streamLocalReply(
 
       let fullText = ""
       for await (const chunk of chunks) {
+        // chunk สุดท้าย (include_usage) แบกสถิติที่วัดจริง — เก็บเป็นคาลิเบรชันรอบหน้า
+        if (chunk.usage) {
+          recordPrefillCalibration("gpu", {
+            rate: chunk.usage.extra.prefill_tokens_per_s > 0 ? chunk.usage.extra.prefill_tokens_per_s : undefined,
+            // WebLLM นับ prompt_tokens เฉพาะส่วนใหม่เมื่อคุยต่อเนื่อง — อัตราส่วน
+            // ตัวอักษร/token จึงคำนวณได้เฉพาะรอบที่พรอมป์ทั้งก้อนถูกประมวลผล (ข้อความแรก)
+            charsPerToken:
+              messages.length === 1 && chunk.usage.prompt_tokens > 0
+                ? promptChars / chunk.usage.prompt_tokens
+                : undefined,
+          })
+        }
         const delta = chunk.choices[0]?.delta?.content ?? ""
         if (!delta) continue
-        if (!fullText) stopPrefill()
+        if (!fullText) prefill.done()
         fullText += delta
         const { thinking, answer, inThink } = splitThinking(fullText)
         if (thinking) handlers.onThinking?.(thinking)
@@ -204,8 +219,8 @@ export async function streamLocalReply(
       }
       return splitThinking(fullText).answer
     } finally {
-      // มาถึงตรงนี้โดยยังไม่เคยได้ token (error/ยกเลิก) — หยุด tick เฉยๆ ห้ามบันทึกอัตรา
-      stopPrefill(false)
+      // มาถึงตรงนี้โดยยังไม่เคยได้ token (error/ยกเลิก) — หยุด tick เฉยๆ ห้ามบันทึกค่า
+      prefill.cancel()
     }
   })
 }

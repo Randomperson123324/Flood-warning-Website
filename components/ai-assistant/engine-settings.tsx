@@ -4,10 +4,24 @@
 // แผง AI ลอย (assistant-panel) และช่องแชทชุมชนตอนพิมพ์ /AI (chat-panel)
 
 import { useEffect, useRef, useState } from "react"
-import { Brain, Check, Cloud, Cpu, LoaderCircle, MemoryStick, Settings2, TriangleAlert, Trash2, Zap } from "lucide-react"
+import {
+  Brain,
+  Check,
+  ChevronDown,
+  Cloud,
+  Cpu,
+  LoaderCircle,
+  MemoryStick,
+  Settings2,
+  SlidersHorizontal,
+  TriangleAlert,
+  Trash2,
+  Zap,
+} from "lucide-react"
 import { useAIEngine } from "@/hooks/use-ai-engine"
 import { useLanguage } from "@/hooks/use-language"
 import { getStorageEstimate } from "@/lib/ai/local/engine"
+import { getPrefillCalibration, type PrefillCalibration } from "@/lib/ai/local/shared"
 import { cn } from "@/lib/utils"
 
 function formatBytes(bytes: number): string {
@@ -36,10 +50,21 @@ export function EngineSettings({ direction = "down" }: { direction?: "down" | "u
   } = useAIEngine()
   const [open, setOpen] = useState(false)
   const [deleteArmed, setDeleteArmed] = useState(false)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
   const [storage, setStorage] = useState<{ usage: number; quota: number } | null>(null)
+  const [prefillCal, setPrefillCal] = useState<PrefillCalibration | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
 
   const model = localModel
+
+  // จำนวนเธรดที่ wllama จะใช้จริงเมื่อ multi-thread ได้ (ค่าตั้งต้นของ wllama = ครึ่งหนึ่ง
+  // ของ hardwareConcurrency) — โชว์ในตัวเลือกขั้นสูงให้เห็นว่าโหมด CPU ได้กี่เธรด
+  const cpuThreads = Math.max(1, Math.floor((typeof navigator !== "undefined" ? navigator.hardwareConcurrency || 1 : 1) / 2))
+
+  useEffect(() => {
+    if (!open) return
+    setPrefillCal(getPrefillCalibration(localBackend))
+  }, [open, localBackend])
 
   useEffect(() => {
     if (!open) return
@@ -191,6 +216,40 @@ export function EngineSettings({ direction = "down" }: { direction?: "down" | "u
                 </span>
                 {thinking && <Check className="ml-auto h-4 w-4 shrink-0 text-accent" />}
               </button>
+            )}
+
+            {/* ตัวเลือกขั้นสูง — สถานะเชิงเทคนิคของโหมดบนเครื่อง (มัลติเธรด, ความเร็วที่วัดได้) */}
+            {engine === "local" && (
+              <div className="rounded-lg border border-border/10">
+                <button
+                  type="button"
+                  onClick={() => setAdvancedOpen((v) => !v)}
+                  className="flex w-full items-center gap-1.5 px-2.5 py-2 text-xs font-medium text-ink-soft transition-colors hover:text-accent"
+                >
+                  <SlidersHorizontal className="h-3 w-3 shrink-0 text-accent" />
+                  {t("ai", "advancedOptions")}
+                  <ChevronDown className={cn("ml-auto h-3 w-3 shrink-0 transition-transform", advancedOpen && "rotate-180")} />
+                </button>
+                {advancedOpen && (
+                  <div className="space-y-1.5 border-t border-border/10 px-2.5 py-2 text-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-ink-soft">{t("ai", "multithreadLabel")}</span>
+                      <span className={cpuMultithread ? "text-status-normal" : "text-status-warning"}>
+                        {cpuMultithread
+                          ? `${t("ai", "multithreadOn")} · ${cpuThreads} ${t("ai", "threadsUnit")}`
+                          : t("ai", "multithreadOff")}
+                      </span>
+                    </div>
+                    {!cpuMultithread && (
+                      <p className="text-[11px] leading-relaxed text-ink-soft">{t("ai", "multithreadOffHint")}</p>
+                    )}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-ink-soft">{t("ai", "measuredPrefillRate")}</span>
+                      <span>{prefillCal ? `${prefillCal.rate.toFixed(1)} token/s` : "—"}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* เลือกโมเดล — โชว์ variant ที่เครื่องนี้จะใช้จริง (f16/f32)

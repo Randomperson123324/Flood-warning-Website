@@ -84,61 +84,145 @@ export function splitThinking(text: string): { thinking: string; answer: string;
   return { thinking: thinkingParts.join("").trim(), answer: answer.replace(/^\s+/, ""), inThink }
 }
 
-const PREFILL_RATE_KEY = "streeflood:ai-prefill-rate"
-// ไม่มีเอนจินไหนรายงานความคืบหน้า prefill จริงๆ (WebLLM/wllama ไม่มี event ให้)
-// ค่าตั้งต้นเดาแบบกดต่ำไว้ก่อน (คืบเร็วกว่าคาดดีกว่าค้าง) — หลังรันครั้งแรก
-// จะถูกแทนด้วยค่าที่วัดได้จริงของเครื่องนั้น
-const DEFAULT_PREFILL_RATE = { gpu: 200, cpu: 10 } as const
-// ภาษาไทย/อังกฤษปนกัน tokenizer ของ Qwen ตกราวๆ 3 ตัวอักษรต่อ token
-const CHARS_PER_TOKEN = 3
+const PREFILL_CAL_KEY = "streeflood:ai-prefill-cal"
+// ค่าตั้งต้นก่อนมีข้อมูลวัดจริง — กดอัตราต่ำไว้ก่อน (คืบเร็วกว่าคาดดีกว่าค้าง)
+// charsPerToken: ไทย/อังกฤษปนกัน tokenizer ของ Qwen ตกราวๆ 3 ตัวอักษรต่อ token
+const DEFAULT_CAL = {
+  gpu: { rate: 200, charsPerToken: 3 },
+  cpu: { rate: 10, charsPerToken: 3 },
+} as const
+
+export interface PrefillCalibration {
+  /** token/วินาที ช่วง prefill ที่วัดได้จริงของเครื่องนี้ */
+  rate: number
+  /** ตัวอักษรต่อ token ที่วัดจากพรอมป์จริง — ใช้แปลงความยาวข้อความเป็นจำนวน token */
+  charsPerToken: number
+}
+
+/** ค่าที่เคยวัดได้จริงของ backend นี้ — null ถ้ายังไม่เคยรันเลย */
+export function getPrefillCalibration(backend: "gpu" | "cpu"): PrefillCalibration | null {
+  try {
+    const raw = window.localStorage.getItem(`${PREFILL_CAL_KEY}:${backend}`)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<PrefillCalibration>
+    if (
+      typeof parsed.rate === "number" && Number.isFinite(parsed.rate) && parsed.rate > 0 &&
+      typeof parsed.charsPerToken === "number" && Number.isFinite(parsed.charsPerToken) && parsed.charsPerToken > 0
+    ) {
+      return { rate: parsed.rate, charsPerToken: parsed.charsPerToken }
+    }
+  } catch {
+    // localStorage ใช้ไม่ได้ / ข้อมูลเพี้ยน — ถือว่าไม่เคยวัด
+  }
+  return null
+}
+
+export function recordPrefillCalibration(backend: "gpu" | "cpu", update: Partial<PrefillCalibration>): void {
+  const rate = update.rate && Number.isFinite(update.rate) && update.rate > 0 ? update.rate : undefined
+  const charsPerToken =
+    update.charsPerToken && Number.isFinite(update.charsPerToken) && update.charsPerToken > 0
+      ? update.charsPerToken
+      : undefined
+  if (!rate && !charsPerToken) return
+  const current = getPrefillCalibration(backend) ?? DEFAULT_CAL[backend]
+  const next: PrefillCalibration = {
+    rate: rate ?? current.rate,
+    charsPerToken: charsPerToken ?? current.charsPerToken,
+  }
+  try {
+    window.localStorage.setItem(`${PREFILL_CAL_KEY}:${backend}`, JSON.stringify(next))
+  } catch {
+    // เก็บไม่ได้ก็แค่เสียการปรับตัว ครั้งหน้าใช้ค่าตั้งต้นเหมือนเดิม
+  }
+}
+
+/** จุดคืบหน้าจริงจากเอนจิน — รูปเดียวกับ prompt_progress ของ llama.cpp server */
+export interface PrefillAnchor {
+  total: number
+  cache: number
+  processed: number
+  time_ms: number
+}
+
+export interface PrefillProgressHandle {
+  /**
+   * ป้อนจุดคืบหน้าจริง (เส้นทาง CPU: wllama ส่ง prompt_progress มาทุก batch)
+   * ตัวนับจะเปลี่ยนจากโหมดประมาณการเป็นตามจุดจริง + extrapolate ระหว่างจุด
+   */
+  anchor: (real: PrefillAnchor) => void
+  /** token แรกออกแล้ว — หยุด tick และบันทึกคาลิเบรชันไว้ใช้ประมาณครั้งถัดไป */
+  done: () => void
+  /** จบโดยไม่เคยได้ token (error/ยกเลิก) — หยุดเฉยๆ ห้ามบันทึกค่ามั่ว */
+  cancel: () => void
+}
 
 /**
- * ประมาณความคืบหน้าช่วง prefill ("กำลังวิเคราะห์พรอมป์ X%") จากขนาดพรอมป์
- * กับอัตรา token/วินาที ที่วัดจากรอบก่อน (เก็บใน localStorage แยกตาม backend)
- * คืนฟังก์ชัน stop — เรียกตอนได้ token แรกเพื่อหยุด tick และบันทึกอัตราที่วัดได้จริง
- * ถ้าจบโดยไม่เคยได้ token (error/ยกเลิก) ให้เรียก stop(false) จะได้ไม่บันทึกอัตรามั่ว
+ * ความคืบหน้าช่วง prefill ("กำลังวิเคราะห์พรอมป์ X%")
+ * - มีข้อมูลจริง (anchor จาก wllama): % คิดจากจำนวน token ที่ประมวลผลแล้วจริงๆ
+ *   และ extrapolate ต่อระหว่างรอ batch ถัดไปด้วยอัตราที่วัดจาก batch ก่อนหน้า
+ * - ไม่มี (WebLLM ไม่ส่ง event): ประมาณจากขนาดพรอมป์ + อัตราที่วัดได้รอบก่อน
+ *   (เก็บใน localStorage แยกตาม backend) — เส้นตรงถึง 85% แล้วไต่เข้า 99 แบบ asymptote
  */
 export function trackPrefillProgress(opts: {
   promptChars: number
   backend: "gpu" | "cpu"
   onTick: (pct: number) => void
-}): (recordRate?: boolean) => void {
-  const rateKey = `${PREFILL_RATE_KEY}:${opts.backend}`
-  let rate: number = DEFAULT_PREFILL_RATE[opts.backend]
-  try {
-    const stored = Number(window.localStorage.getItem(rateKey))
-    if (Number.isFinite(stored) && stored > 0) rate = stored
-  } catch {
-    // localStorage ใช้ไม่ได้ (เช่นโหมดส่วนตัวบางเบราว์เซอร์) — ใช้ค่าตั้งต้นไป
-  }
-
-  const estTokens = Math.max(1, opts.promptChars / CHARS_PER_TOKEN)
-  const expectedMs = (estTokens / rate) * 1000
+}): PrefillProgressHandle {
+  const cal = getPrefillCalibration(opts.backend) ?? DEFAULT_CAL[opts.backend]
+  const estTokens = Math.max(1, opts.promptChars / cal.charsPerToken)
+  const expectedMs = (estTokens / cal.rate) * 1000
   const startedAt = Date.now()
 
+  // จุดจริงล่าสุด + อัตรา %/ms ที่วัดระหว่างสองจุดล่าสุด (ไว้ extrapolate)
+  let last: { pct: number; at: number; pctPerMs: number; real: PrefillAnchor } | null = null
+
+  const currentPct = () => {
+    const now = Date.now()
+    if (last) return last.pct + (now - last.at) * last.pctPerMs
+    const linear = (now - startedAt) / expectedMs
+    return linear <= 0.85 ? linear * 100 : 85 + 14 * (1 - Math.exp(-(linear - 0.85) / 1.5))
+  }
+
   opts.onTick(0)
-  const interval = setInterval(() => {
-    // เส้นตรงถึง 85% ตามเวลาที่คาด จากนั้นไต่เข้าหา 99 แบบ asymptote — ต่อให้
-    // เครื่องช้ากว่าที่เดาไว้มาก ตัวเลขก็ยังขยับให้เห็นเรื่อยๆ ไม่นิ่งค้างที่ 99
-    const linear = (Date.now() - startedAt) / expectedMs
-    const pct = linear <= 0.85 ? linear * 100 : 85 + 14 * (1 - Math.exp(-(linear - 0.85) / 1.5))
-    opts.onTick(Math.min(99, Math.round(pct)))
-  }, 250)
+  const interval = setInterval(() => opts.onTick(Math.min(99, Math.round(currentPct()))), 250)
 
   let stopped = false
-  return (recordRate = true) => {
-    if (stopped) return
+  const stop = () => {
     stopped = true
     clearInterval(interval)
-    if (!recordRate) return
-    const elapsedSec = (Date.now() - startedAt) / 1000
-    // เร็วกว่า 0.2 วิ วัดอัตราไม่เที่ยง (โดน cache/พรอมป์สั้น) — ไม่อัปเดตค่า
-    if (elapsedSec < 0.2) return
-    try {
-      window.localStorage.setItem(rateKey, String(estTokens / elapsedSec))
-    } catch {
-      // เก็บไม่ได้ก็แค่เสียการปรับตัว ครั้งหน้าใช้ค่าตั้งต้นเหมือนเดิม
-    }
+  }
+
+  return {
+    anchor: (real) => {
+      if (stopped || real.total <= 0) return
+      const now = Date.now()
+      const donePct = ((real.cache + real.processed) / real.total) * 100
+      const prev = last
+      // อัตราจากช่วงระหว่างจุดล่าสุด (เวลาจริงฝั่งเรา) — ยังไม่มีสองจุดก็ใช้อัตราคาลิเบรต
+      const pctPerMs =
+        prev && donePct > prev.pct && now > prev.at
+          ? (donePct - prev.pct) / (now - prev.at)
+          : (cal.rate / 1000 / real.total) * 100
+      last = { pct: donePct, at: now, pctPerMs, real }
+      opts.onTick(Math.min(99, Math.round(donePct)))
+    },
+    done: () => {
+      if (stopped) return
+      stop()
+      if (last && last.real.processed > 0 && last.real.time_ms > 0) {
+        // มีตัวเลขที่เอนจินวัดเองครบ — ทั้งอัตราและจำนวน token จริงของพรอมป์นี้
+        recordPrefillCalibration(opts.backend, {
+          rate: (last.real.processed / last.real.time_ms) * 1000,
+          charsPerToken: opts.promptChars / last.real.total,
+        })
+        return
+      }
+      const elapsedSec = (Date.now() - startedAt) / 1000
+      // เร็วกว่า 0.2 วิ วัดอัตราไม่เที่ยง (โดน cache/พรอมป์สั้น) — ไม่อัปเดตค่า
+      if (elapsedSec < 0.2) return
+      recordPrefillCalibration(opts.backend, { rate: estTokens / elapsedSec })
+    },
+    cancel: stop,
   }
 }
 

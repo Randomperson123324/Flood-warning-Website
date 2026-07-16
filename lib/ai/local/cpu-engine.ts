@@ -61,6 +61,9 @@ export async function getCpuEngine(
 
     await wllama.loadModelFromUrl(CPU_MODEL.url, {
       n_ctx: CPU_MODEL.contextSize,
+      // event ความคืบหน้า prefill (return_progress) มาทีละ batch — batch ละ 512
+      // ให้ % ขยับถี่พอ (ค่าตั้งต้น 2048 จะได้ event เดียวทั้งพรอมป์)
+      n_batch: 512,
       // 0 = ไม่ offload ชั้นไหนขึ้น GPU เลย — เส้นทางนี้ตั้งใจให้รันบน CPU/RAM ล้วน
       // (wllama 3.x เปิด WebGPU อัตโนมัติ ซึ่งจะพาไปเจอปัญหา VRAM เดิมของ engine.ts)
       n_gpu_layers: 0,
@@ -156,7 +159,7 @@ export async function streamCpuReply(
     // ซึ่งใน Jinja ถือเป็น truthy → โหมดคิดไม่ปิดจริง
     const softSwitch = opts.thinking ? "/think" : "/no_think"
     const promptChars = systemPrompt.length + messages.reduce((n, m) => n + m.content.length, 0)
-    const stopPrefill = trackPrefillProgress({
+    const prefill = trackPrefillProgress({
       promptChars,
       backend: "cpu",
       onTick: (pct) => handlers.onToolCall?.(`${opts.labels.analyzingPrompt} ${pct}%`),
@@ -168,13 +171,20 @@ export async function streamCpuReply(
         temperature: 0.6,
         // เปิดโหมดคิดต้องเผื่อ budget ให้ reasoning ไม่กิน max_tokens จนคำตอบขาด
         max_tokens: opts.thinking ? 2048 : 1024,
+        // ขอ event ความคืบหน้า prefill จริง (prompt_progress) จาก llama.cpp —
+        // type ของ wllama ยังไม่ประกาศ field นี้ แต่ implementation ส่ง options
+        // ทั้งก้อนเป็น JSON เข้า wasm ตรงๆ (ยืนยันแล้วว่า event ทะลุมาถึง chunk)
+        ...({ return_progress: true } as object),
       })
 
       let fullText = ""
       for await (const chunk of chunks) {
+        // chunk ความคืบหน้า prefill — จำนวน token ที่ประมวลผลแล้วจริงๆ ไม่ใช่ค่าประมาณ
+        const progress = (chunk as { prompt_progress?: import("./shared").PrefillAnchor }).prompt_progress
+        if (progress) prefill.anchor(progress)
         const delta = chunk.choices[0]?.delta?.content ?? ""
         if (!delta) continue
-        if (!fullText) stopPrefill()
+        if (!fullText) prefill.done()
         fullText += delta
         const { thinking, answer, inThink } = splitThinking(fullText)
         if (thinking) handlers.onThinking?.(thinking)
@@ -187,8 +197,8 @@ export async function streamCpuReply(
       }
       return splitThinking(fullText).answer
     } finally {
-      // มาถึงตรงนี้โดยยังไม่เคยได้ token (error/ยกเลิก) — หยุด tick เฉยๆ ห้ามบันทึกอัตรา
-      stopPrefill(false)
+      // มาถึงตรงนี้โดยยังไม่เคยได้ token (error/ยกเลิก) — หยุด tick เฉยๆ ห้ามบันทึกค่า
+      prefill.cancel()
     }
   })
 }

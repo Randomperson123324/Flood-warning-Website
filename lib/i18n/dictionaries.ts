@@ -349,6 +349,17 @@ export const dictionary = {
     analyzingPrompt: { th: "กำลังวิเคราะห์พรอมป์…", en: "Analyzing prompt…" },
     thinkingStatus: { th: "กำลังคิด…", en: "Thinking…" },
     thoughtsLabel: { th: "ความคิดของโมเดล", en: "Thoughts" },
+    // ตัวเลือกขั้นสูงของโหมดบนเครื่อง
+    advancedOptions: { th: "ตัวเลือกขั้นสูง", en: "Advanced options" },
+    multithreadLabel: { th: "มัลติเธรด (CPU)", en: "CPU multi-threading" },
+    multithreadOn: { th: "เปิดอยู่", en: "On" },
+    multithreadOff: { th: "ปิด — เธรดเดียว", en: "Off — single-thread" },
+    threadsUnit: { th: "เธรด", en: "threads" },
+    multithreadOffHint: {
+      th: "หน้านี้เปิดมัลติเธรดไม่ได้ (ติดข้อจำกัดของระบบยืนยันตัวตน) — เปิดผู้ช่วยจากหน้าแรกจะเร็วกว่า",
+      en: "Multi-threading isn't available on this page — open the assistant from the home page for full speed",
+    },
+    measuredPrefillRate: { th: "ความเร็ววิเคราะห์พรอมป์ (วัดจริง)", en: "Measured prompt speed" },
     modelCached: { th: "มีในเครื่องแล้ว", en: "Downloaded" },
     modelReady: { th: "พร้อมใช้งาน", en: "Ready" },
     downloadModel: { th: "ดาวน์โหลดโมเดล", en: "Download model" },
