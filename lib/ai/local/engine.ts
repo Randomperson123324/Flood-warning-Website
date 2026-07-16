@@ -77,9 +77,10 @@ export async function getEngine(
     return engine
   }
 
-  // ห้ามใส่ { type: "module" } — Next ไม่ได้เปิด experiments.outputModule webpack จึงปล่อย
-  // worker chunk เป็นแบบ classic ที่ bootstrap ด้วย importScripts() ซึ่งไม่มีใน module worker
-  // (worker ตายทันทีที่บูตด้วย "Module scripts don't support importScripts()")
+  // ไม่ระบุ type เพราะ webpack เขียนทับให้ตรงกับ chunk ที่มันปล่อยออกมาอยู่แล้ว — Next
+  // ไม่ได้เปิด experiments.outputModule จึงได้ classic worker (bootstrap ด้วย importScripts)
+  // เขียน { type: "module" } ไว้ก็ถูก compile เป็น { type: void 0 } เท่ากัน ไม่มีผลอะไร
+  // ละไว้เลยดีกว่า จะได้ไม่เข้าใจผิดว่าเป็น module worker
   worker = new Worker(new URL("./webllm.worker.ts", import.meta.url))
   loadedModelId = modelId
   enginePromise = webllm.CreateWebWorkerMLCEngine(worker, modelId, {
