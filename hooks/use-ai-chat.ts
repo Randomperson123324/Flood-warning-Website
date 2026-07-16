@@ -16,6 +16,8 @@ interface ChatMessage {
   // ข้อความสถานะชั่วคราวตอน AI กำลังเรียก tool อยู่ (เช่น "🔧 กำลังตรวจสอบสภาพอากาศ...")
   // จะถูกเคลียร์ทิ้งทันทีที่มีเนื้อหาจริง (message.delta) เข้ามา
   toolStatus?: string
+  // reasoning ของโมเดล (โหมดคิดของ AI บนเครื่อง) — โชว์เป็นบล็อกความคิดพับได้
+  thinking?: string
   // ข้อความ assistant นี้สร้างด้วย engine ไหน — ไว้ติดป้าย "บนเครื่อง"
   engine?: AIEngineKind
 }
@@ -23,6 +25,7 @@ interface ChatMessage {
 interface StreamHandlers {
   onContent: (fullTextSoFar: string) => void
   onToolCall?: (label: string) => void
+  onThinking?: (thinkingTextSoFar: string) => void
 }
 
 // อ่าน SSE stream จาก /api/ai (รูปแบบ event ตามแนวทาง LM Studio: chat.start /
@@ -80,7 +83,7 @@ async function streamAIReply(
 }
 
 export function useAIChat(context: AIContext, isOpen: boolean) {
-  const { engine, localBackend, localModelId, status: engineStatus, loadModel } = useAIEngine()
+  const { engine, localBackend, localModelId, status: engineStatus, thinking, loadModel } = useAIEngine()
   const { t } = useLanguage()
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
   const [autoAnalysis, setAutoAnalysis] = useState("")
@@ -92,15 +95,15 @@ export function useAIChat(context: AIContext, isOpen: boolean) {
   const contextRef = useRef(context)
   contextRef.current = context
   // ให้ callback ที่สร้างครั้งเดียว (runAutoAnalysis) เห็นค่า engine ปัจจุบันเสมอ
-  const engineRef = useRef({ engine, localBackend, localModelId, phase: engineStatus.phase, loadModel, t })
-  engineRef.current = { engine, localBackend, localModelId, phase: engineStatus.phase, loadModel, t }
+  const engineRef = useRef({ engine, localBackend, localModelId, phase: engineStatus.phase, thinking, loadModel, t })
+  engineRef.current = { engine, localBackend, localModelId, phase: engineStatus.phase, thinking, loadModel, t }
 
   // เลือกเส้นทางตาม engine ที่ผู้ใช้ตั้งไว้: cloud → SSE ผ่าน /api/ai,
   // local → รันในเบราว์เซอร์ (GPU ผ่าน WebLLM หรือ CPU ผ่าน wllama ตาม localBackend)
   // โหลดโมเดลก่อนถ้ายังไม่พร้อม โดยโชว์ % ผ่าน toolStatus
   const streamReply = useCallback(
     async (messages: { role: "user" | "assistant"; content: string }[], handlers: StreamHandlers) => {
-      const { engine: kind, localBackend: backend, localModelId: modelId, loadModel: load, t: translate } =
+      const { engine: kind, localBackend: backend, localModelId: modelId, thinking: think, loadModel: load, t: translate } =
         engineRef.current
       if (kind !== "local") return streamAIReply(messages, contextRef.current, handlers)
 
@@ -109,11 +112,13 @@ export function useAIChat(context: AIContext, isOpen: boolean) {
         fetchingContext: translate("ai", "fetchingContext"),
         loadingModel: translate("ai", "loadingModelStatus"),
         thinking: translate("ai", "thinking"),
+        analyzingPrompt: translate("ai", "analyzingPrompt"),
+        thinkingStatus: translate("ai", "thinkingStatus"),
       }
       if (backend === "cpu") {
-        return streamCpuReply(messages, contextRef.current, handlers, { labels })
+        return streamCpuReply(messages, contextRef.current, handlers, { labels, thinking: think })
       }
-      return streamLocalReply(messages, contextRef.current, handlers, { modelId, labels })
+      return streamLocalReply(messages, contextRef.current, handlers, { modelId, labels, thinking: think })
     },
     [],
   )
@@ -139,6 +144,8 @@ export function useAIChat(context: AIContext, isOpen: boolean) {
             setAutoAnalysis(partial)
           },
           onToolCall: (label) => setAnalysisStatus(label),
+          // การ์ดสรุปไม่โชว์เนื้อ reasoning (รก) — บอกแค่สถานะว่ากำลังคิด
+          onThinking: () => setAnalysisStatus(engineRef.current.t("ai", "thinkingStatus")),
         },
       )
     } catch (err) {
@@ -161,18 +168,42 @@ export function useAIChat(context: AIContext, isOpen: boolean) {
     const activeEngine = engineRef.current.engine
     try {
       const history = [...chatHistory, userMsg].map((m) => ({ role: m.role, content: m.content }))
+      // reasoning สะสมของคำตอบนี้ — เก็บไว้นอก setState เพื่อให้ทุก callback
+      // (สถานะ/เนื้อหา) แปะความคิดล่าสุดติดข้อความไปด้วยเสมอ ไม่หายตอนสลับสถานะ
+      let thinkingText = ""
       const finalText = await streamReply(history, {
         onContent: (partial) => {
           setChatHistory((prev) => [
             ...prev.slice(0, -1),
-            { role: "assistant", content: partial, timestamp: new Date(), isLoading: false, engine: activeEngine },
+            {
+              role: "assistant",
+              content: partial,
+              timestamp: new Date(),
+              isLoading: false,
+              thinking: thinkingText || undefined,
+              engine: activeEngine,
+            },
           ])
         },
         onToolCall: (label) => {
           setChatHistory((prev) => [
             ...prev.slice(0, -1),
-            { role: "assistant", content: "", timestamp: new Date(), isLoading: true, toolStatus: label },
+            {
+              role: "assistant",
+              content: "",
+              timestamp: new Date(),
+              isLoading: true,
+              toolStatus: label,
+              thinking: thinkingText || undefined,
+            },
           ])
+        },
+        onThinking: (partialThinking) => {
+          thinkingText = partialThinking
+          setChatHistory((prev) => {
+            const last = prev[prev.length - 1]
+            return [...prev.slice(0, -1), { ...last, thinking: thinkingText }]
+          })
         },
       })
       onComplete?.(finalText)

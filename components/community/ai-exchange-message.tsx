@@ -3,6 +3,7 @@
 import { Bot, LoaderCircle, Terminal } from "lucide-react"
 import { useLanguage } from "@/hooks/use-language"
 import { MarkdownMessage } from "@/components/ai-assistant/markdown-message"
+import { ThinkingBlock } from "@/components/ai-assistant/thinking-block"
 import { ReactionBar } from "@/components/community/reaction-bar"
 import { cn } from "@/lib/utils"
 import type { ReactionSummary } from "@/hooks/use-message-reactions"
@@ -13,6 +14,8 @@ export interface AIExchange {
   answer: string
   isLoading: boolean
   toolStatus?: string
+  /** reasoning ของโหมดคิด (AI บนเครื่อง) — มีเฉพาะระหว่าง stream ไม่ถูกบันทึกลงฐานข้อมูล */
+  thinking?: string
 }
 
 interface AIExchangeMessageProps {
@@ -67,16 +70,20 @@ export function AIExchangeMessage({ exchange, username, time, isMine, reactions,
         </div>
         <div className="glass-panel-strong px-3.5 py-2 text-sm">
           {exchange.isLoading && !exchange.answer ? (
-            exchange.toolStatus ? (
-              <span className="flex items-center gap-1.5 text-xs text-ink-soft">
-                <LoaderCircle className="h-3 w-3 animate-spin" />
-                {exchange.toolStatus}
-              </span>
-            ) : (
-              <LoaderCircle className="h-3.5 w-3.5 animate-spin text-ink-soft" />
-            )
+            <>
+              {exchange.thinking && <ThinkingBlock text={exchange.thinking} streaming />}
+              {exchange.toolStatus ? (
+                <span className="flex items-center gap-1.5 text-xs text-ink-soft">
+                  <LoaderCircle className="h-3 w-3 animate-spin" />
+                  {exchange.toolStatus}
+                </span>
+              ) : (
+                <LoaderCircle className="h-3.5 w-3.5 animate-spin text-ink-soft" />
+              )}
+            </>
           ) : (
             <>
+              {exchange.thinking && <ThinkingBlock text={exchange.thinking} streaming={false} />}
               <MarkdownMessage content={exchange.answer} />
               {exchange.isLoading && <LoaderCircle className="mt-1 h-3 w-3 animate-spin text-ink-soft" />}
             </>

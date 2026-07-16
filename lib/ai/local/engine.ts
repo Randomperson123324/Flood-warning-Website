@@ -17,7 +17,7 @@
 import type { AIContext } from "@/types"
 import { F32_FALLBACKS } from "./models"
 
-import { buildFallbackSystemPrompt, fetchContextPrompt } from "./shared"
+import { buildFallbackSystemPrompt, fetchContextPrompt, splitThinking, trackPrefillProgress } from "./shared"
 import type { LocalStreamHandlers, LocalStreamLabels } from "./shared"
 
 type WebLLM = typeof import("@mlc-ai/web-llm")
@@ -154,7 +154,7 @@ export async function streamLocalReply(
   messages: { role: "user" | "assistant"; content: string }[],
   context: AIContext,
   handlers: LocalStreamHandlers,
-  opts: { modelId: string; labels: LocalStreamLabels },
+  opts: { modelId: string; labels: LocalStreamLabels; thinking?: boolean },
 ): Promise<string> {
   handlers.onToolCall?.(opts.labels.fetchingContext)
   let systemPrompt: string
@@ -169,24 +169,42 @@ export async function streamLocalReply(
   })
 
   return enqueue(async () => {
-    const chunks = await engine.chat.completions.create({
-      messages: [{ role: "system", content: systemPrompt }, ...messages],
-      stream: true,
-      temperature: 0.6,
-      max_tokens: 1024,
-      // Qwen3 เป็นโมเดล hybrid thinking — ปิด <think> เพื่อให้ตอบเร็วและ
-      // ไม่มี reasoning หลุดมาในแชท (รองรับใน web-llm >= 0.2.80)
-      extra_body: { enable_thinking: false },
+    const promptChars = systemPrompt.length + messages.reduce((n, m) => n + m.content.length, 0)
+    const stopPrefill = trackPrefillProgress({
+      promptChars,
+      backend: "gpu",
+      onTick: (pct) => handlers.onToolCall?.(`${opts.labels.analyzingPrompt} ${pct}%`),
     })
+    try {
+      const chunks = await engine.chat.completions.create({
+        messages: [{ role: "system", content: systemPrompt }, ...messages],
+        stream: true,
+        temperature: 0.6,
+        // เปิดโหมดคิดต้องเผื่อ budget ให้ reasoning ไม่กิน max_tokens จนคำตอบขาด
+        max_tokens: opts.thinking ? 2048 : 1024,
+        // Qwen3 เป็นโมเดล hybrid thinking — เปิด/ปิด <think> ตาม toggle ของผู้ใช้
+        // (รองรับใน web-llm >= 0.2.80)
+        extra_body: { enable_thinking: !!opts.thinking },
+      })
 
-    let fullText = ""
-    for await (const chunk of chunks) {
-      const delta = chunk.choices[0]?.delta?.content ?? ""
-      if (delta) {
+      let fullText = ""
+      for await (const chunk of chunks) {
+        const delta = chunk.choices[0]?.delta?.content ?? ""
+        if (!delta) continue
+        if (!fullText) stopPrefill()
         fullText += delta
-        handlers.onContent(fullText)
+        const { thinking, answer, inThink } = splitThinking(fullText)
+        if (thinking) handlers.onThinking?.(thinking)
+        if (answer) {
+          handlers.onContent(answer)
+        } else {
+          // ยังไม่มีคำตอบให้โชว์ — บอกสถานะว่ากำลังคิด (ใน <think>) หรือกำลังพิมพ์
+          handlers.onToolCall?.(opts.thinking && inThink ? opts.labels.thinkingStatus : opts.labels.thinking)
+        }
       }
+      return splitThinking(fullText).answer
+    } finally {
+      stopPrefill()
     }
-    return fullText
   })
 }

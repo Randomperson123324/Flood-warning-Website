@@ -4,7 +4,7 @@
 // แผง AI ลอย (assistant-panel) และช่องแชทชุมชนตอนพิมพ์ /AI (chat-panel)
 
 import { useEffect, useRef, useState } from "react"
-import { Check, Cloud, Cpu, LoaderCircle, MemoryStick, Settings2, TriangleAlert, Trash2, Zap } from "lucide-react"
+import { Brain, Check, Cloud, Cpu, LoaderCircle, MemoryStick, Settings2, TriangleAlert, Trash2, Zap } from "lucide-react"
 import { useAIEngine } from "@/hooks/use-ai-engine"
 import { useLanguage } from "@/hooks/use-language"
 import { getStorageEstimate } from "@/lib/ai/local/engine"
@@ -26,8 +26,10 @@ export function EngineSettings({ direction = "down" }: { direction?: "down" | "u
     status,
     webgpuSupported,
     cpuMultithread,
+    thinking,
     setEngine,
     setLocalBackend,
+    setThinking,
     setLocalModel,
     loadModel,
     removeModel,
@@ -170,6 +172,25 @@ export function EngineSettings({ direction = "down" }: { direction?: "down" | "u
                   </p>
                 )}
               </div>
+            )}
+
+            {/* โหมดคิดของ Qwen3 (thinking) — แถวเดียวกดสลับเปิด/ปิด มีผลรอบถามถัดไปทันที */}
+            {engine === "local" && (
+              <button
+                type="button"
+                onClick={() => setThinking(!thinking)}
+                className={cn(
+                  "flex w-full items-start gap-2.5 rounded-lg border p-2 text-left transition-colors",
+                  thinking ? "border-accent/60 bg-accent/10" : "border-border/10 hover:border-border/30",
+                )}
+              >
+                <Brain className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium">{t("ai", "thinkingToggle")}</span>
+                  <span className="block text-xs text-ink-soft">{t("ai", "thinkingToggleDesc")}</span>
+                </span>
+                {thinking && <Check className="ml-auto h-4 w-4 shrink-0 text-accent" />}
+              </button>
             )}
 
             {/* เลือกโมเดล — โชว์ variant ที่เครื่องนี้จะใช้จริง (f16/f32)

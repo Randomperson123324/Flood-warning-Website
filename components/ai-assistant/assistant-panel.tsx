@@ -6,6 +6,7 @@ import { useLanguage } from "@/hooks/use-language"
 import { useAIChat } from "@/hooks/use-ai-chat"
 import { MarkdownMessage } from "@/components/ai-assistant/markdown-message"
 import { EngineSettings } from "@/components/ai-assistant/engine-settings"
+import { ThinkingBlock } from "@/components/ai-assistant/thinking-block"
 import { cn } from "@/lib/utils"
 import type { AIContext } from "@/types"
 
@@ -72,16 +73,20 @@ export function AssistantPanel({ context, open, onClose }: AssistantPanelProps) 
           <div key={i} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
             <div className={cn("glass-panel-strong max-w-[85%] px-3.5 py-2", msg.role === "user" && "bg-accent/10")}>
               {msg.isLoading ? (
-                msg.toolStatus ? (
-                  <span className="flex items-center gap-1.5 text-xs text-ink-soft">
-                    <LoaderCircle className="h-3 w-3 animate-spin" />
-                    {msg.toolStatus}
-                  </span>
-                ) : (
-                  <LoaderCircle className="h-3.5 w-3.5 animate-spin text-ink-soft" />
-                )
+                <>
+                  {msg.thinking && <ThinkingBlock text={msg.thinking} streaming />}
+                  {msg.toolStatus ? (
+                    <span className="flex items-center gap-1.5 text-xs text-ink-soft">
+                      <LoaderCircle className="h-3 w-3 animate-spin" />
+                      {msg.toolStatus}
+                    </span>
+                  ) : (
+                    <LoaderCircle className="h-3.5 w-3.5 animate-spin text-ink-soft" />
+                  )}
+                </>
               ) : msg.role === "assistant" ? (
                 <>
+                  {msg.thinking && <ThinkingBlock text={msg.thinking} streaming={false} />}
                   <MarkdownMessage content={msg.content} />
                   {msg.engine === "local" && (
                     <span className="mt-1 flex items-center gap-1 text-[10px] text-ink-soft">

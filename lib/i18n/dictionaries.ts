@@ -340,8 +340,15 @@ export const dictionary = {
     backendCpu: { th: "ซีพียู + RAM", en: "CPU + RAM" },
     backendCpuDesc: { th: "ทำงานได้ทุกเครื่อง แต่ช้ากว่า GPU มาก", en: "Works on any machine, but much slower than GPU" },
     backendCpuSlow: { th: "โหมดช้า (เธรดเดียว) — คำตอบอาจใช้เวลาหลายสิบวินาที", en: "Slow mode (single-thread) — replies may take a while" },
-    // โชว์ระหว่างรอ token แรก (โมเดลปิด thinking แล้ว — ไม่ได้ "คิด" แต่กำลังพิมพ์คำตอบ)
+    // โชว์ระหว่างรอคำตอบส่วนที่มองเห็น (นอก <think>) — โมเดลกำลังพิมพ์คำตอบอยู่
     thinking: { th: "กำลังพิมพ์…", en: "Typing…" },
+    // toggle โหมดคิดของ Qwen3 (เฉพาะ AI บนเครื่อง)
+    thinkingToggle: { th: "โหมดคิดวิเคราะห์ (Thinking)", en: "Thinking mode" },
+    thinkingToggleDesc: { th: "โมเดลใช้เวลาคิดก่อนตอบ — ช้าลงแต่ตอบละเอียดขึ้น", en: "The model reasons before answering — slower but more thorough" },
+    // สถานะละเอียดระหว่างรอคำตอบ (เอนจินต่อท้าย " X%" เอง)
+    analyzingPrompt: { th: "กำลังวิเคราะห์พรอมป์…", en: "Analyzing prompt…" },
+    thinkingStatus: { th: "กำลังคิด…", en: "Thinking…" },
+    thoughtsLabel: { th: "ความคิดของโมเดล", en: "Thoughts" },
     modelCached: { th: "มีในเครื่องแล้ว", en: "Downloaded" },
     modelReady: { th: "พร้อมใช้งาน", en: "Ready" },
     downloadModel: { th: "ดาวน์โหลดโมเดล", en: "Download model" },

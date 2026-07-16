@@ -10,6 +10,8 @@ import type { AIContext } from "@/types"
 export interface LocalStreamHandlers {
   onContent: (fullTextSoFar: string) => void
   onToolCall?: (label: string) => void
+  /** ข้อความ reasoning สะสม (ใน <think>...</think>) — เรียกเฉพาะตอนเปิดโหมดคิด */
+  onThinking?: (thinkingTextSoFar: string) => void
 }
 
 export interface LocalStreamLabels {
@@ -17,6 +19,10 @@ export interface LocalStreamLabels {
   loadingModel: string
   /** โชว์ระหว่างรอ token แรก — สำคัญกับเส้นทาง CPU ที่หน่วงเป็นสิบวินาที */
   thinking: string
+  /** โชว์ระหว่าง prefill พร้อม % (ประมาณการ — ดู trackPrefillProgress) */
+  analyzingPrompt: string
+  /** โชว์ระหว่างโมเดลกำลัง reasoning อยู่ใน <think> */
+  thinkingStatus: string
 }
 
 // โมเดลของเส้นทาง CPU — ตรึงไว้ตัวเดียว (Qwen3 1.7B ตระกูลเดียวกับฝั่ง GPU)
@@ -47,6 +53,87 @@ export function buildFallbackSystemPrompt(context: AIContext): string {
 
 ห้ามอ้างว่าเรียกเครื่องมือหรือค้นข้อมูลเพิ่มได้
 `.trim()
+}
+
+// แยก reasoning block <think>...</think> ของ Qwen3 ออกจากคำตอบจริง
+// รองรับแท็กที่ยังไม่ปิด (กำลัง stream อยู่) — ถือว่าทุกอย่างหลัง <think> เป็น reasoning
+// แม้ปิดโหมดคิดแล้วโมเดลก็ยังใส่แท็กเปล่าๆ (<think>\n\n</think>) มาได้ในบางที
+export function splitThinking(text: string): { thinking: string; answer: string; inThink: boolean } {
+  const thinkingParts: string[] = []
+  let answer = ""
+  let rest = text
+  let inThink = false
+  while (true) {
+    const open = rest.indexOf("<think>")
+    if (open === -1) {
+      answer += rest
+      break
+    }
+    answer += rest.slice(0, open)
+    rest = rest.slice(open + "<think>".length)
+    const close = rest.indexOf("</think>")
+    if (close === -1) {
+      // ยังไม่ปิด — โมเดลกำลังคิดอยู่
+      thinkingParts.push(rest)
+      inThink = true
+      break
+    }
+    thinkingParts.push(rest.slice(0, close))
+    rest = rest.slice(close + "</think>".length)
+  }
+  return { thinking: thinkingParts.join("").trim(), answer: answer.replace(/^\s+/, ""), inThink }
+}
+
+const PREFILL_RATE_KEY = "streeflood:ai-prefill-rate"
+// ไม่มีเอนจินไหนรายงานความคืบหน้า prefill จริงๆ (WebLLM/wllama ไม่มี event ให้)
+// ค่าตั้งต้นเดาจากสปีดทั่วไป — หลังรันครั้งแรกจะถูกแทนด้วยค่าที่วัดได้จริงของเครื่องนั้น
+const DEFAULT_PREFILL_RATE = { gpu: 200, cpu: 20 } as const
+// ภาษาไทย/อังกฤษปนกัน tokenizer ของ Qwen ตกราวๆ 3 ตัวอักษรต่อ token
+const CHARS_PER_TOKEN = 3
+
+/**
+ * ประมาณความคืบหน้าช่วง prefill ("กำลังวิเคราะห์พรอมป์ X%") จากขนาดพรอมป์
+ * กับอัตรา token/วินาที ที่วัดจากรอบก่อน (เก็บใน localStorage แยกตาม backend)
+ * คืนฟังก์ชัน stop — เรียกเมื่อได้ token แรกเพื่อหยุด tick และบันทึกอัตราที่วัดได้จริง
+ */
+export function trackPrefillProgress(opts: {
+  promptChars: number
+  backend: "gpu" | "cpu"
+  onTick: (pct: number) => void
+}): () => void {
+  const rateKey = `${PREFILL_RATE_KEY}:${opts.backend}`
+  let rate: number = DEFAULT_PREFILL_RATE[opts.backend]
+  try {
+    const stored = Number(window.localStorage.getItem(rateKey))
+    if (Number.isFinite(stored) && stored > 0) rate = stored
+  } catch {
+    // localStorage ใช้ไม่ได้ (เช่นโหมดส่วนตัวบางเบราว์เซอร์) — ใช้ค่าตั้งต้นไป
+  }
+
+  const estTokens = Math.max(1, opts.promptChars / CHARS_PER_TOKEN)
+  const expectedMs = (estTokens / rate) * 1000
+  const startedAt = Date.now()
+
+  opts.onTick(0)
+  const interval = setInterval(() => {
+    const pct = Math.min(99, Math.round(((Date.now() - startedAt) / expectedMs) * 100))
+    opts.onTick(pct)
+  }, 250)
+
+  let stopped = false
+  return () => {
+    if (stopped) return
+    stopped = true
+    clearInterval(interval)
+    const elapsedSec = (Date.now() - startedAt) / 1000
+    // เร็วกว่า 0.2 วิ วัดอัตราไม่เที่ยง (โดน cache/พรอมป์สั้น) — ไม่อัปเดตค่า
+    if (elapsedSec < 0.2) return
+    try {
+      window.localStorage.setItem(rateKey, String(estTokens / elapsedSec))
+    } catch {
+      // เก็บไม่ได้ก็แค่เสียการปรับตัว ครั้งหน้าใช้ค่าตั้งต้นเหมือนเดิม
+    }
+  }
 }
 
 export async function fetchContextPrompt(context: AIContext): Promise<string> {

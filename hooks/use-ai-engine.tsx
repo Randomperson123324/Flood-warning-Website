@@ -33,6 +33,7 @@ import { CPU_MODEL } from "@/lib/ai/local/shared"
 const ENGINE_KEY = "streeflood:ai-engine"
 const MODEL_KEY = "streeflood:ai-local-model"
 const BACKEND_KEY = "streeflood:ai-local-backend"
+const THINKING_KEY = "streeflood:ai-thinking"
 
 export type AIEngineKind = "cloud" | "local"
 /** เส้นทางของโหมด on-device: gpu = WebLLM/WebGPU | cpu = wllama/WebAssembly (ใช้ RAM) */
@@ -58,8 +59,11 @@ interface AIEngineContextValue {
   webgpuSupported: boolean | null
   /** true = หน้านี้ cross-origin isolated → โหมด CPU รัน multi-thread (เร็วกว่า) */
   cpuMultithread: boolean
+  /** เปิดโหมดคิด (Qwen3 thinking) ของ AI บนเครื่อง — ช้าลงแต่ตอบละเอียดขึ้น */
+  thinking: boolean
   setEngine: (next: AIEngineKind) => void
   setLocalBackend: (next: LocalBackend) => void
+  setThinking: (next: boolean) => void
   /** เปลี่ยนโมเดล (รับ id ของ variant ไหนก็ได้) — ไม่มีผลระหว่างดาวน์โหลด */
   setLocalModel: (id: string) => void
   /** โหลดโมเดลเข้าเครื่อง (ดาวน์โหลดก่อนถ้ายังไม่มี) — เจ้าของ state ความคืบหน้า */
@@ -78,6 +82,7 @@ export function AIEngineProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AIEngineStatus>({ phase: "idle" })
   const [webgpuSupported, setWebgpuSupported] = useState<boolean | null>(null)
   const [cpuMultithread, setCpuMultithread] = useState(false)
+  const [thinking, setThinkingState] = useState(false)
   // กัน loadModel ซ้อนกัน (เช่น กดโหลดใน popover พร้อมกับส่งข้อความแรก)
   const loadPromiseRef = useRef<Promise<void> | null>(null)
 
@@ -134,6 +139,7 @@ export function AIEngineProvider({ children }: { children: ReactNode }) {
 
     // โหมด local ใช้ได้เสมอแล้ว เพราะเส้นทาง CPU ไม่ต้องพึ่ง GPU
     if (window.localStorage.getItem(ENGINE_KEY) === "local") setEngineState("local")
+    if (window.localStorage.getItem(THINKING_KEY) === "true") setThinkingState(true)
 
     const storedModel = window.localStorage.getItem(MODEL_KEY)
     if (storedModel) {
@@ -160,6 +166,11 @@ export function AIEngineProvider({ children }: { children: ReactNode }) {
   const setEngine = useCallback((next: AIEngineKind) => {
     setEngineState(next)
     window.localStorage.setItem(ENGINE_KEY, next)
+  }, [])
+
+  const setThinking = useCallback((next: boolean) => {
+    setThinkingState(next)
+    window.localStorage.setItem(THINKING_KEY, String(next))
   }, [])
 
   const setLocalBackend = useCallback((next: LocalBackend) => {
@@ -236,8 +247,10 @@ export function AIEngineProvider({ children }: { children: ReactNode }) {
       status,
       webgpuSupported,
       cpuMultithread,
+      thinking,
       setEngine,
       setLocalBackend,
+      setThinking,
       setLocalModel,
       loadModel,
       removeModel,
@@ -251,8 +264,10 @@ export function AIEngineProvider({ children }: { children: ReactNode }) {
       status,
       webgpuSupported,
       cpuMultithread,
+      thinking,
       setEngine,
       setLocalBackend,
+      setThinking,
       setLocalModel,
       loadModel,
       removeModel,

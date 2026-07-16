@@ -293,6 +293,7 @@ export function ChatPanel() {
       answer: asstMsg?.role === "assistant" ? asstMsg.content : "",
       isLoading: asstMsg?.isLoading ?? true,
       toolStatus: asstMsg?.toolStatus,
+      thinking: asstMsg?.thinking,
     }
   }, [aiChatHistory, isSendingAI])
 

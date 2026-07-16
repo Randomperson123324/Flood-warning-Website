@@ -11,7 +11,7 @@
 // ของผู้ใช้ที่ใช้ cloud/GPU และไม่โดน SSR แตะ
 
 import type { AIContext } from "@/types"
-import { CPU_MODEL, buildFallbackSystemPrompt, fetchContextPrompt } from "./shared"
+import { CPU_MODEL, buildFallbackSystemPrompt, fetchContextPrompt, splitThinking, trackPrefillProgress } from "./shared"
 import type { LocalStreamHandlers, LocalStreamLabels } from "./shared"
 
 // import ชี้ตรงไปที่ build ESM ของ wllama เพราะ package.json (3.5.1) ตั้ง main เป็น
@@ -129,22 +129,12 @@ function enqueue<T>(fn: () => Promise<T>): Promise<T> {
   return run
 }
 
-// ตัด reasoning block <think>...</think> ของ Qwen3 ออกจากข้อความที่จะโชว์
-// แม้สั่ง /no_think แล้วโมเดลก็ยังใส่แท็กเปล่าๆ (<think>\n\n</think>) มาได้ในบางที
-// รับ text สะสมทั้งก้อน (streaming) แล้วคืนเฉพาะส่วนที่เป็นคำตอบจริง
-function stripThinking(text: string): string {
-  const withoutClosed = text.replace(/<think>[\s\S]*?<\/think>/g, "")
-  // แท็ก <think> ที่ยังไม่ปิด (กำลัง stream อยู่) → ซ่อนตั้งแต่ตรงนั้นจนกว่าจะเจอ </think>
-  const open = withoutClosed.indexOf("<think>")
-  return (open === -1 ? withoutClosed : withoutClosed.slice(0, open)).replace(/^\s+/, "")
-}
-
 // คู่แฝดของ streamLocalReply (engine.ts) — สัญญาเดียวกัน แต่รันบน CPU
 export async function streamCpuReply(
   messages: { role: "user" | "assistant"; content: string }[],
   context: AIContext,
   handlers: LocalStreamHandlers,
-  opts: { labels: LocalStreamLabels },
+  opts: { labels: LocalStreamLabels; thinking?: boolean },
 ): Promise<string> {
   handlers.onToolCall?.(opts.labels.fetchingContext)
   let systemPrompt: string
@@ -159,27 +149,45 @@ export async function streamCpuReply(
   })
 
   return enqueue(async () => {
-    handlers.onToolCall?.(opts.labels.thinking)
-    // Qwen3 เป็นโมเดล hybrid thinking — ปิดโหมดคิดด้วย soft switch /no_think ต่อท้าย
-    // system prompt (เป็น token ที่โมเดลถูกเทรนมาให้รู้จัก ไม่ผ่าน template variable)
-    // ทำไมไม่ใช้ chat_template_kwargs enable_thinking=false: wllama ส่ง kwarg ข้ามไป
+    // Qwen3 เป็นโมเดล hybrid thinking — เปิด/ปิดโหมดคิดด้วย soft switch /think หรือ /no_think
+    // ต่อท้าย system prompt (เป็น token ที่โมเดลถูกเทรนมาให้รู้จัก ไม่ผ่าน template variable)
+    // ทำไมไม่ใช้ chat_template_kwargs enable_thinking: wllama ส่ง kwarg ข้ามไป
     // wasm เป็น "อาร์เรย์ของ string" (ดู glue arr_str) ค่า false เลยกลายเป็น "false"
     // ซึ่งใน Jinja ถือเป็น truthy → โหมดคิดไม่ปิดจริง
-    const chunks = await wllama.createChatCompletion({
-      messages: [{ role: "system", content: `${systemPrompt}\n\n/no_think` }, ...messages],
-      stream: true,
-      temperature: 0.6,
-      max_tokens: 1024,
+    const softSwitch = opts.thinking ? "/think" : "/no_think"
+    const promptChars = systemPrompt.length + messages.reduce((n, m) => n + m.content.length, 0)
+    const stopPrefill = trackPrefillProgress({
+      promptChars,
+      backend: "cpu",
+      onTick: (pct) => handlers.onToolCall?.(`${opts.labels.analyzingPrompt} ${pct}%`),
     })
+    try {
+      const chunks = await wllama.createChatCompletion({
+        messages: [{ role: "system", content: `${systemPrompt}\n\n${softSwitch}` }, ...messages],
+        stream: true,
+        temperature: 0.6,
+        // เปิดโหมดคิดต้องเผื่อ budget ให้ reasoning ไม่กิน max_tokens จนคำตอบขาด
+        max_tokens: opts.thinking ? 2048 : 1024,
+      })
 
-    let fullText = ""
-    for await (const chunk of chunks) {
-      const delta = chunk.choices[0]?.delta?.content ?? ""
-      if (delta) {
+      let fullText = ""
+      for await (const chunk of chunks) {
+        const delta = chunk.choices[0]?.delta?.content ?? ""
+        if (!delta) continue
+        if (!fullText) stopPrefill()
         fullText += delta
-        handlers.onContent(stripThinking(fullText))
+        const { thinking, answer, inThink } = splitThinking(fullText)
+        if (thinking) handlers.onThinking?.(thinking)
+        if (answer) {
+          handlers.onContent(answer)
+        } else {
+          // ยังไม่มีคำตอบให้โชว์ — บอกสถานะว่ากำลังคิด (ใน <think>) หรือกำลังพิมพ์
+          handlers.onToolCall?.(opts.thinking && inThink ? opts.labels.thinkingStatus : opts.labels.thinking)
+        }
       }
+      return splitThinking(fullText).answer
+    } finally {
+      stopPrefill()
     }
-    return stripThinking(fullText)
   })
 }
