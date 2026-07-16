@@ -77,7 +77,10 @@ export async function getEngine(
     return engine
   }
 
-  worker = new Worker(new URL("./webllm.worker.ts", import.meta.url), { type: "module" })
+  // ห้ามใส่ { type: "module" } — Next ไม่ได้เปิด experiments.outputModule webpack จึงปล่อย
+  // worker chunk เป็นแบบ classic ที่ bootstrap ด้วย importScripts() ซึ่งไม่มีใน module worker
+  // (worker ตายทันทีที่บูตด้วย "Module scripts don't support importScripts()")
+  worker = new Worker(new URL("./webllm.worker.ts", import.meta.url))
   loadedModelId = modelId
   enginePromise = webllm.CreateWebWorkerMLCEngine(worker, modelId, {
     initProgressCallback: (report) => onProgress?.(report.progress, report.text),
