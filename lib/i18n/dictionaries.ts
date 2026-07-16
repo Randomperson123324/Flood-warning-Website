@@ -360,6 +360,18 @@ export const dictionary = {
       en: "Multi-threading isn't available on this page — open the assistant from the home page for full speed",
     },
     measuredPrefillRate: { th: "ความเร็ววิเคราะห์พรอมป์ (วัดจริง)", en: "Measured prompt speed" },
+    // GPU offload ของโหมด CPU (แบบ LM Studio)
+    gpuOffload: { th: "แบ่งงานให้การ์ดจอ", en: "GPU offload" },
+    layersUnit: { th: "เลเยอร์", en: "layers" },
+    gpuOffloadDesc: {
+      th: "ยิ่งมากยิ่งเร็ว แต่กิน VRAM ของการ์ดจอ — ลดลงถ้าเครื่องค้างหรือภาพกระตุก",
+      en: "More layers = faster, but uses graphics memory — lower it if your machine stutters",
+    },
+    gpuOffloadNote: {
+      th: "มีผลกับข้อความถัดไป (โหลดโมเดลใหม่ให้อัตโนมัติ ไม่ต้องดาวน์โหลดซ้ำ)",
+      en: "Applies to the next message (model reloads automatically, no re-download)",
+    },
+    gpuOffloadUnavailable: { th: "การ์ดจอใช้ไม่ได้ — รันบน CPU ล้วน", en: "No usable GPU — running on CPU only" },
     modelCached: { th: "มีในเครื่องแล้ว", en: "Downloaded" },
     modelReady: { th: "พร้อมใช้งาน", en: "Ready" },
     downloadModel: { th: "ดาวน์โหลดโมเดล", en: "Download model" },

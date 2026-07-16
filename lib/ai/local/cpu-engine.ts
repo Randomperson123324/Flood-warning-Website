@@ -11,6 +11,7 @@
 // ของผู้ใช้ที่ใช้ cloud/GPU และไม่โดน SSR แตะ
 
 import type { AIContext } from "@/types"
+import { hasWebGpuAdapter, supportsShaderF16 } from "./engine"
 import { CPU_MODEL, buildFallbackSystemPrompt, fetchContextPrompt, splitThinking, trackPrefillProgress } from "./shared"
 import type { LocalStreamHandlers, LocalStreamLabels } from "./shared"
 
@@ -26,8 +27,50 @@ const WASM_PATHS = { default: "/wllama/wllama.wasm" }
 
 let modulePromise: Promise<WllamaModule> | null = null
 let instancePromise: Promise<WllamaInstance> | null = null
+// จำนวนเลเยอร์ที่ instance ปัจจุบันโหลดไว้บน GPU — ไว้เทียบว่าต้องโหลดใหม่ไหม
+let loadedGpuLayers: number | null = null
 // llama.cpp context เดียวรัน generation ได้ทีละงาน — queue กันชนเหมือนฝั่ง GPU
 let generationQueue: Promise<unknown> = Promise.resolve()
+
+// GPU offload แบบ LM Studio: แบ่งบางเลเยอร์ของโมเดลไปรันบนการ์ดจอผ่าน WebGPU
+// เร็วขึ้นตามจำนวนเลเยอร์ แต่กิน VRAM — ผู้ใช้ปรับได้ใน "ตัวเลือกขั้นสูง"
+const GPU_OFFLOAD_KEY = "streeflood:ai-gpu-offload"
+
+/** ค่าที่ผู้ใช้ตั้งเอง — null = ยังไม่เคยตั้ง (ใช้ค่าอัตโนมัติ) */
+export function getStoredGpuOffload(): number | null {
+  try {
+    const raw = window.localStorage.getItem(GPU_OFFLOAD_KEY)
+    if (raw === null) return null
+    const n = Number(raw)
+    return Number.isInteger(n) && n >= 0 && n <= CPU_MODEL.layerCount ? n : null
+  } catch {
+    return null
+  }
+}
+
+export function setStoredGpuOffload(layers: number): void {
+  try {
+    window.localStorage.setItem(GPU_OFFLOAD_KEY, String(layers))
+  } catch {
+    // เก็บไม่ได้ก็ใช้ค่าอัตโนมัติต่อไป
+  }
+}
+
+/**
+ * จำนวนเลเยอร์ที่จะ offload จริง: ค่าที่ผู้ใช้ตั้ง หรือค่าอัตโนมัติแบบระวัง VRAM
+ * (ทำนอง auto ของ LM Studio แต่เบราว์เซอร์ไม่รู้ขนาด VRAM จริง จึงเดาจากยุคการ์ด):
+ * ไม่มี adapter → 0 | การ์ดมี shader-f16 (ยุคใหม่ VRAM มักพอ) → ครึ่งหนึ่ง |
+ * การ์ดเก่า (ไม่มี f16 เช่น Radeon 530 ~2 GB) → หนึ่งในสี่ พอช่วยแต่ไม่ล้น
+ * ถ้า offload แล้ว WebGPU ใช้ไม่ได้จริง wllama แค่ log แล้วถอยไป CPU เอง ไม่พัง
+ */
+export async function resolveGpuOffload(): Promise<number> {
+  const stored = getStoredGpuOffload()
+  if (stored !== null) return stored
+  if (!(await hasWebGpuAdapter())) return 0
+  return (await supportsShaderF16())
+    ? Math.floor(CPU_MODEL.layerCount / 2)
+    : Math.floor(CPU_MODEL.layerCount / 4)
+}
 
 function loadWllama(): Promise<WllamaModule> {
   modulePromise ??= import("@wllama/wllama/esm/index.js")
@@ -48,8 +91,23 @@ export function isCpuMultithreadAvailable(): boolean {
 export async function getCpuEngine(
   onProgress?: (progress: number, text: string) => void,
 ): Promise<WllamaInstance> {
-  if (instancePromise) return instancePromise
+  const gpuLayers = await resolveGpuOffload()
+  // ทางลัดเคสปกติ: โหลดไว้แล้วและค่า offload ไม่เปลี่ยน — ไม่ต้องเข้าคิว
+  if (instancePromise && loadedGpuLayers === gpuLayers) return instancePromise
 
+  // สร้าง/สลับ instance ผ่านคิว generation ซึ่งทำหน้าที่เป็น mutex ในตัว:
+  // สองสายเรียกพร้อมกันตัวหลังจะเช็คซ้ำแล้วได้ instance เดิม และการปิด instance
+  // (ตอนค่า offload เปลี่ยน — n_gpu_layers เป็นพารามิเตอร์ตอนโหลด ต้องโหลดใหม่
+  // แต่โมเดลอยู่ใน cache แล้ว ไม่ดาวน์โหลดซ้ำ) จะไม่ตัดขา generation ที่ค้างอยู่
+  return enqueue(() => swapCpuEngine(onProgress))
+}
+
+async function swapCpuEngine(onProgress?: (progress: number, text: string) => void): Promise<WllamaInstance> {
+  const gpuLayers = await resolveGpuOffload()
+  if (instancePromise && loadedGpuLayers === gpuLayers) return instancePromise
+  await unloadCpuEngine()
+
+  loadedGpuLayers = gpuLayers
   instancePromise = (async () => {
     const { Wllama, LoggerWithoutDebug } = await loadWllama()
     const wllama = new Wllama(WASM_PATHS, {
@@ -64,9 +122,10 @@ export async function getCpuEngine(
       // event ความคืบหน้า prefill (return_progress) มาทีละ batch — batch ละ 512
       // ให้ % ขยับถี่พอ (ค่าตั้งต้น 2048 จะได้ event เดียวทั้งพรอมป์)
       n_batch: 512,
-      // 0 = ไม่ offload ชั้นไหนขึ้น GPU เลย — เส้นทางนี้ตั้งใจให้รันบน CPU/RAM ล้วน
-      // (wllama 3.x เปิด WebGPU อัตโนมัติ ซึ่งจะพาไปเจอปัญหา VRAM เดิมของ engine.ts)
-      n_gpu_layers: 0,
+      // แบ่งบางเลเยอร์ขึ้น GPU ตามการตั้งค่า/ค่าอัตโนมัติ (ดู resolveGpuOffload) —
+      // ห้ามปล่อย undefined เพราะ wllama 3.x จะ offload ทุกเลเยอร์อัตโนมัติ
+      // ซึ่งพาไปเจอปัญหา VRAM ล้นแบบเดียวกับ engine.ts บนการ์ดเล็ก
+      n_gpu_layers: gpuLayers,
       // ใช้ jinja template ที่ติดมากับ GGUF — Qwen3 ต้องใช้เพื่อจัดรูปแบบ chat ให้ถูก
       // (รวมถึงให้ soft switch /no_think ในพรอมป์ทำงาน — ดู streamCpuReply)
       jinja: true,
@@ -94,6 +153,7 @@ export function isCpuEngineLoaded(): boolean {
 export async function unloadCpuEngine(): Promise<void> {
   const pending = instancePromise
   instancePromise = null
+  loadedGpuLayers = null
   try {
     const wllama = await pending
     await wllama?.exit()

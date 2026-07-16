@@ -20,8 +20,9 @@ import {
 } from "lucide-react"
 import { useAIEngine } from "@/hooks/use-ai-engine"
 import { useLanguage } from "@/hooks/use-language"
-import { getStorageEstimate } from "@/lib/ai/local/engine"
-import { getPrefillCalibration, type PrefillCalibration } from "@/lib/ai/local/shared"
+import { getStorageEstimate, hasWebGpuAdapter } from "@/lib/ai/local/engine"
+import { resolveGpuOffload, setStoredGpuOffload } from "@/lib/ai/local/cpu-engine"
+import { CPU_MODEL, getPrefillCalibration, type PrefillCalibration } from "@/lib/ai/local/shared"
 import { cn } from "@/lib/utils"
 
 function formatBytes(bytes: number): string {
@@ -53,6 +54,9 @@ export function EngineSettings({ direction = "down" }: { direction?: "down" | "u
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [storage, setStorage] = useState<{ usage: number; quota: number } | null>(null)
   const [prefillCal, setPrefillCal] = useState<PrefillCalibration | null>(null)
+  // GPU offload ของโหมด CPU: null = ยัง resolve ไม่เสร็จ | เลขคือเลเยอร์ที่ใช้จริง
+  const [gpuOffload, setGpuOffload] = useState<number | null>(null)
+  const [gpuAdapterOk, setGpuAdapterOk] = useState<boolean | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
 
   const model = localModel
@@ -64,6 +68,8 @@ export function EngineSettings({ direction = "down" }: { direction?: "down" | "u
   useEffect(() => {
     if (!open) return
     setPrefillCal(getPrefillCalibration(localBackend))
+    void hasWebGpuAdapter().then(setGpuAdapterOk)
+    void resolveGpuOffload().then(setGpuOffload)
   }, [open, localBackend])
 
   useEffect(() => {
@@ -247,6 +253,43 @@ export function EngineSettings({ direction = "down" }: { direction?: "down" | "u
                       <span className="text-ink-soft">{t("ai", "measuredPrefillRate")}</span>
                       <span>{prefillCal ? `${prefillCal.rate.toFixed(1)} token/s` : "—"}</span>
                     </div>
+
+                    {/* GPU offload (เฉพาะโหมด CPU) — แบ่งเลเยอร์ไปรันบนการ์ดจอแบบ LM Studio */}
+                    {localBackend === "cpu" && (
+                      <div className="space-y-1 border-t border-border/10 pt-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-ink-soft">{t("ai", "gpuOffload")}</span>
+                          <span className={gpuAdapterOk === false ? "text-ink-soft" : undefined}>
+                            {gpuAdapterOk === false
+                              ? t("ai", "gpuOffloadUnavailable")
+                              : gpuOffload === null
+                                ? "…"
+                                : `${gpuOffload} / ${CPU_MODEL.layerCount} ${t("ai", "layersUnit")}`}
+                          </span>
+                        </div>
+                        {gpuAdapterOk !== false && (
+                          <>
+                            <input
+                              type="range"
+                              min={0}
+                              max={CPU_MODEL.layerCount}
+                              step={1}
+                              value={gpuOffload ?? 0}
+                              disabled={gpuOffload === null || status.phase === "downloading"}
+                              onChange={(e) => {
+                                const n = Number(e.target.value)
+                                setGpuOffload(n)
+                                setStoredGpuOffload(n)
+                              }}
+                              className="h-1 w-full cursor-pointer accent-accent disabled:cursor-not-allowed"
+                              aria-label={t("ai", "gpuOffload")}
+                            />
+                            <p className="text-[11px] leading-relaxed text-ink-soft">{t("ai", "gpuOffloadDesc")}</p>
+                            <p className="text-[11px] leading-relaxed text-ink-soft">{t("ai", "gpuOffloadNote")}</p>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

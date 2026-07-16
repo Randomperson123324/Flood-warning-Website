@@ -41,6 +41,23 @@ export function isWebGPUAvailable(): boolean {
   return typeof navigator !== "undefined" && !!(navigator as Navigator & { gpu?: unknown }).gpu
 }
 
+let adapterCheckPromise: Promise<boolean> | null = null
+
+// navigator.gpu มีอยู่ไม่ได้แปลว่าใช้ได้จริง — บางเครื่อง requestAdapter คืน null
+// (การ์ดโดน blocklist / ตัว render เป็นซอฟต์แวร์) ต้องเช็คถึงระดับ adapter
+export function hasWebGpuAdapter(): Promise<boolean> {
+  adapterCheckPromise ??= (async () => {
+    try {
+      type GPULike = { requestAdapter(): Promise<unknown | null> }
+      const gpu = (navigator as Navigator & { gpu?: GPULike }).gpu
+      return !!(await gpu?.requestAdapter())
+    } catch {
+      return false
+    }
+  })()
+  return adapterCheckPromise
+}
+
 let f16SupportPromise: Promise<boolean> | null = null
 
 // GPU/driver บางตัวไม่มี WebGPU feature "shader-f16" — โมเดล q4f16 จะ compile shader

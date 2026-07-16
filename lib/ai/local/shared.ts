@@ -33,6 +33,8 @@ export const CPU_MODEL = {
   label: "Qwen3 1.7B",
   sizeText: "~1.1 GB",
   contextSize: 4096,
+  /** จำนวน hidden layer ของ Qwen3-1.7B — เพดานของ n_gpu_layers (GPU offload) */
+  layerCount: 28,
 } as const
 
 // prompt สำรองกรณีดึง /api/ai/context ไม่ได้ (เช่น offline) — ใช้ข้อมูล AIContext
