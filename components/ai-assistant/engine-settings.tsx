@@ -10,6 +10,7 @@ import {
   ChevronDown,
   Cloud,
   Cpu,
+  Database,
   LoaderCircle,
   MemoryStick,
   Settings2,
@@ -20,7 +21,7 @@ import {
 } from "lucide-react"
 import { useAIEngine } from "@/hooks/use-ai-engine"
 import { useLanguage } from "@/hooks/use-language"
-import { getStorageEstimate, hasWebGpuAdapter } from "@/lib/ai/local/engine"
+import { getStorageEstimate, getWebGpuInfo, type WebGpuInfo } from "@/lib/ai/local/engine"
 import { resolveGpuOffload, setStoredGpuOffload } from "@/lib/ai/local/cpu-engine"
 import { CPU_MODEL, getPrefillCalibration, type PrefillCalibration } from "@/lib/ai/local/shared"
 import { cn } from "@/lib/utils"
@@ -42,9 +43,11 @@ export function EngineSettings({ direction = "down" }: { direction?: "down" | "u
     webgpuSupported,
     cpuMultithread,
     thinking,
+    sendContext,
     setEngine,
     setLocalBackend,
     setThinking,
+    setSendContext,
     setLocalModel,
     loadModel,
     removeModel,
@@ -56,7 +59,8 @@ export function EngineSettings({ direction = "down" }: { direction?: "down" | "u
   const [prefillCal, setPrefillCal] = useState<PrefillCalibration | null>(null)
   // GPU offload ของโหมด CPU: null = ยัง resolve ไม่เสร็จ | เลขคือเลเยอร์ที่ใช้จริง
   const [gpuOffload, setGpuOffload] = useState<number | null>(null)
-  const [gpuAdapterOk, setGpuAdapterOk] = useState<boolean | null>(null)
+  // undefined = กำลังเช็ค | null = ไม่มี adapter ใช้ได้ | object = ข้อมูลการ์ดจอ
+  const [gpuInfo, setGpuInfo] = useState<WebGpuInfo | null | undefined>(undefined)
   const rootRef = useRef<HTMLDivElement>(null)
 
   const model = localModel
@@ -68,9 +72,13 @@ export function EngineSettings({ direction = "down" }: { direction?: "down" | "u
   useEffect(() => {
     if (!open) return
     setPrefillCal(getPrefillCalibration(localBackend))
-    void hasWebGpuAdapter().then(setGpuAdapterOk)
+    void getWebGpuInfo().then(setGpuInfo)
     void resolveGpuOffload().then(setGpuOffload)
   }, [open, localBackend])
+
+  // สเปกเครื่องสำหรับตัวเลือกขั้นสูง — deviceMemory มีเฉพาะ Chromium และเพดานรายงานคือ 8
+  const cpuCores = typeof navigator !== "undefined" ? navigator.hardwareConcurrency || 1 : 1
+  const deviceRam = typeof navigator !== "undefined" ? (navigator as Navigator & { deviceMemory?: number }).deviceMemory : undefined
 
   useEffect(() => {
     if (!open) return
@@ -224,6 +232,25 @@ export function EngineSettings({ direction = "down" }: { direction?: "down" | "u
               </button>
             )}
 
+            {/* toggle ส่งข้อมูลสดจากเว็บ (ระดับน้ำ/อากาศ) ให้ AI — ปิดแล้ว prompt สั้นมาก ตอบไวขึ้นมาก */}
+            {engine === "local" && (
+              <button
+                type="button"
+                onClick={() => setSendContext(!sendContext)}
+                className={cn(
+                  "flex w-full items-start gap-2.5 rounded-lg border p-2 text-left transition-colors",
+                  sendContext ? "border-accent/60 bg-accent/10" : "border-border/10 hover:border-border/30",
+                )}
+              >
+                <Database className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium">{t("ai", "sendContextToggle")}</span>
+                  <span className="block text-xs text-ink-soft">{t("ai", "sendContextToggleDesc")}</span>
+                </span>
+                {sendContext && <Check className="ml-auto h-4 w-4 shrink-0 text-accent" />}
+              </button>
+            )}
+
             {/* ตัวเลือกขั้นสูง — สถานะเชิงเทคนิคของโหมดบนเครื่อง (มัลติเธรด, ความเร็วที่วัดได้) */}
             {engine === "local" && (
               <div className="rounded-lg border border-border/10">
@@ -238,20 +265,70 @@ export function EngineSettings({ direction = "down" }: { direction?: "down" | "u
                 </button>
                 {advancedOpen && (
                   <div className="space-y-1.5 border-t border-border/10 px-2.5 py-2 text-xs">
+                    {/* ── สเปกเครื่อง ── */}
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-ink-soft">{t("ai", "multithreadLabel")}</span>
-                      <span className={cpuMultithread ? "text-status-normal" : "text-status-warning"}>
-                        {cpuMultithread
-                          ? `${t("ai", "multithreadOn")} · ${cpuThreads} ${t("ai", "threadsUnit")}`
-                          : t("ai", "multithreadOff")}
+                      <span className="text-ink-soft">{t("ai", "devCpu")}</span>
+                      <span>{cpuCores} {t("ai", "threadsUnit")}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-ink-soft">{t("ai", "devRam")}</span>
+                      <span>{deviceRam ? `${deviceRam} GB${deviceRam >= 8 ? "+" : ""}` : "—"}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-ink-soft">{t("ai", "devGpu")}</span>
+                      <span className={gpuInfo === null ? "text-status-warning" : undefined}>
+                        {gpuInfo === undefined
+                          ? "…"
+                          : gpuInfo === null
+                            ? t("ai", "devGpuNone")
+                            : `${gpuInfo.vendor} ${gpuInfo.architecture}`.trim() || "WebGPU"}
                       </span>
                     </div>
-                    {!cpuMultithread && (
-                      <p className="text-[11px] leading-relaxed text-ink-soft">{t("ai", "multithreadOffHint")}</p>
+                    {gpuInfo && gpuInfo.maxBufferBytes > 0 && (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-ink-soft">{t("ai", "devGpuMem")}</span>
+                        <span>{formatBytes(gpuInfo.maxBufferBytes)}</span>
+                      </div>
                     )}
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-ink-soft">{t("ai", "measuredPrefillRate")}</span>
-                      <span>{prefillCal ? `${prefillCal.rate.toFixed(1)} token/s` : "—"}</span>
+                    {gpuInfo && !gpuInfo.f16 && (
+                      <p className="text-[11px] leading-relaxed text-ink-soft">{t("ai", "devNoF16")}</p>
+                    )}
+
+                    {/* ── ข้อมูลเอนจิน AI ── */}
+                    <div className="space-y-1.5 border-t border-border/10 pt-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-ink-soft">{t("ai", "engineRow")}</span>
+                        <span>{localBackend === "cpu" ? "wllama · llama.cpp (WASM)" : "WebLLM (WebGPU)"}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-ink-soft">{t("ai", "modelRow")}</span>
+                        <span className="truncate">{model.label} · {model.sizeText}</span>
+                      </div>
+                      {localBackend === "cpu" && (
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-ink-soft">{t("ai", "contextRow")}</span>
+                          <span>{CPU_MODEL.contextSize.toLocaleString()} token</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-ink-soft">{t("ai", "multithreadLabel")}</span>
+                        <span className={cpuMultithread ? "text-status-normal" : "text-status-warning"}>
+                          {cpuMultithread
+                            ? `${t("ai", "multithreadOn")} · ${cpuThreads} ${t("ai", "threadsUnit")}`
+                            : t("ai", "multithreadOff")}
+                        </span>
+                      </div>
+                      {!cpuMultithread && (
+                        <p className="text-[11px] leading-relaxed text-ink-soft">{t("ai", "multithreadOffHint")}</p>
+                      )}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-ink-soft">{t("ai", "measuredPrefillRate")}</span>
+                        <span>{prefillCal ? `${prefillCal.rate.toFixed(1)} token/s` : "—"}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-ink-soft">{t("ai", "measuredDecodeRate")}</span>
+                        <span>{prefillCal?.decodeRate ? `${prefillCal.decodeRate.toFixed(1)} token/s` : "—"}</span>
+                      </div>
                     </div>
 
                     {/* GPU offload (เฉพาะโหมด CPU) — แบ่งเลเยอร์ไปรันบนการ์ดจอแบบ LM Studio */}
@@ -259,15 +336,15 @@ export function EngineSettings({ direction = "down" }: { direction?: "down" | "u
                       <div className="space-y-1 border-t border-border/10 pt-1.5">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-ink-soft">{t("ai", "gpuOffload")}</span>
-                          <span className={gpuAdapterOk === false ? "text-ink-soft" : undefined}>
-                            {gpuAdapterOk === false
+                          <span className={gpuInfo === null ? "text-ink-soft" : undefined}>
+                            {gpuInfo === null
                               ? t("ai", "gpuOffloadUnavailable")
                               : gpuOffload === null
                                 ? "…"
                                 : `${gpuOffload} / ${CPU_MODEL.layerCount} ${t("ai", "layersUnit")}`}
                           </span>
                         </div>
-                        {gpuAdapterOk !== false && (
+                        {gpuInfo !== null && (
                           <>
                             <input
                               type="range"
@@ -352,7 +429,9 @@ export function EngineSettings({ direction = "down" }: { direction?: "down" | "u
                   <div className="space-y-1">
                     <div className="flex items-center gap-1.5 text-xs text-ink-soft">
                       <LoaderCircle className="h-3 w-3 animate-spin" />
-                      {t("ai", "downloading")} {status.progress ?? 0}%
+                      {(status.progress ?? 0) >= 100
+                        ? t("ai", "preparingModel")
+                        : `${t("ai", "downloading")} ${status.progress ?? 0}%`}
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-border/20">
                       <div

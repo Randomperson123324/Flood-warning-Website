@@ -53,8 +53,21 @@ export default function DashboardPage() {
   const latestBySensorId = useLatestReadings(sensorIds)
   const { reports } = useFloodReports()
 
-  const aiContext = useMemo<AIContext | null>(() => {
-    if (!selectedSensor) return null
+  const aiContext = useMemo<AIContext>(() => {
+    // ไม่มีเซนเซอร์ (เช่น dev เครื่องเปล่า หรือฐานข้อมูลยังไม่ได้ตั้ง) — ยังเปิด
+    // ผู้ช่วย AI ได้ แค่ไม่มีข้อมูลน้ำให้ อ้าง label ตรงๆ ให้โมเดลรู้ว่าไม่มีข้อมูล
+    if (!selectedSensor) {
+      return {
+        sensorLabel: "ไม่มีข้อมูลเซนเซอร์",
+        currentLevel: 0,
+        warningLevel: 0,
+        dangerLevel: 0,
+        trend: "stable",
+        ratePerHour: 0,
+        weather: weather.weather,
+        activeFloodReports: reports.length,
+      }
+    }
     return {
       currentLevel: water.latest?.level ?? 0,
       warningLevel: selectedSensor.warning_level_cm,
@@ -131,7 +144,7 @@ export default function DashboardPage() {
         <NearbyGovStations location={location} status={geoStatus} onRetry={retryGeo} />
       </div>
 
-      {aiContext && <AssistantLauncher context={aiContext} />}
+      <AssistantLauncher context={aiContext} />
 
       <AnnouncementPopup />
     </main>

@@ -17,6 +17,8 @@ export interface LocalStreamHandlers {
 export interface LocalStreamLabels {
   fetchingContext: string
   loadingModel: string
+  /** โชว์หลังอ่านไฟล์โมเดลครบ 100% — ช่วงยัดโมเดลเข้าหน่วยความจำที่ไม่มี progress ให้รายงาน */
+  preparingModel: string
   /** โชว์ระหว่างรอ token แรก — สำคัญกับเส้นทาง CPU ที่หน่วงเป็นสิบวินาที */
   thinking: string
   /** โชว์ระหว่าง prefill พร้อม % (ประมาณการ — ดู trackPrefillProgress) */
@@ -36,6 +38,18 @@ export const CPU_MODEL = {
   /** จำนวน hidden layer ของ Qwen3-1.7B — เพดานของ n_gpu_layers (GPU offload) */
   layerCount: 28,
 } as const
+
+// prompt แบบไม่มีข้อมูลเว็บเลย — ใช้เมื่อผู้ใช้ปิด toggle "ส่งข้อมูลเว็บให้ AI"
+// (สั้นมาก → prefill แทบจะทันที) โมเดลต้องรู้ว่าตัวเองไม่มีข้อมูลสด จะได้ไม่มั่ว
+export function buildBareSystemPrompt(): string {
+  return `
+คุณคือ AI ผู้ช่วยของเว็บเฝ้าระวังน้ำท่วม ตอบเป็นภาษาไทย กระชับ ชัดเจน
+ผู้ใช้ปิดการส่งข้อมูลเว็บ — คุณไม่มีข้อมูลระดับน้ำ สภาพอากาศ หรือประกาศเตือนภัยล่าสุด
+ถ้าถูกถามถึงสถานการณ์ปัจจุบัน ให้บอกตรงๆ ว่าไม่มีข้อมูลสด และแนะนำให้เปิด
+"ส่งข้อมูลเว็บให้ AI" ในตั้งค่า หรือดูข้อมูลจากหน้าเว็บโดยตรง
+คำถามความรู้ทั่วไปตอบได้ตามปกติ ห้ามแต่งตัวเลขหรือข้อมูลสถานการณ์ขึ้นเอง
+`.trim()
+}
 
 // prompt สำรองกรณีดึง /api/ai/context ไม่ได้ (เช่น offline) — ใช้ข้อมูล AIContext
 // ที่มีอยู่แล้วฝั่ง client เพื่อให้โหมด on-device ยังตอบได้แม้ไม่มีเน็ต
@@ -89,16 +103,18 @@ export function splitThinking(text: string): { thinking: string; answer: string;
 const PREFILL_CAL_KEY = "streeflood:ai-prefill-cal"
 // ค่าตั้งต้นก่อนมีข้อมูลวัดจริง — กดอัตราต่ำไว้ก่อน (คืบเร็วกว่าคาดดีกว่าค้าง)
 // charsPerToken: ไทย/อังกฤษปนกัน tokenizer ของ Qwen ตกราวๆ 3 ตัวอักษรต่อ token
-const DEFAULT_CAL = {
+const DEFAULT_CAL: Record<"gpu" | "cpu", PrefillCalibration> = {
   gpu: { rate: 200, charsPerToken: 3 },
   cpu: { rate: 10, charsPerToken: 3 },
-} as const
+}
 
 export interface PrefillCalibration {
   /** token/วินาที ช่วง prefill ที่วัดได้จริงของเครื่องนี้ */
   rate: number
   /** ตัวอักษรต่อ token ที่วัดจากพรอมป์จริง — ใช้แปลงความยาวข้อความเป็นจำนวน token */
   charsPerToken: number
+  /** token/วินาที ช่วง generate (decode) ที่วัดได้จริง — โชว์ในตัวเลือกขั้นสูง */
+  decodeRate?: number
 }
 
 /** ค่าที่เคยวัดได้จริงของ backend นี้ — null ถ้ายังไม่เคยรันเลย */
@@ -111,7 +127,11 @@ export function getPrefillCalibration(backend: "gpu" | "cpu"): PrefillCalibratio
       typeof parsed.rate === "number" && Number.isFinite(parsed.rate) && parsed.rate > 0 &&
       typeof parsed.charsPerToken === "number" && Number.isFinite(parsed.charsPerToken) && parsed.charsPerToken > 0
     ) {
-      return { rate: parsed.rate, charsPerToken: parsed.charsPerToken }
+      const decodeRate =
+        typeof parsed.decodeRate === "number" && Number.isFinite(parsed.decodeRate) && parsed.decodeRate > 0
+          ? parsed.decodeRate
+          : undefined
+      return { rate: parsed.rate, charsPerToken: parsed.charsPerToken, decodeRate }
     }
   } catch {
     // localStorage ใช้ไม่ได้ / ข้อมูลเพี้ยน — ถือว่าไม่เคยวัด
@@ -120,16 +140,16 @@ export function getPrefillCalibration(backend: "gpu" | "cpu"): PrefillCalibratio
 }
 
 export function recordPrefillCalibration(backend: "gpu" | "cpu", update: Partial<PrefillCalibration>): void {
-  const rate = update.rate && Number.isFinite(update.rate) && update.rate > 0 ? update.rate : undefined
-  const charsPerToken =
-    update.charsPerToken && Number.isFinite(update.charsPerToken) && update.charsPerToken > 0
-      ? update.charsPerToken
-      : undefined
-  if (!rate && !charsPerToken) return
+  const valid = (n: number | undefined) => (n && Number.isFinite(n) && n > 0 ? n : undefined)
+  const rate = valid(update.rate)
+  const charsPerToken = valid(update.charsPerToken)
+  const decodeRate = valid(update.decodeRate)
+  if (!rate && !charsPerToken && !decodeRate) return
   const current = getPrefillCalibration(backend) ?? DEFAULT_CAL[backend]
   const next: PrefillCalibration = {
     rate: rate ?? current.rate,
     charsPerToken: charsPerToken ?? current.charsPerToken,
+    decodeRate: decodeRate ?? current.decodeRate,
   }
   try {
     window.localStorage.setItem(`${PREFILL_CAL_KEY}:${backend}`, JSON.stringify(next))
@@ -169,18 +189,20 @@ export function trackPrefillProgress(opts: {
   promptChars: number
   backend: "gpu" | "cpu"
   onTick: (pct: number) => void
+  /** ขนาด batch ของเอนจิน (token ต่อ 1 event) — ใช้จำกัดการ extrapolate ไม่ให้แซงของจริง */
+  batchTokens?: number
 }): PrefillProgressHandle {
   const cal = getPrefillCalibration(opts.backend) ?? DEFAULT_CAL[opts.backend]
   const estTokens = Math.max(1, opts.promptChars / cal.charsPerToken)
   const expectedMs = (estTokens / cal.rate) * 1000
   const startedAt = Date.now()
 
-  // จุดจริงล่าสุด + อัตรา %/ms ที่วัดระหว่างสองจุดล่าสุด (ไว้ extrapolate)
-  let last: { pct: number; at: number; pctPerMs: number; real: PrefillAnchor } | null = null
+  // จุดจริงล่าสุด + อัตรา %/ms ที่วัดระหว่างสองจุดล่าสุด (ไว้ extrapolate) + เพดาน
+  let last: { pct: number; at: number; pctPerMs: number; capPct: number; real: PrefillAnchor } | null = null
 
   const currentPct = () => {
     const now = Date.now()
-    if (last) return last.pct + (now - last.at) * last.pctPerMs
+    if (last) return Math.min(last.capPct, last.pct + (now - last.at) * last.pctPerMs)
     const linear = (now - startedAt) / expectedMs
     return linear <= 0.85 ? linear * 100 : 85 + 14 * (1 - Math.exp(-(linear - 0.85) / 1.5))
   }
@@ -198,14 +220,22 @@ export function trackPrefillProgress(opts: {
     anchor: (real) => {
       if (stopped || real.total <= 0) return
       const now = Date.now()
-      const donePct = ((real.cache + real.processed) / real.total) * 100
+      const doneTokens = real.cache + real.processed
+      const donePct = (doneTokens / real.total) * 100
       const prev = last
       // อัตราจากช่วงระหว่างจุดล่าสุด (เวลาจริงฝั่งเรา) — ยังไม่มีสองจุดก็ใช้อัตราคาลิเบรต
       const pctPerMs =
         prev && donePct > prev.pct && now > prev.at
           ? (donePct - prev.pct) / (now - prev.at)
           : (cal.rate / 1000 / real.total) * 100
-      last = { pct: donePct, at: now, pctPerMs, real }
+      // extrapolate ได้ไม่เกินขอบ batch ถัดไป และไม่เกิน 98 — เลข 99 สงวนไว้ให้
+      // ตอน prefill เสร็จจริง (anchor สุดท้าย processed == total) เท่านั้น จะได้ไม่มี
+      // อาการ "นั่งค้างที่ 99" ระหว่างที่ batch สุดท้ายยังบดอยู่
+      const capPct = Math.max(
+        donePct,
+        Math.min(98, ((doneTokens + (opts.batchTokens ?? Number.POSITIVE_INFINITY)) / real.total) * 100 - 1),
+      )
+      last = { pct: donePct, at: now, pctPerMs, capPct, real }
       opts.onTick(Math.min(99, Math.round(donePct)))
     },
     done: () => {

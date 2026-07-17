@@ -17,7 +17,14 @@
 import type { AIContext } from "@/types"
 import { F32_FALLBACKS } from "./models"
 
-import { buildFallbackSystemPrompt, fetchContextPrompt, recordPrefillCalibration, splitThinking, trackPrefillProgress } from "./shared"
+import {
+  buildBareSystemPrompt,
+  buildFallbackSystemPrompt,
+  fetchContextPrompt,
+  recordPrefillCalibration,
+  splitThinking,
+  trackPrefillProgress,
+} from "./shared"
 import type { LocalStreamHandlers, LocalStreamLabels } from "./shared"
 
 type WebLLM = typeof import("@mlc-ai/web-llm")
@@ -41,21 +48,47 @@ export function isWebGPUAvailable(): boolean {
   return typeof navigator !== "undefined" && !!(navigator as Navigator & { gpu?: unknown }).gpu
 }
 
-let adapterCheckPromise: Promise<boolean> | null = null
+export interface WebGpuInfo {
+  vendor: string
+  architecture: string
+  f16: boolean
+  /** เพดานขนาด buffer ต่อก้อน (ไบต์) — ตัวชี้วัด VRAM ที่เบราว์เซอร์ยอมให้ใช้จริง
+   * (WebGPU ไม่มีทางเลือก dedicated/shared memory — ไดรเวอร์จัดการเองทั้งหมด) */
+  maxBufferBytes: number
+}
+
+let gpuInfoPromise: Promise<WebGpuInfo | null> | null = null
+
+/** ข้อมูล adapter ของการ์ดจอ (vendor/สถาปัตยกรรม/f16) — null = ไม่มี adapter ใช้ได้ */
+export function getWebGpuInfo(): Promise<WebGpuInfo | null> {
+  gpuInfoPromise ??= (async () => {
+    try {
+      type AdapterLike = {
+        features: ReadonlySet<string>
+        info?: { vendor?: string; architecture?: string }
+        limits?: { maxBufferSize?: number }
+      }
+      type GPULike = { requestAdapter(): Promise<AdapterLike | null> }
+      const gpu = (navigator as Navigator & { gpu?: GPULike }).gpu
+      const adapter = await gpu?.requestAdapter()
+      if (!adapter) return null
+      return {
+        vendor: adapter.info?.vendor ?? "",
+        architecture: adapter.info?.architecture ?? "",
+        f16: adapter.features.has("shader-f16"),
+        maxBufferBytes: adapter.limits?.maxBufferSize ?? 0,
+      }
+    } catch {
+      return null
+    }
+  })()
+  return gpuInfoPromise
+}
 
 // navigator.gpu มีอยู่ไม่ได้แปลว่าใช้ได้จริง — บางเครื่อง requestAdapter คืน null
 // (การ์ดโดน blocklist / ตัว render เป็นซอฟต์แวร์) ต้องเช็คถึงระดับ adapter
 export function hasWebGpuAdapter(): Promise<boolean> {
-  adapterCheckPromise ??= (async () => {
-    try {
-      type GPULike = { requestAdapter(): Promise<unknown | null> }
-      const gpu = (navigator as Navigator & { gpu?: GPULike }).gpu
-      return !!(await gpu?.requestAdapter())
-    } catch {
-      return false
-    }
-  })()
-  return adapterCheckPromise
+  return getWebGpuInfo().then((info) => info !== null)
 }
 
 let f16SupportPromise: Promise<boolean> | null = null
@@ -171,18 +204,25 @@ export async function streamLocalReply(
   messages: { role: "user" | "assistant"; content: string }[],
   context: AIContext,
   handlers: LocalStreamHandlers,
-  opts: { modelId: string; labels: LocalStreamLabels; thinking?: boolean },
+  opts: { modelId: string; labels: LocalStreamLabels; thinking?: boolean; includeContext?: boolean },
 ): Promise<string> {
-  handlers.onToolCall?.(opts.labels.fetchingContext)
   let systemPrompt: string
-  try {
-    systemPrompt = await fetchContextPrompt(context)
-  } catch {
-    systemPrompt = buildFallbackSystemPrompt(context)
+  if (opts.includeContext === false) {
+    // ผู้ใช้ปิด "ส่งข้อมูลเว็บให้ AI" — prompt เปล่าสั้นๆ prefill แทบทันที
+    systemPrompt = buildBareSystemPrompt()
+  } else {
+    handlers.onToolCall?.(opts.labels.fetchingContext)
+    try {
+      systemPrompt = await fetchContextPrompt(context)
+    } catch {
+      systemPrompt = buildFallbackSystemPrompt(context)
+    }
   }
 
   const engine = await getEngine(opts.modelId, (progress, _text) => {
-    handlers.onToolCall?.(`${opts.labels.loadingModel} ${Math.round(progress * 100)}%`)
+    const pct = Math.round(progress * 100)
+    // progress 100% = อ่านไฟล์ครบแล้ว แต่ยังยัดเข้า GPU/คอมไพล์ shader อยู่ (ไม่มี progress)
+    handlers.onToolCall?.(pct >= 100 ? opts.labels.preparingModel : `${opts.labels.loadingModel} ${pct}%`)
   })
 
   return enqueue(async () => {
@@ -213,6 +253,7 @@ export async function streamLocalReply(
         if (chunk.usage) {
           recordPrefillCalibration("gpu", {
             rate: chunk.usage.extra.prefill_tokens_per_s > 0 ? chunk.usage.extra.prefill_tokens_per_s : undefined,
+            decodeRate: chunk.usage.extra.decode_tokens_per_s > 0 ? chunk.usage.extra.decode_tokens_per_s : undefined,
             // WebLLM นับ prompt_tokens เฉพาะส่วนใหม่เมื่อคุยต่อเนื่อง — อัตราส่วน
             // ตัวอักษร/token จึงคำนวณได้เฉพาะรอบที่พรอมป์ทั้งก้อนถูกประมวลผล (ข้อความแรก)
             charsPerToken:

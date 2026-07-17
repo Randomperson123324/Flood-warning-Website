@@ -345,6 +345,12 @@ export const dictionary = {
     // toggle โหมดคิดของ Qwen3 (เฉพาะ AI บนเครื่อง)
     thinkingToggle: { th: "โหมดคิดวิเคราะห์ (Thinking)", en: "Thinking mode" },
     thinkingToggleDesc: { th: "โมเดลใช้เวลาคิดก่อนตอบ — ช้าลงแต่ตอบละเอียดขึ้น", en: "The model reasons before answering — slower but more thorough" },
+    // toggle ส่งข้อมูลสดจากเว็บให้ AI บนเครื่อง
+    sendContextToggle: { th: "ส่งข้อมูลเว็บให้ AI", en: "Send website data to AI" },
+    sendContextToggleDesc: {
+      th: "ระดับน้ำ สภาพอากาศ และประกาศเตือนภัยล่าสุด — ปิดแล้ว AI ตอบไวขึ้นมากแต่ไม่รู้สถานการณ์",
+      en: "Latest water level, weather, and warnings — turning it off makes replies much faster but the AI won't know current conditions",
+    },
     // สถานะละเอียดระหว่างรอคำตอบ (เอนจินต่อท้าย " X%" เอง)
     analyzingPrompt: { th: "กำลังวิเคราะห์พรอมป์…", en: "Analyzing prompt…" },
     thinkingStatus: { th: "กำลังคิด…", en: "Thinking…" },
@@ -360,6 +366,22 @@ export const dictionary = {
       en: "Multi-threading isn't available on this page — open the assistant from the home page for full speed",
     },
     measuredPrefillRate: { th: "ความเร็ววิเคราะห์พรอมป์ (วัดจริง)", en: "Measured prompt speed" },
+    measuredDecodeRate: { th: "ความเร็วตอบ (วัดจริง)", en: "Measured reply speed" },
+    // สเปกเครื่องในตัวเลือกขั้นสูง
+    devCpu: { th: "ซีพียู", en: "CPU" },
+    devRam: { th: "แรม (โดยประมาณ)", en: "RAM (approx.)" },
+    devGpu: { th: "การ์ดจอ", en: "GPU" },
+    devGpuNone: { th: "ตรวจไม่พบ / ใช้ไม่ได้", en: "Not available" },
+    // เพดานหน่วยความจำต่อ buffer ที่ WebGPU ยอมให้ — บอกเป็นนัยว่าโมเดลใหญ่แค่ไหนถึงจะพอ
+    // (เว็บเลือกใช้ shared GPU memory เองไม่ได้ — ไดรเวอร์เป็นคนตัดสินใจล้วนๆ)
+    devGpuMem: { th: "หน่วยความจำ GPU (เพดานต่อก้อน)", en: "GPU memory (per-buffer cap)" },
+    devNoF16: {
+      th: "การ์ดจอไม่มี shader-f16 — โมเดล GPU จะใช้รุ่น f32 ที่กิน VRAM มากกว่า",
+      en: "GPU lacks shader-f16 — GPU-mode models fall back to the larger f32 variants",
+    },
+    engineRow: { th: "เอนจิน", en: "Engine" },
+    modelRow: { th: "โมเดล", en: "Model" },
+    contextRow: { th: "หน้าต่างบริบท", en: "Context window" },
     // GPU offload ของโหมด CPU (แบบ LM Studio)
     gpuOffload: { th: "แบ่งงานให้การ์ดจอ", en: "GPU offload" },
     layersUnit: { th: "เลเยอร์", en: "layers" },
@@ -384,6 +406,8 @@ export const dictionary = {
     localLoadError: { th: "โมเดลบนเครื่องมีปัญหา กรุณาลองใหม่ หรือสลับไปใช้ Cloud AI", en: "The on-device model failed — try again or switch to Cloud AI" },
     fetchingContext: { th: "กำลังดึงข้อมูลล่าสุด...", en: "Fetching latest data..." },
     loadingModelStatus: { th: "กำลังโหลดโมเดล...", en: "Loading model..." },
+    // หลังอ่านไฟล์ครบ 100% — ช่วงยัดโมเดลเข้าหน่วยความจำ/สร้าง context ที่ไม่มี % ให้รายงาน
+    preparingModel: { th: "กำลังเตรียมโมเดล… (เครื่องช้าอาจใช้เวลาเป็นนาที)", en: "Preparing model… (can take a minute on slower machines)" },
   },
 } as const
 

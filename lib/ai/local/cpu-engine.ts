@@ -12,7 +12,15 @@
 
 import type { AIContext } from "@/types"
 import { hasWebGpuAdapter, supportsShaderF16 } from "./engine"
-import { CPU_MODEL, buildFallbackSystemPrompt, fetchContextPrompt, splitThinking, trackPrefillProgress } from "./shared"
+import {
+  CPU_MODEL,
+  buildBareSystemPrompt,
+  buildFallbackSystemPrompt,
+  fetchContextPrompt,
+  recordPrefillCalibration,
+  splitThinking,
+  trackPrefillProgress,
+} from "./shared"
 import type { LocalStreamHandlers, LocalStreamLabels } from "./shared"
 
 // import ชี้ตรงไปที่ build ESM ของ wllama เพราะ package.json (3.5.1) ตั้ง main เป็น
@@ -24,6 +32,10 @@ type WllamaInstance = import("@wllama/wllama/esm/index.js").Wllama
 // wasm ถูก copy ไว้ที่ public/wllama/ ตอน build (ดู scripts ใน package.json)
 // wllama เลือก single/multi-thread เองตาม crossOriginIsolated ของหน้านั้นๆ
 const WASM_PATHS = { default: "/wllama/wllama.wasm" }
+
+// ขนาด batch ของ prefill — กำหนดจังหวะ event prompt_progress (1 event ต่อ batch)
+// และเป็นเพดาน extrapolate ของตัวนับ % (ดู trackPrefillProgress)
+const PREFILL_BATCH_TOKENS = 512
 
 let modulePromise: Promise<WllamaModule> | null = null
 let instancePromise: Promise<WllamaInstance> | null = null
@@ -119,9 +131,9 @@ async function swapCpuEngine(onProgress?: (progress: number, text: string) => vo
 
     await wllama.loadModelFromUrl(CPU_MODEL.url, {
       n_ctx: CPU_MODEL.contextSize,
-      // event ความคืบหน้า prefill (return_progress) มาทีละ batch — batch ละ 512
-      // ให้ % ขยับถี่พอ (ค่าตั้งต้น 2048 จะได้ event เดียวทั้งพรอมป์)
-      n_batch: 512,
+      // event ความคืบหน้า prefill (return_progress) มาทีละ batch — batch เล็กพอ
+      // ให้ % ขยับถี่ (ค่าตั้งต้น 2048 จะได้ event เดียวทั้งพรอมป์)
+      n_batch: PREFILL_BATCH_TOKENS,
       // แบ่งบางเลเยอร์ขึ้น GPU ตามการตั้งค่า/ค่าอัตโนมัติ (ดู resolveGpuOffload) —
       // ห้ามปล่อย undefined เพราะ wllama 3.x จะ offload ทุกเลเยอร์อัตโนมัติ
       // ซึ่งพาไปเจอปัญหา VRAM ล้นแบบเดียวกับ engine.ts บนการ์ดเล็ก
@@ -197,18 +209,26 @@ export async function streamCpuReply(
   messages: { role: "user" | "assistant"; content: string }[],
   context: AIContext,
   handlers: LocalStreamHandlers,
-  opts: { labels: LocalStreamLabels; thinking?: boolean },
+  opts: { labels: LocalStreamLabels; thinking?: boolean; includeContext?: boolean },
 ): Promise<string> {
-  handlers.onToolCall?.(opts.labels.fetchingContext)
   let systemPrompt: string
-  try {
-    systemPrompt = await fetchContextPrompt(context)
-  } catch {
-    systemPrompt = buildFallbackSystemPrompt(context)
+  if (opts.includeContext === false) {
+    // ผู้ใช้ปิด "ส่งข้อมูลเว็บให้ AI" — prompt เปล่าสั้นๆ prefill แทบทันที
+    systemPrompt = buildBareSystemPrompt()
+  } else {
+    handlers.onToolCall?.(opts.labels.fetchingContext)
+    try {
+      systemPrompt = await fetchContextPrompt(context)
+    } catch {
+      systemPrompt = buildFallbackSystemPrompt(context)
+    }
   }
 
   const wllama = await getCpuEngine((progress) => {
-    handlers.onToolCall?.(`${opts.labels.loadingModel} ${Math.round(progress * 100)}%`)
+    const pct = Math.round(progress * 100)
+    // progress 100% = อ่านไฟล์จาก cache ครบแล้ว แต่ยังยัดโมเดล ~1.1 GB เข้าหน่วยความจำ
+    // wasm + สร้าง context อยู่ — ช่วงนี้กินเวลาเป็นนาทีบนเครื่องช้าและไม่มี progress ให้
+    handlers.onToolCall?.(pct >= 100 ? opts.labels.preparingModel : `${opts.labels.loadingModel} ${pct}%`)
   })
 
   return enqueue(async () => {
@@ -222,6 +242,7 @@ export async function streamCpuReply(
     const prefill = trackPrefillProgress({
       promptChars,
       backend: "cpu",
+      batchTokens: PREFILL_BATCH_TOKENS,
       onTick: (pct) => handlers.onToolCall?.(`${opts.labels.analyzingPrompt} ${pct}%`),
     })
     try {
@@ -235,6 +256,8 @@ export async function streamCpuReply(
         // ทำงานคู่กับ TTL cache ใน fetchContextPrompt ที่ทำให้ prefix นิ่งพอจะตรงได้จริง
         // → เทิร์นถัดๆ ไป prefill เฉพาะข้อความใหม่ ไม่ใช่ทั้งบทสนทนา
         cache_prompt: true,
+        // แนบ timings (ความเร็ว prefill/decode ที่วัดจริง) มากับ chunk — เก็บโชว์ในตัวเลือกขั้นสูง
+        timings_per_token: true,
         // ขอ event ความคืบหน้า prefill จริง (prompt_progress) จาก llama.cpp —
         // type ของ wllama ยังไม่ประกาศ field นี้ แต่ implementation ส่ง options
         // ทั้งก้อนเป็น JSON เข้า wasm ตรงๆ (ยืนยันแล้วว่า event ทะลุมาถึง chunk)
@@ -242,10 +265,12 @@ export async function streamCpuReply(
       })
 
       let fullText = ""
+      let decodeRate = 0
       for await (const chunk of chunks) {
         // chunk ความคืบหน้า prefill — จำนวน token ที่ประมวลผลแล้วจริงๆ ไม่ใช่ค่าประมาณ
         const progress = (chunk as { prompt_progress?: import("./shared").PrefillAnchor }).prompt_progress
         if (progress) prefill.anchor(progress)
+        if (chunk.timings && chunk.timings.predicted_per_second > 0) decodeRate = chunk.timings.predicted_per_second
         const delta = chunk.choices[0]?.delta?.content ?? ""
         if (!delta) continue
         if (!fullText) prefill.done()
@@ -259,6 +284,8 @@ export async function streamCpuReply(
           handlers.onToolCall?.(opts.thinking && inThink ? opts.labels.thinkingStatus : opts.labels.thinking)
         }
       }
+      // ความเร็ว decode ที่ llama.cpp วัดเอง (จาก chunk สุดท้ายที่มี timings)
+      if (decodeRate > 0) recordPrefillCalibration("cpu", { decodeRate })
       return splitThinking(fullText).answer
     } finally {
       // มาถึงตรงนี้โดยยังไม่เคยได้ token (error/ยกเลิก) — หยุด tick เฉยๆ ห้ามบันทึกค่า

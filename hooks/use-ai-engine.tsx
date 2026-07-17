@@ -34,6 +34,7 @@ const ENGINE_KEY = "streeflood:ai-engine"
 const MODEL_KEY = "streeflood:ai-local-model"
 const BACKEND_KEY = "streeflood:ai-local-backend"
 const THINKING_KEY = "streeflood:ai-thinking"
+const SEND_CONTEXT_KEY = "streeflood:ai-send-context"
 
 export type AIEngineKind = "cloud" | "local"
 /** เส้นทางของโหมด on-device: gpu = WebLLM/WebGPU | cpu = wllama/WebAssembly (ใช้ RAM) */
@@ -61,9 +62,12 @@ interface AIEngineContextValue {
   cpuMultithread: boolean
   /** เปิดโหมดคิด (Qwen3 thinking) ของ AI บนเครื่อง — ช้าลงแต่ตอบละเอียดขึ้น */
   thinking: boolean
+  /** ส่งข้อมูลสดจากเว็บ (ระดับน้ำ/อากาศ) ให้ AI บนเครื่อง — ปิดแล้วตอบเร็วขึ้นมากแต่ AI ไม่รู้ข้อมูล */
+  sendContext: boolean
   setEngine: (next: AIEngineKind) => void
   setLocalBackend: (next: LocalBackend) => void
   setThinking: (next: boolean) => void
+  setSendContext: (next: boolean) => void
   /** เปลี่ยนโมเดล (รับ id ของ variant ไหนก็ได้) — ไม่มีผลระหว่างดาวน์โหลด */
   setLocalModel: (id: string) => void
   /** โหลดโมเดลเข้าเครื่อง (ดาวน์โหลดก่อนถ้ายังไม่มี) — เจ้าของ state ความคืบหน้า */
@@ -83,6 +87,7 @@ export function AIEngineProvider({ children }: { children: ReactNode }) {
   const [webgpuSupported, setWebgpuSupported] = useState<boolean | null>(null)
   const [cpuMultithread, setCpuMultithread] = useState(false)
   const [thinking, setThinkingState] = useState(false)
+  const [sendContext, setSendContextState] = useState(true)
   // กัน loadModel ซ้อนกัน (เช่น กดโหลดใน popover พร้อมกับส่งข้อความแรก)
   const loadPromiseRef = useRef<Promise<void> | null>(null)
 
@@ -140,6 +145,7 @@ export function AIEngineProvider({ children }: { children: ReactNode }) {
     // โหมด local ใช้ได้เสมอแล้ว เพราะเส้นทาง CPU ไม่ต้องพึ่ง GPU
     if (window.localStorage.getItem(ENGINE_KEY) === "local") setEngineState("local")
     if (window.localStorage.getItem(THINKING_KEY) === "true") setThinkingState(true)
+    if (window.localStorage.getItem(SEND_CONTEXT_KEY) === "false") setSendContextState(false)
 
     const storedModel = window.localStorage.getItem(MODEL_KEY)
     if (storedModel) {
@@ -171,6 +177,11 @@ export function AIEngineProvider({ children }: { children: ReactNode }) {
   const setThinking = useCallback((next: boolean) => {
     setThinkingState(next)
     window.localStorage.setItem(THINKING_KEY, String(next))
+  }, [])
+
+  const setSendContext = useCallback((next: boolean) => {
+    setSendContextState(next)
+    window.localStorage.setItem(SEND_CONTEXT_KEY, String(next))
   }, [])
 
   const setLocalBackend = useCallback((next: LocalBackend) => {
@@ -248,9 +259,11 @@ export function AIEngineProvider({ children }: { children: ReactNode }) {
       webgpuSupported,
       cpuMultithread,
       thinking,
+      sendContext,
       setEngine,
       setLocalBackend,
       setThinking,
+      setSendContext,
       setLocalModel,
       loadModel,
       removeModel,
@@ -265,9 +278,11 @@ export function AIEngineProvider({ children }: { children: ReactNode }) {
       webgpuSupported,
       cpuMultithread,
       thinking,
+      sendContext,
       setEngine,
       setLocalBackend,
       setThinking,
+      setSendContext,
       setLocalModel,
       loadModel,
       removeModel,
