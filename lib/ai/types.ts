@@ -89,6 +89,34 @@ export interface PrefetchedData {
   tmdWarning: unknown
 }
 
+// ย่อ WeatherData ให้เหลือเฉพาะที่โมเดลใช้ตอบจริง — ข้อมูลเต็ม (hourly 24 ชม. +
+// forecast รายวัน + คำบรรยายสองภาษา + icon) ยาว ~6,000 ตัวอักษร กินเวลา prefill
+// ของโหมด on-device CPU หลักนาที ทั้งที่คำตอบใช้แค่สภาพปัจจุบัน + ฝนไม่กี่ชั่วโมงข้างหน้า
+function compactWeather(weather: unknown): unknown {
+  if (weather == null || typeof weather !== "object") return weather
+  const w = weather as {
+    city?: unknown
+    current?: unknown
+    hourly?: unknown[]
+    forecast?: unknown[]
+    timestamp?: unknown
+    source?: unknown
+    error?: unknown
+  }
+  if (w.error) return weather
+  const pickHour = (h: unknown) => {
+    const x = h as { time?: unknown; temp?: unknown; precipitation?: unknown; descriptionTh?: unknown }
+    return { time: x.time, temp: x.temp, precipitation: x.precipitation, descriptionTh: x.descriptionTh }
+  }
+  return {
+    city: w.city,
+    current: w.current,
+    hourly6hr: Array.isArray(w.hourly) ? w.hourly.slice(0, 6).map(pickHour) : undefined,
+    timestamp: w.timestamp,
+    source: w.source,
+  }
+}
+
 /** system prompt สำหรับโหมด on-device (WebLLM) — โมเดลเล็กเรียก tool เองไม่ได้
  * เลยฝังข้อมูลสดที่ดึงไว้แล้วลงไปใน prompt แทน และตัด workflow 8 tool ทิ้ง
  * (โมเดลเล็กยิ่ง prompt ยาวยิ่งตอบเพี้ยน — เก็บให้สั้นที่สุด) */
@@ -119,7 +147,7 @@ export function buildLocalSystemPrompt(context: AIContext, timestamp: string, fr
 
 ${section("ค่าที่วัดล่าสุดจาก sensor", fresh.latestReading)}
 
-${section("สภาพอากาศ (ดู field source ว่ามาจาก TMD หรือ Open-Meteo — อ้างตามนั้น)", fresh.weather)}
+${section("สภาพอากาศ (ดู field source ว่ามาจาก TMD หรือ Open-Meteo — อ้างตามนั้น)", compactWeather(fresh.weather))}
 
 ${section("ประกาศเตือนภัยจากกรมอุตุฯ (hasWarning: false = ไม่มีประกาศ)", fresh.tmdWarning)}
 

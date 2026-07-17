@@ -231,6 +231,10 @@ export async function streamCpuReply(
         temperature: 0.6,
         // เปิดโหมดคิดต้องเผื่อ budget ให้ reasoning ไม่กิน max_tokens จนคำตอบขาด
         max_tokens: opts.thinking ? 2048 : 1024,
+        // reuse KV cache ของ prefix ที่ตรงกับรอบก่อน (system prompt + ประวัติแชท)
+        // ทำงานคู่กับ TTL cache ใน fetchContextPrompt ที่ทำให้ prefix นิ่งพอจะตรงได้จริง
+        // → เทิร์นถัดๆ ไป prefill เฉพาะข้อความใหม่ ไม่ใช่ทั้งบทสนทนา
+        cache_prompt: true,
         // ขอ event ความคืบหน้า prefill จริง (prompt_progress) จาก llama.cpp —
         // type ของ wllama ยังไม่ประกาศ field นี้ แต่ implementation ส่ง options
         // ทั้งก้อนเป็น JSON เข้า wasm ตรงๆ (ยืนยันแล้วว่า event ทะลุมาถึง chunk)

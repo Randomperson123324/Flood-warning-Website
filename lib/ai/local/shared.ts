@@ -228,7 +228,19 @@ export function trackPrefillProgress(opts: {
   }
 }
 
+// ใช้ system prompt เดิมซ้ำช่วงสั้นๆ — ประเด็นไม่ใช่ประหยัด network แต่เพื่อให้ prefix
+// ของบทสนทนา "นิ่ง" หลายๆ เทิร์น: prompt มี timestamp/ข้อมูลสดที่เปลี่ยนทุกครั้ง ถ้า
+// เปลี่ยนแม้ตัวเดียว KV cache ของโมเดล (cache_prompt) ใช้ต่อไม่ได้ ต้อง prefill ใหม่
+// ทั้งพรอมป์ทุกข้อความ พอ prompt นิ่ง เทิร์นถัดไป prefill แค่ข้อความใหม่ (เร็วขึ้นมหาศาล
+// บนเส้นทาง CPU) — แลกกับข้อมูลสดช้าสุด 2 นาที เท่ากับรอบ auto-analysis อยู่แล้ว
+const CONTEXT_PROMPT_TTL_MS = 120_000
+let promptCache: { sensorId: string | undefined; prompt: string; at: number } | null = null
+
 export async function fetchContextPrompt(context: AIContext): Promise<string> {
+  const now = Date.now()
+  if (promptCache && promptCache.sensorId === context.sensorId && now - promptCache.at < CONTEXT_PROMPT_TTL_MS) {
+    return promptCache.prompt
+  }
   const res = await fetch("/api/ai/context", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -237,5 +249,6 @@ export async function fetchContextPrompt(context: AIContext): Promise<string> {
   if (!res.ok) throw new Error(`context API error: ${res.status}`)
   const data = (await res.json()) as { systemPrompt?: string }
   if (!data.systemPrompt) throw new Error("context API returned no prompt")
+  promptCache = { sensorId: context.sensorId, prompt: data.systemPrompt, at: now }
   return data.systemPrompt
 }

@@ -364,8 +364,8 @@ export const dictionary = {
     gpuOffload: { th: "แบ่งงานให้การ์ดจอ", en: "GPU offload" },
     layersUnit: { th: "เลเยอร์", en: "layers" },
     gpuOffloadDesc: {
-      th: "ยิ่งมากยิ่งเร็ว แต่กิน VRAM ของการ์ดจอ — ลดลงถ้าเครื่องค้างหรือภาพกระตุก",
-      en: "More layers = faster, but uses graphics memory — lower it if your machine stutters",
+      th: "ยิ่งมากยิ่งเร็ว แต่กิน VRAM ของการ์ดจอ — ลดลงถ้าเครื่องค้างหรือภาพกระตุก ถ้า VRAM ไม่ขยับเลย แปลว่าการ์ด/ไดรเวอร์ไม่รองรับการคำนวณผ่านเบราว์เซอร์ ระบบจะถอยไปใช้ CPU ให้เองอัตโนมัติ",
+      en: "More layers = faster, but uses graphics memory — lower it if your machine stutters. If VRAM usage never moves, your GPU/driver can't run browser compute and it falls back to CPU automatically",
     },
     gpuOffloadNote: {
       th: "มีผลกับข้อความถัดไป (โหลดโมเดลใหม่ให้อัตโนมัติ ไม่ต้องดาวน์โหลดซ้ำ)",
