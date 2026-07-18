@@ -1,11 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { SITE_CONFIG } from "@/lib/config"
 import type { TMDWarningData } from "@/lib/weather/tmd-warning"
-
-// Poll the TMD advisory feed on a slow cadence — warnings change on the order
-// of hours, not minutes, so there's no need to hammer the endpoint.
-const REFRESH_INTERVAL_MS = 15 * 60 * 1000
 
 interface UseTMDWarningResult {
   warning: TMDWarningData | null
@@ -37,7 +34,7 @@ export function useTMDWarning(): UseTMDWarningResult {
     }
 
     load()
-    const interval = setInterval(load, REFRESH_INTERVAL_MS)
+    const interval = setInterval(load, SITE_CONFIG.fetch.tmdWarningRefreshIntervalMs)
 
     return () => {
       cancelled = true

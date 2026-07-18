@@ -19,8 +19,10 @@ export function useArchiveData(sensor: Sensor | null, date: string): UseArchiveD
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const sensorId = sensor?.sensor_id ?? null
+
   useEffect(() => {
-    if (!sensor || !date) return
+    if (!sensorId || !date) return
     if (!supabase) {
       setError("Supabase is not configured")
       setLoading(false)
@@ -39,7 +41,7 @@ export function useArchiveData(sensor: Sensor | null, date: string): UseArchiveD
       const { data, error: queryError } = await supabase!
         .from("water_readings")
         .select("*")
-        .eq("sensor_id", sensor!.sensor_id)
+        .eq("sensor_id", sensorId!)
         .gte("timestamp", start.toISOString())
         .lt("timestamp", end.toISOString())
         .order("timestamp", { ascending: true })
@@ -60,7 +62,7 @@ export function useArchiveData(sensor: Sensor | null, date: string): UseArchiveD
     return () => {
       cancelled = true
     }
-  }, [sensor, date])
+  }, [sensorId, date])
 
   return { readings, loading, error }
 }

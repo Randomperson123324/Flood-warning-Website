@@ -23,6 +23,7 @@ export function useSensors(location: UserLocation | null): UseSensorsResult {
 
   useEffect(() => {
     let cancelled = false
+    let initial = true
 
     async function load() {
       if (!supabase) {
@@ -30,7 +31,9 @@ export function useSensors(location: UserLocation | null): UseSensorsResult {
         setLoading(false)
         return
       }
-      setLoading(true)
+      // Only surface a loading state on the first fetch — periodic refreshes
+      // should update data silently instead of flickering the UI.
+      if (initial) setLoading(true)
       const { data, error: queryError } = await supabase
         .from("sensors")
         .select("*")
@@ -45,6 +48,7 @@ export function useSensors(location: UserLocation | null): UseSensorsResult {
         setError(null)
       }
       setLoading(false)
+      initial = false
     }
 
     load()

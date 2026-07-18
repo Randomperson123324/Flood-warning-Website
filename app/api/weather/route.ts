@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const lat = Number(latParam)
     const lon = Number(lonParam)
 
-    if (Number.isNaN(lat) || Number.isNaN(lon)) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
       return NextResponse.json({ error: "Invalid lat/lon query parameters" }, { status: 400 })
     }
 

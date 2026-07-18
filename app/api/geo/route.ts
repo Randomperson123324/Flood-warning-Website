@@ -19,9 +19,13 @@ function extractClientIp(req: NextRequest): string | null {
   return null
 }
 
+// Keep the fallback chain snappy — a hung provider should fail over, not
+// stall the whole geolocation flow.
+const GEO_LOOKUP_TIMEOUT_MS = 5_000
+
 async function fetchFromIpApiCo(ip: string | null) {
   const url = ip ? `https://ipapi.co/${ip}/json/` : "https://ipapi.co/json/"
-  const res = await fetch(url, { cache: "no-store" })
+  const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(GEO_LOOKUP_TIMEOUT_MS) })
   if (!res.ok) throw new Error(`ipapi.co error: ${res.status}`)
   const data = await res.json()
   if (data.error || typeof data.latitude !== "number" || typeof data.longitude !== "number") {
@@ -33,7 +37,7 @@ async function fetchFromIpApiCo(ip: string | null) {
 async function fetchFromIpApiCom(ip: string | null) {
   const query = ip ?? ""
   const url = `http://ip-api.com/json/${query}?fields=status,message,lat,lon,city`
-  const res = await fetch(url, { cache: "no-store" })
+  const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(GEO_LOOKUP_TIMEOUT_MS) })
   if (!res.ok) throw new Error(`ip-api.com error: ${res.status}`)
   const data = await res.json()
   if (data.status !== "success" || typeof data.lat !== "number" || typeof data.lon !== "number") {

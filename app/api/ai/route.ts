@@ -34,9 +34,16 @@ function getProvider() {
   throw new Error("No AI provider configured: set GEMINI_API_KEY or AI_PROVIDER=lmstudio")
 }
 
+const sseTextEncoder = new TextEncoder()
+
 function sseEncode(event: ClientStreamEvent): Uint8Array {
-  return new TextEncoder().encode(`data: ${JSON.stringify(event)}\n\n`)
+  return sseTextEncoder.encode(`data: ${JSON.stringify(event)}\n\n`)
 }
+
+// Bound the conversation payload — each request fans out into model tokens
+// (and tool calls), so unchecked size is a direct quota/cost abuse vector.
+const MAX_MESSAGES = 40
+const MAX_MESSAGE_CHARS = 8_000
 
 export async function POST(req: NextRequest) {
   let body: AIRequest
@@ -49,6 +56,12 @@ export async function POST(req: NextRequest) {
   const { messages, context } = body
   if (!messages?.length) {
     return new Response(JSON.stringify({ error: "No messages provided" }), { status: 400 })
+  }
+  if (
+    messages.length > MAX_MESSAGES ||
+    messages.some((m) => typeof m?.content !== "string" || m.content.length > MAX_MESSAGE_CHARS)
+  ) {
+    return new Response(JSON.stringify({ error: "Conversation too large" }), { status: 413 })
   }
 
   const stream = new ReadableStream<Uint8Array>({

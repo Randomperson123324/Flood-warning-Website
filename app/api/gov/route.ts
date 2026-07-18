@@ -11,6 +11,10 @@ import {
   type GovWarningAlert,
 } from "@/lib/gov/thaiwater"
 
+// Dynamic handler + cached upstream fetches (next.revalidate) is the intended
+// combo — static prerendering would freeze all agency feeds at build time.
+export const dynamic = "force-dynamic"
+
 export interface GovDataPayload {
   /** null = that agency's feed failed; empty array/object = feed worked but nothing active */
   announcements: GovAnnouncement[] | null

@@ -141,7 +141,15 @@ export function createLMStudioProvider(): AIProvider {
 
         for (const tc of toolCalls) {
           yield { type: "tool_call", name: tc.name }
-          const args = JSON.parse(tc.arguments || "{}")
+          // A partial/garbled stream can leave arguments as invalid JSON —
+          // fall back to an empty object instead of throwing and killing the
+          // whole response.
+          let args: Record<string, unknown> = {}
+          try {
+            args = tc.arguments ? JSON.parse(tc.arguments) : {}
+          } catch {
+            args = {}
+          }
           const result = await onToolCall(tc.name, args)
           openaiMessages.push({
             role: "tool",

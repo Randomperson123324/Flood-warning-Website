@@ -77,7 +77,7 @@ async function handleGetTMDWarning(_args: Record<string, unknown>): Promise<unkn
 async function handleGetFloodReports(args: Record<string, unknown>): Promise<unknown> {
   const supabase = createServerSupabaseClient()
   if (!supabase) return []
-  const limit = Number(args.limit) || 10
+  const limit = Math.min(Math.max(Number(args.limit) || 10, 1), 50)
   const { data } = await supabase
     .from("flood_reports")
     .select("area_name, severity, description, created_at")
@@ -108,7 +108,14 @@ async function handleGetSiteSettings(args: Record<string, unknown>): Promise<unk
 }
 
 async function handleSearchWeb(args: Record<string, unknown>): Promise<unknown> {
-  return searchWeb(String(args.query ?? ""))
+  const query = String(args.query ?? "").slice(0, 300)
+  const result = await searchWeb(query)
+  // Trim per-result page content — Tavily can return large extracts, and the
+  // full set otherwise bloats the model context (and cost) on every call.
+  return {
+    ...result,
+    results: result.results.map((r) => ({ ...r, content: r.content.slice(0, 1_500) })),
+  }
 }
 
 // ─── Registry ─────────────────────────────────────────────────────────────────

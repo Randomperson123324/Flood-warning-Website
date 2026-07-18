@@ -67,7 +67,10 @@ export function AlertWatcherProvider({ children }: { children: ReactNode }) {
       // Fire a browser notification only on escalation (normal→warning,
       // warning→danger, normal→danger) — never on de-escalation or on the
       // very first poll (no baseline to compare against yet).
-      if (Notification?.permission === "granted") {
+      // `typeof` guard — merely referencing `Notification` (even with optional
+      // chaining) throws ReferenceError on browsers without the API (e.g. some
+      // iOS Safari versions), which would kill the whole polling loop.
+      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
         for (const sensor of sensorData as Sensor[]) {
           const prev = previousSeverity.current[sensor.sensor_id]
           const next = nextSeverity[sensor.sensor_id]

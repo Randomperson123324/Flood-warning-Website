@@ -12,6 +12,9 @@
 
 import { SITE_CONFIG } from "@/lib/config"
 
+// A hung search backend would otherwise stall the AI's SSE stream mid-answer.
+const SEARCH_TIMEOUT_MS = 10_000
+
 export interface SearchResultItem {
   title: string
   url: string
@@ -36,6 +39,7 @@ async function searchTavily(query: string): Promise<SearchResult> {
       max_results: SITE_CONFIG.search.maxResults,
     }),
     cache: "no-store",
+    signal: AbortSignal.timeout(SEARCH_TIMEOUT_MS),
   })
 
   if (!res.ok) throw new Error(`Tavily error: ${res.status}`)
@@ -54,7 +58,7 @@ async function searchTavily(query: string): Promise<SearchResult> {
 
 async function searchDuckDuckGo(query: string): Promise<SearchResult> {
   const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1`
-  const res = await fetch(url, { cache: "no-store" })
+  const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(SEARCH_TIMEOUT_MS) })
   if (!res.ok) throw new Error(`DuckDuckGo error: ${res.status}`)
   const data = await res.json()
 

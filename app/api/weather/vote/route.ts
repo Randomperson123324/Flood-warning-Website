@@ -2,6 +2,10 @@ import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { type NextRequest, NextResponse } from "next/server"
 import { SITE_CONFIG } from "@/lib/config"
 
+// Next.js 14 prerenders GET route handlers as static at build unless they use
+// dynamic APIs — without this the vote tally would be a frozen build-time snapshot.
+export const dynamic = "force-dynamic"
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient()
@@ -48,6 +52,12 @@ export async function POST(request: NextRequest) {
 
     if (is_raining !== null && typeof is_raining !== "boolean") {
       return NextResponse.json({ error: "Invalid input: is_raining must be a boolean or null" }, { status: 400 })
+    }
+    if (visitor_id !== undefined && visitor_id !== null && (typeof visitor_id !== "string" || visitor_id.length === 0 || visitor_id.length > 64)) {
+      return NextResponse.json({ error: "Invalid visitor_id" }, { status: 400 })
+    }
+    if (location !== undefined && location !== null && (typeof location !== "string" || location.length > 120)) {
+      return NextResponse.json({ error: "Invalid location" }, { status: 400 })
     }
 
     const authHeader = request.headers.get("Authorization")

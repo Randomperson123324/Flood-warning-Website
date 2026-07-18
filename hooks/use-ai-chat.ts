@@ -181,7 +181,12 @@ export function useAIChat(context: AIContext, isOpen: boolean) {
 
     const activeEngine = engineRef.current.engine
     try {
-      const history = [...chatHistory, userMsg].map((m) => ({ role: m.role, content: m.content }))
+      // Only send the tail of the conversation to the server — keeps requests
+      // under the API's payload cap and bounds token cost on long chats. The
+      // full history still lives in local state for display.
+      const MAX_TURNS = 30
+      const recent = [...chatHistory, userMsg].slice(-MAX_TURNS)
+      const history = recent.map((m) => ({ role: m.role, content: m.content.slice(0, 8_000) }))
       // reasoning สะสมของคำตอบนี้ — เก็บไว้นอก setState เพื่อให้ทุก callback
       // (สถานะ/เนื้อหา) แปะความคิดล่าสุดติดข้อความไปด้วยเสมอ ไม่หายตอนสลับสถานะ
       let thinkingText = ""

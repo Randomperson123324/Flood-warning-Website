@@ -1,7 +1,7 @@
 "use client"
 
-import { useMemo } from "react"
-import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet"
+import { useEffect, useMemo } from "react"
+import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 import { useTheme } from "next-themes"
@@ -20,6 +20,17 @@ interface SensorMapProps {
   selectedSensorId: string | null
   userLocation: UserLocation | null
   onSelect: (sensorId: string) => void
+}
+
+/** react-leaflet only applies MapContainer's `center` prop at mount — this
+ * child keeps the view in sync when the selected sensor (or location)
+ * changes afterwards, so clicking a sensor actually moves the map. */
+function RecenterView({ center }: { center: [number, number] }) {
+  const map = useMap()
+  useEffect(() => {
+    map.flyTo(center, map.getZoom(), { duration: 0.8 })
+  }, [center[0], center[1], map]) // eslint-disable-line react-hooks/exhaustive-deps
+  return null
 }
 
 const SEVERITY_COLOR: Record<string, string> = {
@@ -73,6 +84,7 @@ export function SensorMap({ sensors, latestBySensorId, selectedSensorId, userLoc
     <div className="glass-panel h-[clamp(18rem,55vh,28rem)] overflow-hidden p-1">
       <MapContainer center={center} zoom={SITE_CONFIG.map.defaultZoom} className="h-full w-full rounded-glass">
         <TileLayer url={tileUrl} attribution={SITE_CONFIG.map.tileAttribution} />
+        <RecenterView center={center} />
 
         {userLocation && (
           <Marker position={[userLocation.lat, userLocation.lon]} icon={userIcon()}>

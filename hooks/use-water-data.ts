@@ -27,8 +27,14 @@ export function useWaterData(sensor: Sensor | null): UseWaterDataResult {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Depend on the stable sensor_id (not the object) — useSensors re-fetches
+  // its list periodically and produces brand-new objects each time, which
+  // would otherwise tear down the realtime channel and re-fetch the entire
+  // history every few minutes for the exact same sensor.
+  const sensorId = sensor?.sensor_id ?? null
+
   useEffect(() => {
-    if (!sensor) return
+    if (!sensorId) return
     if (!supabase) {
       setError("Supabase is not configured")
       setLoading(false)
@@ -46,7 +52,7 @@ export function useWaterData(sensor: Sensor | null): UseWaterDataResult {
       const { data, error: queryError } = await supabase!
         .from("water_readings")
         .select("*")
-        .eq("sensor_id", sensor!.sensor_id)
+        .eq("sensor_id", sensorId!)
         .gte("timestamp", since)
         .order("timestamp", { ascending: false })
         .limit(SITE_CONFIG.fetch.realtimeLimit)
@@ -64,12 +70,20 @@ export function useWaterData(sensor: Sensor | null): UseWaterDataResult {
     loadHistory()
 
     const channel = supabase
-      .channel(`water_readings:${sensor.sensor_id}:${uniqueId()}`)
+      .channel(`water_readings:${sensorId}:${uniqueId()}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "water_readings", filter: `sensor_id=eq.${sensor.sensor_id}` },
+        { event: "INSERT", schema: "public", table: "water_readings", filter: `sensor_id=eq.${sensorId}` },
         (payload) => {
-          setHistory((prev) => [...prev, payload.new as WaterReading])
+          const reading = payload.new as WaterReading
+          setHistory((prev) => {
+            // Dedupe (channel rejoins can replay events) and cap growth so a
+            // long-lived tab doesn't accumulate readings without bound.
+            if (prev.some((r) => r.id === reading.id)) return prev
+            const next = [...prev, reading]
+            const cap = SITE_CONFIG.fetch.realtimeLimit
+            return next.length > cap ? next.slice(next.length - cap) : next
+          })
         },
       )
       .subscribe()
@@ -78,7 +92,7 @@ export function useWaterData(sensor: Sensor | null): UseWaterDataResult {
       cancelled = true
       supabase?.removeChannel(channel)
     }
-  }, [sensor])
+  }, [sensorId])
 
   const latest = history.length > 0 ? history[history.length - 1] : null
 

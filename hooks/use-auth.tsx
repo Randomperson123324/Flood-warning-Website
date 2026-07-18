@@ -47,14 +47,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     })
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession)
       if (nextSession?.user) {
-        setProfile(await fetchProfile(nextSession.user.id))
-        await supabase!
-          .from("users")
-          .update({ is_online: true, last_seen: new Date().toISOString() })
-          .eq("id", nextSession.user.id)
+        const userId = nextSession.user.id
+        // Defer Supabase calls out of the callback itself — awaiting queries
+        // inside onAuthStateChange can deadlock (the SDK holds an internal
+        // lock while the callback runs). See supabase-js docs on this.
+        setTimeout(async () => {
+          setProfile(await fetchProfile(userId))
+          await supabase!
+            .from("users")
+            .update({ is_online: true, last_seen: new Date().toISOString() })
+            .eq("id", userId)
+        }, 0)
       } else {
         setProfile(null)
       }

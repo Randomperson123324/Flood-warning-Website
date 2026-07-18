@@ -66,7 +66,11 @@ export function useCommunityChat(): UseCommunityChatResult {
           .select("*, users(username, role)")
           .eq("id", (payload.new as ChatMessage).id)
           .single()
-        if (data) setMessages((prev) => [...prev, data as unknown as ChatMessage])
+        if (data) {
+          const msg = data as unknown as ChatMessage
+          // Channel rejoins can replay the same INSERT — dedupe by id.
+          setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]))
+        }
       })
       .subscribe()
 

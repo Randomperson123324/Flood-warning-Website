@@ -23,6 +23,10 @@ export async function POST(req: NextRequest) {
   if (!description || typeof description !== "string" || description.trim().length === 0) {
     return NextResponse.json({ error: "description is required" }, { status: 400 })
   }
+  // Sanity caps — keep abuse from stuffing megabytes into public rows.
+  if (area_name.length > 120 || description.length > 2000) {
+    return NextResponse.json({ error: "Input too long" }, { status: 400 })
+  }
 
   const verification = await verifyTurnstileToken(turnstileToken)
   if (!verification.ok) {

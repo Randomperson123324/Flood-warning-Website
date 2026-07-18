@@ -27,6 +27,19 @@ export interface WeatherLocation {
 // the same cached result instead of hammering TMD.
 const weatherCache = new Map<string, { data: WeatherData; fetchedAt: number }>()
 
+// Hard cap on cached locations. /api/weather accepts arbitrary coordinates,
+// so without a bound anyone could grow this Map without limit. Map iteration
+// order is insertion order, so evicting the first key is effectively FIFO.
+const WEATHER_CACHE_MAX_ENTRIES = 100
+
+function pruneCache() {
+  while (weatherCache.size > WEATHER_CACHE_MAX_ENTRIES) {
+    const oldest = weatherCache.keys().next().value
+    if (oldest === undefined) break
+    weatherCache.delete(oldest)
+  }
+}
+
 function cacheKey(loc: WeatherLocation): string {
   return `${loc.lat.toFixed(4)},${loc.lon.toFixed(4)}`
 }
@@ -170,6 +183,7 @@ export async function fetchWeather(loc: WeatherLocation): Promise<WeatherData> {
   }
 
   weatherCache.set(key, { data, fetchedAt: Date.now() })
+  pruneCache()
   return data
 }
 

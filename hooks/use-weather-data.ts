@@ -15,17 +15,25 @@ export function useWeatherData(sensor: Sensor | null): UseWeatherResult {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Stable primitive deps — the parent's sensor object identity changes on
+  // every periodic sensors re-fetch, which would otherwise reset the refresh
+  // interval and re-request weather far more often than configured.
+  const lat = sensor?.lat ?? null
+  const lon = sensor?.lon ?? null
+  const label = sensor?.label ?? ""
+
   useEffect(() => {
-    if (!sensor) return
+    if (lat === null || lon === null) return
     let cancelled = false
+    let initial = true
 
     async function load() {
-      setLoading(true)
+      if (initial) setLoading(true)
       try {
         const params = new URLSearchParams({
-          lat: String(sensor!.lat),
-          lon: String(sensor!.lon),
-          label: sensor!.label,
+          lat: String(lat),
+          lon: String(lon),
+          label,
         })
         const res = await fetch(`/api/weather?${params.toString()}`, { cache: "no-store" })
         const data = await res.json()
@@ -37,6 +45,7 @@ export function useWeatherData(sensor: Sensor | null): UseWeatherResult {
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load weather")
       } finally {
         if (!cancelled) setLoading(false)
+        initial = false
       }
     }
 
@@ -47,7 +56,7 @@ export function useWeatherData(sensor: Sensor | null): UseWeatherResult {
       cancelled = true
       clearInterval(interval)
     }
-  }, [sensor])
+  }, [lat, lon, label])
 
   return { weather, loading, error }
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import { Header } from "@/components/header"
 import { AnnouncementBanner } from "@/components/announcement-banner"
@@ -31,19 +31,19 @@ const SensorMap = dynamic(() => import("@/components/dashboard/sensor-map").then
 export default function DashboardPage() {
   const { t } = useLanguage()
   const { location, status: geoStatus, retry: retryGeo } = useGeolocation()
-  const { sensors, sensorsByDistance, recommendedSensor, loading: sensorsLoading } = useSensors(location)
+  const { sensors, sensorsByDistance, recommendedSensor, loading: sensorsLoading, error: sensorsError } = useSensors(location)
 
+  // null = auto-follow the recommended (nearest) sensor; set only when the
+  // person explicitly picks one from the dropdown/map. Previously this was
+  // also set by an effect on the first recommendation, which raced the GPS
+  // fix: sensors resolve before geolocation, so the selection locked onto the
+  // first alphabetical sensor and the real "nearest" recommendation arriving
+  // moments later never applied. Keeping auto mode as null fixes that — the
+  // selection stays dynamic until a manual choice is made.
   const [manualSensorId, setManualSensorId] = useState<string | null>(null)
 
-  // Auto-follow the recommended (nearest) sensor until the person manually
-  // picks one — re-evaluated every time location/sensors resolve, per the
-  // "dynamic every visit" requirement.
-  useEffect(() => {
-    if (!manualSensorId && recommendedSensor) setManualSensorId(recommendedSensor.sensor_id)
-  }, [recommendedSensor, manualSensorId])
-
   const selectedSensor = useMemo(
-    () => sensors.find((s) => s.sensor_id === manualSensorId) ?? recommendedSensor,
+    () => (manualSensorId ? sensors.find((s) => s.sensor_id === manualSensorId) ?? recommendedSensor : recommendedSensor),
     [sensors, manualSensorId, recommendedSensor],
   )
 
@@ -93,9 +93,31 @@ export default function DashboardPage() {
         <LocationBanner status={geoStatus} location={location} onRetry={retryGeo} />
 
         {!sensorsLoading && sensors.length === 0 && (
-          <div className="glass-panel p-6 text-center text-sm text-ink-soft">
-            {t("common", "error")} — no sensors configured yet. Run the SQL setup in{" "}
-            <code className="font-mono">scripts/sql/001_schema.sql</code>.
+          <div className="glass-panel space-y-2 p-6 text-center text-sm text-ink-soft">
+            {sensorsError === "Supabase is not configured" ? (
+              <>
+                <p className="font-medium text-ink">ยังไม่ได้เชื่อมต่อ Supabase</p>
+                <p>
+                  ใส่ <code className="font-mono">NEXT_PUBLIC_SUPABASE_URL</code> และ{" "}
+                  <code className="font-mono">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> ในไฟล์{" "}
+                  <code className="font-mono">.env.local</code> (ดูค่าได้ที่ Supabase dashboard → Settings → API)
+                  แล้วรีสตาร์ท dev server
+                </p>
+              </>
+            ) : sensorsError ? (
+              <>
+                <p className="font-medium text-ink">{t("common", "error")}</p>
+                <p className="font-mono text-xs">{sensorsError}</p>
+              </>
+            ) : (
+              <>
+                <p className="font-medium text-ink">ยังไม่มีเซนเซอร์ในฐานข้อมูล</p>
+                <p>
+                  รัน SQL setup ใน{" "}
+                  <code className="font-mono">scripts/sql/001_phase1_schema.sql</code> ที่ Supabase SQL editor
+                </p>
+              </>
+            )}
           </div>
         )}
 
